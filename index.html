@@ -455,8 +455,13 @@
                   name="gameCode"
                   placeholder="e.g. 7421"
                   inputmode="numeric"
-                  required
                 />
+                <p class="status">
+                  Enter a code to join, or start a fresh game if you're hosting.
+                </p>
+                <button class="btn ghost" type="button" id="start-game">
+                  I'm starting the games 🎬
+                </button>
               </div>
               <button class="btn" type="submit">Lock in our team 🚀</button>
               <p class="status" id="save-status">Nothing saved yet.</p>
@@ -573,10 +578,10 @@
       const adminPanel = document.getElementById("admin-panel");
       const adminActionStatus = document.getElementById("admin-action-status");
       const gameCodeEl = document.getElementById("game-code");
-      const gameCodeInput = document.getElementById("gameCode");
       const newGameButton = document.getElementById("new-game");
       const resetGameButton = document.getElementById("reset-game");
       const clearResultsButton = document.getElementById("clear-results");
+      const startGameButton = document.getElementById("start-game");
       const tabs = document.querySelectorAll(".tab");
 
       const ADMIN_PASSCODE = "3241";
@@ -592,16 +597,12 @@
       const setActiveGameCode = (code) =>
         localStorage.setItem(STORAGE_KEYS.activeGameCode, code);
 
-      const ensureGameCode = () => {
-        let code = getCurrentGameCode();
-        if (!code) {
-          code = generateGameCode();
-          localStorage.setItem(STORAGE_KEYS.currentGameCode, code);
-        }
-        if (!getActiveGameCode()) {
-          setActiveGameCode(code);
-        }
-        return code;
+      const setCurrentGameCode = (code) =>
+        localStorage.setItem(STORAGE_KEYS.currentGameCode, code);
+
+      const setGameCodes = (code) => {
+        setCurrentGameCode(code);
+        setActiveGameCode(code);
       };
 
       const getScopedKey = (key) => getGameStorageKey(key, getActiveGameCode());
@@ -1083,22 +1084,36 @@
         renderRoster();
       };
 
-      form.addEventListener("submit", (event) => {
-        event.preventDefault();
-        const formData = new FormData(form);
-        const playerName = formData.get("playerName").trim();
-        const country = formData.get("country").trim();
-        const partnerName = formData.get("partnerName").trim();
-        const submittedCode = normalizeGameCode(formData.get("gameCode") || "");
-
-        const currentGameCode = ensureGameCode();
-        if (!submittedCode || submittedCode !== currentGameCode) {
-          saveStatus.textContent = "Wrong game code. Ask the host for the current code.";
-          return;
+      const updateTabsVisibility = () => {
+        const hasGame = Boolean(getActiveGameCode());
+        tabs.forEach((tab) => {
+          if (tab.dataset.view === "player") {
+            tab.classList.remove("hidden");
+            return;
+          }
+          tab.classList.toggle("hidden", !hasGame);
+        });
+        if (!hasGame) {
+          setView("player");
         }
+      };
 
-        setActiveGameCode(submittedCode);
+      const startNewGame = () => {
+        const newCode = generateGameCode();
+        setGameCodes(newCode);
+        saveTeams([]);
+        saveMatches([]);
+        setSavedTeamCount(0);
+        clearActiveTeamId();
+        updateGameCodeDisplay();
+        updateTabsVisibility();
+        renderLeaderboard();
+        renderRoster();
+        renderMatch();
+        return newCode;
+      };
 
+      const registerTeam = ({ playerName, country, partnerName }) => {
         const teams = getTeams();
         const existing = findMatchingTeam(teams, playerName, partnerName, country);
 
@@ -1131,6 +1146,31 @@
         renderMatch();
         renderLeaderboard();
         renderRoster();
+        updateTabsVisibility();
+      };
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const formData = new FormData(form);
+        const playerName = formData.get("playerName").trim();
+        const country = formData.get("country").trim();
+        const partnerName = formData.get("partnerName").trim();
+        const submittedCode = normalizeGameCode(formData.get("gameCode") || "");
+
+        if (!submittedCode) {
+          saveStatus.textContent =
+            "Enter a game code to join, or tap “I'm starting the games” to host.";
+          return;
+        }
+
+        const currentGameCode = getCurrentGameCode();
+        if (currentGameCode && submittedCode !== currentGameCode) {
+          saveStatus.textContent = "Wrong game code. Ask the host for the current code.";
+          return;
+        }
+
+        setGameCodes(submittedCode);
+        registerTeam({ playerName, country, partnerName });
       });
 
       rosterForm.addEventListener("submit", (event) => {
@@ -1210,19 +1250,8 @@
       });
 
       newGameButton.addEventListener("click", () => {
-        const newCode = generateGameCode();
-        localStorage.setItem(STORAGE_KEYS.currentGameCode, newCode);
-        setActiveGameCode(newCode);
-        saveTeams([]);
-        saveMatches([]);
-        setSavedTeamCount(0);
-        clearActiveTeamId();
+        const newCode = startNewGame();
         adminActionStatus.textContent = `New game started. Code: ${newCode}`;
-        renderMatch();
-        renderLeaderboard();
-        renderRoster();
-        updateGameCodeDisplay();
-        updateGameCodeInput();
       });
 
       resetGameButton.addEventListener("click", () => {
@@ -1258,23 +1287,18 @@
       });
 
       const updateGameCodeDisplay = () => {
-        const currentCode = ensureGameCode();
+        const currentCode = getActiveGameCode();
         gameCodeEl.textContent = currentCode || "----";
       };
 
-      const updateGameCodeInput = () => {
-        gameCodeInput.value = getActiveGameCode() || getCurrentGameCode() || "";
-      };
-
       const refreshState = () => {
-        ensureGameCode();
         const teams = getTeams();
         ensureSchedule(teams);
         renderMatch();
         renderLeaderboard();
         renderRoster();
         updateGameCodeDisplay();
-        updateGameCodeInput();
+        updateTabsVisibility();
 
         const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
         adminToggle.checked = isAdmin;
@@ -1288,6 +1312,22 @@
         refreshState();
         setInterval(refreshState, 2000);
       };
+
+      startGameButton.addEventListener("click", () => {
+        const formData = new FormData(form);
+        const playerName = formData.get("playerName").trim();
+        const country = formData.get("country").trim();
+        const partnerName = formData.get("partnerName").trim();
+
+        if (!playerName || !country || !partnerName) {
+          saveStatus.textContent = "Fill in your name, country, and partner before starting.";
+          return;
+        }
+
+        const newCode = startNewGame();
+        saveStatus.textContent = `Game started! Share code ${newCode} with the crew.`;
+        registerTeam({ playerName, country, partnerName });
+      });
 
       init();
     </script>
