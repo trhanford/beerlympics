@@ -264,6 +264,49 @@
         font-weight: 700;
       }
 
+      .roster {
+        display: grid;
+        gap: 16px;
+      }
+
+      .roster-group {
+        background: #f7f9ff;
+        border-radius: 18px;
+        padding: 16px;
+        border: 1px solid #e6ebff;
+      }
+
+      .roster-group h3 {
+        margin: 0 0 10px;
+      }
+
+      .roster-team {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: #fff;
+        border: 1px solid #eef1ff;
+        margin-bottom: 10px;
+      }
+
+      .roster-team:last-child {
+        margin-bottom: 0;
+      }
+
+      .roster-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .btn.small {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+      }
+
       .split {
         display: grid;
         gap: 16px;
@@ -293,6 +336,7 @@
       <div class="tabs">
         <button class="tab active" data-view="player">Player Mode</button>
         <button class="tab" data-view="leaderboard">Leaderboard Mode</button>
+        <button class="tab" data-view="roster">Team Roster</button>
       </div>
     </header>
 
@@ -347,6 +391,37 @@
         <p class="status">Project this on the big screen for instant bragging rights.</p>
         <div class="leaderboard" id="leaderboard"></div>
       </section>
+
+      <section class="card hidden" id="roster-section">
+        <h2>Team Roster</h2>
+        <p class="status">See every country and keep your own entry accurate.</p>
+        <div class="roster" id="roster"></div>
+        <div class="game-card" id="roster-edit">
+          <h3>Your roster entry</h3>
+          <p class="status">Edit or remove only your own team details.</p>
+          <form id="roster-form">
+            <div>
+              <label for="rosterPlayerName">Your name</label>
+              <input id="rosterPlayerName" name="rosterPlayerName" required />
+            </div>
+            <div>
+              <label for="rosterCountry">Country represented</label>
+              <input id="rosterCountry" name="rosterCountry" required />
+            </div>
+            <div>
+              <label for="rosterPartnerName">Partner name</label>
+              <input id="rosterPartnerName" name="rosterPartnerName" required />
+            </div>
+            <div class="roster-actions">
+              <button class="btn small" type="submit">Update my entry ✍️</button>
+              <button class="btn small secondary" type="button" id="remove-team">
+                Remove our team 🗑️
+              </button>
+            </div>
+            <p class="status" id="roster-status">Claim your team to edit it here.</p>
+          </form>
+        </div>
+      </section>
     </main>
 
     <script>
@@ -371,7 +446,16 @@
       const scoreActions = document.getElementById("score-actions");
       const leaderboardSection = document.getElementById("leaderboard-section");
       const playerSection = document.getElementById("player-section");
+      const rosterSection = document.getElementById("roster-section");
       const leaderboardEl = document.getElementById("leaderboard");
+      const rosterEl = document.getElementById("roster");
+      const rosterForm = document.getElementById("roster-form");
+      const rosterStatus = document.getElementById("roster-status");
+      const rosterEdit = document.getElementById("roster-edit");
+      const rosterPlayerName = document.getElementById("rosterPlayerName");
+      const rosterPartnerName = document.getElementById("rosterPartnerName");
+      const rosterCountry = document.getElementById("rosterCountry");
+      const removeTeamButton = document.getElementById("remove-team");
       const tabs = document.querySelectorAll(".tab");
 
       const getTeams = () => JSON.parse(localStorage.getItem(STORAGE_KEYS.teams) || "[]");
@@ -397,6 +481,55 @@
           .join("")
           .slice(0, 3)
           .toUpperCase();
+
+      const normalizeText = (value) => value.trim().toLowerCase();
+      const normalizeName = (value) => normalizeText(value).replace(/[^a-z0-9]/g, "");
+      const normalizeCountry = (value) => normalizeText(value).replace(/[^a-z]/g, "");
+
+      const levenshtein = (a, b) => {
+        if (a === b) return 0;
+        const matrix = Array.from({ length: a.length + 1 }, () =>
+          Array.from({ length: b.length + 1 }, () => 0)
+        );
+        for (let i = 0; i <= a.length; i += 1) matrix[i][0] = i;
+        for (let j = 0; j <= b.length; j += 1) matrix[0][j] = j;
+        for (let i = 1; i <= a.length; i += 1) {
+          for (let j = 1; j <= b.length; j += 1) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j] + 1,
+              matrix[i][j - 1] + 1,
+              matrix[i - 1][j - 1] + cost
+            );
+          }
+        }
+        return matrix[a.length][b.length];
+      };
+
+      const areNamesClose = (a, b) => {
+        const left = normalizeName(a);
+        const right = normalizeName(b);
+        if (!left || !right) return false;
+        if (left === right) return true;
+        const distance = levenshtein(left, right);
+        const limit = Math.max(1, Math.floor(Math.max(left.length, right.length) / 4));
+        return distance <= limit;
+      };
+
+      const findMatchingTeam = (teams, playerName, partnerName, country) => {
+        const normalizedCountry = normalizeCountry(country);
+        return teams.find((team) => {
+          const sameCountry = normalizeCountry(team.country) === normalizedCountry;
+          if (!sameCountry) return false;
+          const sameOrder =
+            areNamesClose(playerName, team.playerName) &&
+            areNamesClose(partnerName, team.partnerName);
+          const swappedOrder =
+            areNamesClose(playerName, team.partnerName) &&
+            areNamesClose(partnerName, team.playerName);
+          return sameOrder || swappedOrder;
+        });
+      };
 
       const buildSchedule = (teams) => {
         const shuffled = shuffle(teams);
@@ -499,6 +632,64 @@
           `;
           leaderboardEl.appendChild(card);
         });
+      };
+
+      const renderRoster = () => {
+        const teams = getTeams();
+        const activeTeamId = localStorage.getItem(STORAGE_KEYS.activeTeamId);
+        rosterEl.innerHTML = "";
+
+        if (!teams.length) {
+          rosterEl.innerHTML =
+            "<p class=\"status\">No teams yet. Register to kick off the roster.</p>";
+          rosterEdit.classList.add("hidden");
+          return;
+        }
+
+        rosterEdit.classList.remove("hidden");
+        const grouped = teams.reduce((acc, team) => {
+          const key = team.country || "Unknown";
+          if (!acc[key]) acc[key] = [];
+          acc[key].push(team);
+          return acc;
+        }, {});
+
+        Object.keys(grouped)
+          .sort((a, b) => a.localeCompare(b))
+          .forEach((country) => {
+            const group = document.createElement("div");
+            group.className = "roster-group";
+            group.innerHTML = `<h3>${country}</h3>`;
+            grouped[country].forEach((team) => {
+              const row = document.createElement("div");
+              row.className = "roster-team";
+              row.innerHTML = `
+                <div>
+                  <strong>${team.playerName} + ${team.partnerName}</strong>
+                  <div class="status">Team ID: ${team.id.slice(0, 8)}</div>
+                </div>
+                <span class="flag">${initials(team.country)}</span>
+              `;
+              if (team.id === activeTeamId) {
+                row.style.borderColor = "rgba(91, 108, 255, 0.4)";
+              }
+              group.appendChild(row);
+            });
+            rosterEl.appendChild(group);
+          });
+
+        const activeTeam = teams.find((team) => team.id === activeTeamId);
+        if (activeTeam) {
+          rosterPlayerName.value = activeTeam.playerName;
+          rosterPartnerName.value = activeTeam.partnerName;
+          rosterCountry.value = activeTeam.country;
+          rosterStatus.textContent = "Only your team can be updated from this device.";
+        } else {
+          rosterPlayerName.value = "";
+          rosterPartnerName.value = "";
+          rosterCountry.value = "";
+          rosterStatus.textContent = "Register or rejoin to claim your team.";
+        }
       };
 
       const renderMatch = () => {
@@ -648,13 +839,19 @@
       };
 
       const setView = (view) => {
-        const isLeaderboard = view === "leaderboard";
-        playerSection.classList.toggle("hidden", isLeaderboard);
-        leaderboardSection.classList.toggle("hidden", !isLeaderboard);
+        const sections = {
+          player: playerSection,
+          leaderboard: leaderboardSection,
+          roster: rosterSection,
+        };
+        Object.entries(sections).forEach(([key, section]) => {
+          section.classList.toggle("hidden", key !== view);
+        });
         tabs.forEach((tab) => {
           tab.classList.toggle("active", tab.dataset.view === view);
         });
         renderLeaderboard();
+        renderRoster();
       };
 
       form.addEventListener("submit", (event) => {
@@ -665,11 +862,7 @@
         const partnerName = formData.get("partnerName").trim();
 
         const teams = getTeams();
-        const existing = teams.find(
-          (team) =>
-            team.playerName.toLowerCase() === playerName.toLowerCase() &&
-            team.partnerName.toLowerCase() === partnerName.toLowerCase()
-        );
+        const existing = findMatchingTeam(teams, playerName, partnerName, country);
 
         let activeTeamId = existing?.id;
 
@@ -687,12 +880,59 @@
           ensureSchedule(teams);
           saveStatus.textContent = "Saved locally! You're live on the leaderboard.";
         } else {
-          saveStatus.textContent = "Welcome back! We found your team.";
+          const updatedTeams = teams.map((team) =>
+            team.id === existing.id
+              ? { ...team, playerName, partnerName, country }
+              : team
+          );
+          saveTeams(updatedTeams);
+          saveStatus.textContent = "Welcome back! We found your team and refreshed your details.";
         }
 
         localStorage.setItem(STORAGE_KEYS.activeTeamId, activeTeamId);
         renderMatch();
         renderLeaderboard();
+        renderRoster();
+      });
+
+      rosterForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const activeTeamId = localStorage.getItem(STORAGE_KEYS.activeTeamId);
+        if (!activeTeamId) return;
+        const teams = getTeams();
+        const updatedTeams = teams.map((team) =>
+          team.id === activeTeamId
+            ? {
+                ...team,
+                playerName: rosterPlayerName.value.trim(),
+                partnerName: rosterPartnerName.value.trim(),
+                country: rosterCountry.value.trim(),
+              }
+            : team
+        );
+        saveTeams(updatedTeams);
+        rosterStatus.textContent = "Roster entry updated for your team.";
+        renderLeaderboard();
+        renderMatch();
+        renderRoster();
+      });
+
+      removeTeamButton.addEventListener("click", () => {
+        const activeTeamId = localStorage.getItem(STORAGE_KEYS.activeTeamId);
+        if (!activeTeamId) return;
+        if (!confirm("Remove your team from the roster and schedule?")) return;
+        const teams = getTeams().filter((team) => team.id !== activeTeamId);
+        saveTeams(teams);
+        const updatedMatches = getMatches().filter(
+          (match) => !match.teamIds.includes(activeTeamId)
+        );
+        saveMatches(updatedMatches);
+        ensureSchedule(teams);
+        localStorage.removeItem(STORAGE_KEYS.activeTeamId);
+        rosterStatus.textContent = "Your team was removed. Rejoin anytime.";
+        renderLeaderboard();
+        renderMatch();
+        renderRoster();
       });
 
       tabs.forEach((tab) => {
@@ -706,6 +946,7 @@
         ensureSchedule(teams);
         renderMatch();
         renderLeaderboard();
+        renderRoster();
       };
 
       window.addEventListener("storage", refreshState);
