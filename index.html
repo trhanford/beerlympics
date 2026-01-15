@@ -328,8 +328,6 @@
     </style>
   </head>
   <body>
-    <h1>Beerlympics HQ 🍻</h1>
-    <p>Rules, teams, schedule coming soon.</p>
     <header>
       <h1>Beerlympics Party HQ 🍻</h1>
       <p>Mobile-first mission control for Saturday's legendary showdown.</p>
@@ -342,7 +340,7 @@
 
     <main>
       <section class="card hero">
-        <h2>Welcome to the Cartoon Bracketverse</h2>
+        <h2>Welcome to the 2026 Beerlympics</h2>
         <p>
           Enter your squad, get your matchup, and report wins. Leaderboard mode is
           perfect for the party screen.
@@ -350,7 +348,7 @@
         <div class="hero-badges">
           <span class="badge">🎯 Live matchup</span>
           <span class="badge">🏆 Points in real time</span>
-          <span class="badge">🎉 Kahoot-level vibes</span>
+          <span class="badge">🎉 Automatic Leaderboard </span>
         </div>
       </section>
 
@@ -878,7 +876,7 @@
           saveTeams(teams);
           activeTeamId = team.id;
           ensureSchedule(teams);
-          saveStatus.textContent = "Saved locally! You're live on the leaderboard.";
+          saveStatus.textContent = "All Set! You're live on the leaderboard.";
         } else {
           const updatedTeams = teams.map((team) =>
             team.id === existing.id
