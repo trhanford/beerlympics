@@ -845,9 +845,8 @@
 
       const renderRoster = () => {
         const teams = getTeams();
-        const activeTeamId = localStorage.getItem(STORAGE_KEYS.activeTeamId);
-        const isEditingRoster = rosterForm.contains(document.activeElement);
         const activeTeamId = getActiveTeamId();
+        const isEditingRoster = rosterForm.contains(document.activeElement);
         const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
         rosterEl.innerHTML = "";
 
@@ -909,15 +908,24 @@
           });
 
         const activeTeam = teams.find((team) => team.id === activeTeamId);
-        if (activeTeam) {
+        const adminTeam = adminEditingTeamId
+          ? teams.find((team) => team.id === adminEditingTeamId)
+          : null;
+        const selectedTeam = isAdmin && adminTeam ? adminTeam : activeTeam;
+
+        if (selectedTeam) {
           if (!isEditingRoster) {
-            rosterPlayerName.value = activeTeam.playerName;
-            rosterPartnerName.value = activeTeam.partnerName;
-            rosterCountry.value = activeTeam.country;
+            rosterPlayerName.value = selectedTeam.playerName;
+            rosterPartnerName.value = selectedTeam.partnerName;
+            rosterCountry.value = selectedTeam.country;
           }
-          rosterStatus.textContent = isEditingRoster
-            ? "Editing in progress. We'll pause auto-refresh while you update."
-            : "Only your team can be updated from this device.";
+          if (isAdmin && adminTeam) {
+            rosterStatus.textContent = `Editing ${selectedTeam.playerName} + ${selectedTeam.partnerName}.`;
+          } else {
+            rosterStatus.textContent = isEditingRoster
+              ? "Editing in progress. We'll pause auto-refresh while you update."
+              : "Only your team can be updated from this device.";
+          }
         } else {
           if (!isEditingRoster) {
             rosterPlayerName.value = "";
@@ -925,19 +933,6 @@
             rosterCountry.value = "";
           }
           rosterStatus.textContent = "Register or rejoin to claim your team.";
-        if (!isAdmin || !adminEditingTeamId) {
-          const activeTeam = teams.find((team) => team.id === activeTeamId);
-          if (activeTeam) {
-            rosterPlayerName.value = activeTeam.playerName;
-            rosterPartnerName.value = activeTeam.partnerName;
-            rosterCountry.value = activeTeam.country;
-            rosterStatus.textContent = "Only your team can be updated from this device.";
-          } else {
-            rosterPlayerName.value = "";
-            rosterPartnerName.value = "";
-            rosterCountry.value = "";
-            rosterStatus.textContent = "Register or rejoin to claim your team.";
-          }
         }
       };
 
