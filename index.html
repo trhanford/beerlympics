@@ -557,12 +557,6 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
 
-      // make db globally accessible for now
-      window.__db__ = db;
-      window.__firestore__ = { doc, getDoc, setDoc, updateDoc, onSnapshot };
-    </script>
-
-    <script type="module">
       const GAMES = [
         { name: "Beer Pong", teams: 2 },
         { name: "Flip Cup", teams: 4 },
@@ -615,9 +609,6 @@
       const normalizeGameCode = (value) => value.trim().replace(/\s+/g, "");
       const generateGameCode = () =>
         String(Math.floor(1000 + Math.random() * 9000));
-      const db = () => window.__db__;
-      const { doc, getDoc, setDoc, updateDoc, onSnapshot } = window.__firestore__;
-
       const getGameStorageKey = (key, gameCode) => `${key}_${gameCode}`;
 
       const getCurrentGameCode = () => localStorage.getItem(STORAGE_KEYS.currentGameCode);
@@ -650,10 +641,18 @@
       const saveTeams = (teams) => {
         window.__TEAMS__ = teams;
         localStorage.setItem(getScopedKey(STORAGE_KEYS.teams), JSON.stringify(teams));
+        const activeGameCode = getActiveGameCode();
+        if (activeGameCode) {
+          void saveTeamsToCloud(activeGameCode, teams);
+        }
       };
       const saveMatches = (matches) => {
         window.__MATCHES__ = matches;
         localStorage.setItem(getScopedKey(STORAGE_KEYS.matches), JSON.stringify(matches));
+        const activeGameCode = getActiveGameCode();
+        if (activeGameCode) {
+          void saveMatchesToCloud(activeGameCode, matches);
+        }
       };
 
       const getActiveTeamId = () =>
@@ -691,7 +690,15 @@
       const normalizeName = (value) => normalizeText(value).replace(/[^a-z0-9]/g, "");
       const normalizeCountry = (value) => normalizeText(value).replace(/[^a-z]/g, "");
 
-      const refFor = (code) => doc(db(), "games", code);
+      const refFor = (code) => doc(db, "games", code);
+
+      async function saveTeamsToCloud(code, teams) {
+        await updateDoc(refFor(code), { teams });
+      }
+
+      async function saveMatchesToCloud(code, matches) {
+        await updateDoc(refFor(code), { matches });
+      }
 
       async function createGameInCloud(code) {
         await setDoc(refFor(code), {
