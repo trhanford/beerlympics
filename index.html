@@ -536,6 +536,33 @@
       </section>
     </main>
 
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+      import {
+        getFirestore,
+        doc,
+        getDoc,
+        setDoc,
+        updateDoc,
+        onSnapshot,
+      } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyDPqNcdJ3oxwD2BlgnQ7HtY3KzVD60Gxd8",
+        authDomain: "beerlympics-2ddfc.firebaseapp.com",
+        projectId: "beerlympics-2ddfc",
+        storageBucket: "beerlympics-2ddfc.firebasestorage.app",
+        messagingSenderId: "288667130222",
+        appId: "1:288667130222:web:3a9fd6c49994b2b7db097f",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      // make db globally accessible for now
+      window.__db__ = db;
+    </script>
+
     <script>
       const GAMES = [
         { name: "Beer Pong", teams: 2 },
