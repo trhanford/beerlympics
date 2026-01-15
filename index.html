@@ -414,6 +414,8 @@
                 teamIds: slice.map((team) => team.id),
                 winnerId: null,
                 reported: [],
+                inProgress: false,
+                startedAt: null,
               });
             }
           }
@@ -511,17 +513,44 @@
           return;
         }
 
-        const nextMatch = matches.find(
+        const activeGames = new Set(
+          matches
+            .filter((match) => match.inProgress && !match.winnerId)
+            .map((match) => match.game)
+        );
+
+        const pendingMatches = matches.filter(
           (match) => match.teamIds.includes(activeTeamId) && !match.winnerId
         );
 
+        const nextMatch =
+          pendingMatches.find((match) => match.inProgress) ||
+          pendingMatches.find((match) => !activeGames.has(match.game));
+
         if (!nextMatch) {
-          nextGameCard.innerHTML = `
-            <h3>All done for now 🎉</h3>
-            <p class="status">No pending matches. Hang tight or celebrate!</p>
-          `;
+          const hasPending = matches.some(
+            (match) => match.teamIds.includes(activeTeamId) && !match.winnerId
+          );
+          nextGameCard.innerHTML = hasPending
+            ? `
+              <h3>Waiting on game stations ⏳</h3>
+              <p class="status">All your remaining games are currently in play. Check back soon.</p>
+            `
+            : `
+              <h3>All done for now 🎉</h3>
+              <p class="status">No pending matches. Hang tight or celebrate!</p>
+            `;
           scoreActions.innerHTML = "";
           return;
+        }
+
+        if (!nextMatch.inProgress) {
+          const updatedMatches = matches.map((match) =>
+            match.id === nextMatch.id
+              ? { ...match, inProgress: true, startedAt: new Date().toISOString() }
+              : match
+          );
+          saveMatches(updatedMatches);
         }
 
         const opponents = nextMatch.teamIds
@@ -552,7 +581,7 @@
         winButton.addEventListener("click", () => {
           const updatedMatches = getMatches().map((match) =>
             match.id === nextMatch.id
-              ? { ...match, winnerId: activeTeamId }
+              ? { ...match, winnerId: activeTeamId, inProgress: false }
               : match
           );
           saveMatches(updatedMatches);
@@ -571,7 +600,11 @@
           const match = updatedMatches[matchIndex];
           if (match.teamIds.length === 2) {
             const opponentId = match.teamIds.find((id) => id !== activeTeamId);
-            updatedMatches[matchIndex] = { ...match, winnerId: opponentId };
+            updatedMatches[matchIndex] = {
+              ...match,
+              winnerId: opponentId,
+              inProgress: false,
+            };
             saveMatches(updatedMatches);
             renderMatch();
             renderLeaderboard();
@@ -594,7 +627,11 @@
             button.className = "btn ghost";
             button.textContent = `${team.playerName} + ${team.partnerName}`;
             button.addEventListener("click", () => {
-              updatedMatches[matchIndex] = { ...match, winnerId: id };
+              updatedMatches[matchIndex] = {
+                ...match,
+                winnerId: id,
+                inProgress: false,
+              };
               saveMatches(updatedMatches);
               renderMatch();
               renderLeaderboard();
@@ -664,14 +701,18 @@
         });
       });
 
-      window.addEventListener("storage", () => {
+      const refreshState = () => {
+        const teams = getTeams();
+        ensureSchedule(teams);
         renderMatch();
         renderLeaderboard();
-      });
+      };
+
+      window.addEventListener("storage", refreshState);
 
       const init = () => {
-        renderMatch();
-        renderLeaderboard();
+        refreshState();
+        setInterval(refreshState, 2000);
       };
 
       init();
