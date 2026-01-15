@@ -559,11 +559,6 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
 
-      // make db globally accessible for now
-      window.__db__ = db;
-    </script>
-
-    <script>
       const GAMES = [
         { name: "Beer Pong", teams: 2 },
         { name: "Flip Cup", teams: 4 },
