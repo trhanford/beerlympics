@@ -561,9 +561,10 @@
 
       // make db globally accessible for now
       window.__db__ = db;
+      window.__firestore__ = { doc, getDoc, setDoc, updateDoc, onSnapshot };
     </script>
 
-    <script>
+    <script type="module">
       const GAMES = [
         { name: "Beer Pong", teams: 2 },
         { name: "Flip Cup", teams: 4 },
@@ -617,8 +618,7 @@
       const generateGameCode = () =>
         String(Math.floor(1000 + Math.random() * 9000));
       const db = () => window.__db__;
-      const gameRef = (code) =>
-        window.firebase_firestore_doc(db(), "games", code); // (we'll avoid this; see note below)
+      const { doc, getDoc, setDoc, updateDoc, onSnapshot } = window.__firestore__;
 
       const getGameStorageKey = (key, gameCode) => `${key}_${gameCode}`;
 
@@ -636,15 +636,27 @@
       };
 
       const getScopedKey = (key) => getGameStorageKey(key, getActiveGameCode());
-      const getTeams = () =>
-        JSON.parse(localStorage.getItem(getScopedKey(STORAGE_KEYS.teams)) || "[]");
-      const getMatches = () =>
-        JSON.parse(localStorage.getItem(getScopedKey(STORAGE_KEYS.matches)) || "[]");
+      const getTeams = () => {
+        if (Array.isArray(window.__TEAMS__)) {
+          return window.__TEAMS__;
+        }
+        return JSON.parse(localStorage.getItem(getScopedKey(STORAGE_KEYS.teams)) || "[]");
+      };
+      const getMatches = () => {
+        if (Array.isArray(window.__MATCHES__)) {
+          return window.__MATCHES__;
+        }
+        return JSON.parse(localStorage.getItem(getScopedKey(STORAGE_KEYS.matches)) || "[]");
+      };
 
-      const saveTeams = (teams) =>
+      const saveTeams = (teams) => {
+        window.__TEAMS__ = teams;
         localStorage.setItem(getScopedKey(STORAGE_KEYS.teams), JSON.stringify(teams));
-      const saveMatches = (matches) =>
+      };
+      const saveMatches = (matches) => {
+        window.__MATCHES__ = matches;
         localStorage.setItem(getScopedKey(STORAGE_KEYS.matches), JSON.stringify(matches));
+      };
 
       const getActiveTeamId = () =>
         localStorage.getItem(getScopedKey(STORAGE_KEYS.activeTeamId));
@@ -680,6 +692,49 @@
       const normalizeText = (value) => value.trim().toLowerCase();
       const normalizeName = (value) => normalizeText(value).replace(/[^a-z0-9]/g, "");
       const normalizeCountry = (value) => normalizeText(value).replace(/[^a-z]/g, "");
+
+      const refFor = (code) => doc(db(), "games", code);
+
+      async function createGameInCloud(code) {
+        await setDoc(refFor(code), {
+          started: true,
+          teams: [],
+          matches: [],
+        });
+      }
+
+      async function fetchGame(code) {
+        const snap = await getDoc(refFor(code));
+        return snap.exists() ? snap.data() : null;
+      }
+
+      async function upsertTeam(code, team) {
+        const data = await fetchGame(code);
+        const teams = data?.teams || [];
+
+        const existingIndex = teams.findIndex((entry) => entry.id === team.id);
+        if (existingIndex >= 0) teams[existingIndex] = team;
+        else teams.push(team);
+
+        await updateDoc(refFor(code), { teams });
+      }
+
+      function subscribeToGame(code) {
+        return onSnapshot(refFor(code), (snap) => {
+          if (!snap.exists()) return;
+          const data = snap.data();
+          // Store shared state in memory:
+          window.__TEAMS__ = data.teams || [];
+          window.__MATCHES__ = data.matches || [];
+
+          // Then render using those arrays (we'll swap next):
+          renderLeaderboard();
+          renderRoster();
+          renderMatch();
+          updateGameCodeDisplay();
+          updateTabsVisibility();
+        });
+      }
 
       const levenshtein = (a, b) => {
         if (a === b) return 0;
@@ -1157,11 +1212,12 @@
         return newCode;
       };
 
-      const registerTeam = ({ playerName, country, partnerName }) => {
+      const registerTeam = async ({ playerName, country, partnerName }) => {
         const teams = getTeams();
         const existing = findMatchingTeam(teams, playerName, partnerName, country);
 
         let activeTeamId = existing?.id;
+        let updatedTeam = null;
 
         if (!existing) {
           const team = {
@@ -1173,27 +1229,34 @@
           };
           teams.push(team);
           saveTeams(teams);
+          updatedTeam = team;
           activeTeamId = team.id;
           ensureSchedule(teams);
           saveStatus.textContent = "All Set! You're live on the leaderboard.";
         } else {
-          const updatedTeams = teams.map((team) =>
-            team.id === existing.id
-              ? { ...team, playerName, partnerName, country }
-              : team
-          );
+          const updatedTeams = teams.map((team) => {
+            if (team.id === existing.id) {
+              updatedTeam = { ...team, playerName, partnerName, country };
+              return updatedTeam;
+            }
+            return team;
+          });
           saveTeams(updatedTeams);
           saveStatus.textContent = "Welcome back! We found your team and refreshed your details.";
         }
 
         setActiveTeamId(activeTeamId);
+        const activeGameCode = getActiveGameCode();
+        if (activeGameCode && updatedTeam) {
+          await upsertTeam(activeGameCode, updatedTeam);
+        }
         renderMatch();
         renderLeaderboard();
         renderRoster();
         updateTabsVisibility();
       };
 
-      form.addEventListener("submit", (event) => {
+      form.addEventListener("submit", async (event) => {
         event.preventDefault();
         const formData = new FormData(form);
         const playerName = formData.get("playerName").trim();
@@ -1207,14 +1270,16 @@
           return;
         }
 
-        const currentGameCode = getCurrentGameCode();
-        if (currentGameCode && submittedCode !== currentGameCode) {
-          saveStatus.textContent = "Wrong game code. Ask the host for the current code.";
+        const game = await fetchGame(submittedCode);
+        if (!game) {
+          saveStatus.textContent =
+            "No game found for that code. Ask the host to start one.";
           return;
         }
 
         setGameCodes(submittedCode);
-        registerTeam({ playerName, country, partnerName });
+        subscribeToGame(submittedCode);
+        await registerTeam({ playerName, country, partnerName });
       });
 
       rosterForm.addEventListener("submit", (event) => {
@@ -1357,7 +1422,7 @@
         setInterval(refreshState, 2000);
       };
 
-      startGameButton.addEventListener("click", () => {
+      startGameButton.addEventListener("click", async () => {
         const formData = new FormData(form);
         const playerName = formData.get("playerName").trim();
         const country = formData.get("country").trim();
@@ -1368,9 +1433,12 @@
           return;
         }
 
-        const newCode = startNewGame();
+        const newCode = generateGameCode();
+        setGameCodes(newCode);
+        await createGameInCloud(newCode);
+        subscribeToGame(newCode);
         saveStatus.textContent = `Game started! Share code ${newCode} with the crew.`;
-        registerTeam({ playerName, country, partnerName });
+        await registerTeam({ playerName, country, partnerName });
       });
 
       init();
