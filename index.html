@@ -844,6 +844,8 @@
 
       const renderRoster = () => {
         const teams = getTeams();
+        const activeTeamId = localStorage.getItem(STORAGE_KEYS.activeTeamId);
+        const isEditingRoster = rosterForm.contains(document.activeElement);
         const activeTeamId = getActiveTeamId();
         const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
         rosterEl.innerHTML = "";
@@ -905,6 +907,23 @@
             rosterEl.appendChild(group);
           });
 
+        const activeTeam = teams.find((team) => team.id === activeTeamId);
+        if (activeTeam) {
+          if (!isEditingRoster) {
+            rosterPlayerName.value = activeTeam.playerName;
+            rosterPartnerName.value = activeTeam.partnerName;
+            rosterCountry.value = activeTeam.country;
+          }
+          rosterStatus.textContent = isEditingRoster
+            ? "Editing in progress. We'll pause auto-refresh while you update."
+            : "Only your team can be updated from this device.";
+        } else {
+          if (!isEditingRoster) {
+            rosterPlayerName.value = "";
+            rosterPartnerName.value = "";
+            rosterCountry.value = "";
+          }
+          rosterStatus.textContent = "Register or rejoin to claim your team.";
         if (!isAdmin || !adminEditingTeamId) {
           const activeTeam = teams.find((team) => team.id === activeTeamId);
           if (activeTeam) {
