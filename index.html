@@ -624,6 +624,8 @@
         setActiveGameCode(code);
       };
 
+      const isAdmin = () => localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
+
       const getScopedKey = (key) => getGameStorageKey(key, getActiveGameCode());
       const getTeams = () => {
         if (Array.isArray(window.__TEAMS__)) {
@@ -641,16 +643,12 @@
       const saveTeams = (teams) => {
         window.__TEAMS__ = teams;
         localStorage.setItem(getScopedKey(STORAGE_KEYS.teams), JSON.stringify(teams));
-        const activeGameCode = getActiveGameCode();
-        if (activeGameCode) {
-          void saveTeamsToCloud(activeGameCode, teams);
-        }
       };
       const saveMatches = (matches) => {
         window.__MATCHES__ = matches;
         localStorage.setItem(getScopedKey(STORAGE_KEYS.matches), JSON.stringify(matches));
         const activeGameCode = getActiveGameCode();
-        if (activeGameCode) {
+        if (activeGameCode && isAdmin()) {
           void saveMatchesToCloud(activeGameCode, matches);
         }
       };
@@ -812,16 +810,13 @@
       };
 
       const ensureSchedule = (teams) => {
+        if (!isAdmin()) return getMatches();
         const matches = getMatches();
         const hasResults = matches.some((match) => match.winnerId);
         const savedCount = getSavedTeamCount();
         if (!matches.length || (!hasResults && teams.length !== savedCount)) {
           const newMatches = buildSchedule(teams);
           saveMatches(newMatches);
-          const code = getActiveGameCode();
-          if (code) {
-            void saveMatchesToCloud(code, newMatches);
-          }
           setSavedTeamCount(teams.length);
           return newMatches;
         }
@@ -1422,7 +1417,6 @@
 
       const init = () => {
         refreshState();
-        setInterval(refreshState, 2000);
       };
 
       startGameButton.addEventListener("click", async () => {
