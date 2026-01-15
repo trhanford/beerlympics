@@ -818,6 +818,10 @@
         if (!matches.length || (!hasResults && teams.length !== savedCount)) {
           const newMatches = buildSchedule(teams);
           saveMatches(newMatches);
+          const code = getActiveGameCode();
+          if (code) {
+            void saveMatchesToCloud(code, newMatches);
+          }
           setSavedTeamCount(teams.length);
           return newMatches;
         }
@@ -1232,29 +1236,23 @@
             country,
             createdAt: new Date().toISOString(),
           };
-          teams.push(team);
-          saveTeams(teams);
           updatedTeam = team;
           activeTeamId = team.id;
-          ensureSchedule(teams);
+          const activeGameCode = getActiveGameCode();
+          if (activeGameCode) {
+            await upsertTeam(activeGameCode, team);
+          }
           saveStatus.textContent = "All Set! You're live on the leaderboard.";
         } else {
-          const updatedTeams = teams.map((team) => {
-            if (team.id === existing.id) {
-              updatedTeam = { ...team, playerName, partnerName, country };
-              return updatedTeam;
-            }
-            return team;
-          });
-          saveTeams(updatedTeams);
+          updatedTeam = { ...existing, playerName, partnerName, country };
+          const activeGameCode = getActiveGameCode();
+          if (activeGameCode) {
+            await upsertTeam(activeGameCode, updatedTeam);
+          }
           saveStatus.textContent = "Welcome back! We found your team and refreshed your details.";
         }
 
         setActiveTeamId(activeTeamId);
-        const activeGameCode = getActiveGameCode();
-        if (activeGameCode && updatedTeam) {
-          await upsertTeam(activeGameCode, updatedTeam);
-        }
         renderMatch();
         renderLeaderboard();
         renderRoster();
