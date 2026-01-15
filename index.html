@@ -102,6 +102,27 @@
         font-size: 0.9rem;
       }
 
+      .admin-toggle {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        background: #fff;
+        border-radius: 16px;
+        padding: 10px 12px;
+        border: 1px solid #e8edff;
+      }
+
+      .admin-toggle input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--primary);
+      }
+
+      .admin-toggle small {
+        color: var(--ink-soft);
+      }
+
       .tabs {
         display: flex;
         gap: 12px;
@@ -149,6 +170,12 @@
         font-family: inherit;
       }
 
+      input.small {
+        padding: 6px 10px;
+        border-radius: 12px;
+        font-size: 0.9rem;
+      }
+
       .btn {
         border: none;
         border-radius: 16px;
@@ -172,6 +199,12 @@
 
       .btn:active {
         transform: translateY(1px) scale(0.98);
+      }
+
+      .btn.link {
+        background: transparent;
+        color: var(--primary-dark);
+        padding: 0;
       }
 
       .status {
@@ -292,6 +325,13 @@
         margin-bottom: 10px;
       }
 
+      .roster-team.admin {
+        grid-template-columns: 1fr auto auto;
+        display: grid;
+        gap: 12px;
+        align-items: center;
+      }
+
       .roster-team:last-child {
         margin-bottom: 0;
       }
@@ -305,6 +345,37 @@
       .btn.small {
         padding: 8px 12px;
         font-size: 0.85rem;
+      }
+
+      .admin-panel {
+        display: grid;
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .admin-grid {
+        display: grid;
+        gap: 10px;
+      }
+
+      .game-code {
+        font-size: 1.6rem;
+        font-weight: 800;
+        letter-spacing: 0.2rem;
+        color: var(--primary-dark);
+      }
+
+      .leaderboard-card.admin {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .leaderboard-edit {
+        display: grid;
+        gap: 6px;
+        justify-items: end;
       }
 
       .split {
@@ -352,6 +423,13 @@
           <span class="badge">🏆 Points in real time</span>
           <span class="badge">🎉 Kahoot-level vibes</span>
         </div>
+        <div class="admin-toggle">
+          <label>
+            <input type="checkbox" id="admin-toggle" />
+            Admin mode
+          </label>
+          <small id="admin-status">Admin tools are locked.</small>
+        </div>
       </section>
 
       <section class="card" id="player-section">
@@ -372,6 +450,16 @@
                 <label for="partnerName">Partner name</label>
                 <input id="partnerName" name="partnerName" placeholder="e.g. Sam" required />
               </div>
+              <div>
+                <label for="gameCode">Game code</label>
+                <input
+                  id="gameCode"
+                  name="gameCode"
+                  placeholder="e.g. 7421"
+                  inputmode="numeric"
+                  required
+                />
+              </div>
               <button class="btn" type="submit">Lock in our team 🚀</button>
               <p class="status" id="save-status">Nothing saved yet.</p>
             </form>
@@ -389,7 +477,26 @@
       <section class="card hidden" id="leaderboard-section">
         <h2>Leaderboard Live</h2>
         <p class="status">Project this on the big screen for instant bragging rights.</p>
+        <div class="game-card">
+          <h3>Game code</h3>
+          <div class="game-code" id="game-code">----</div>
+          <p class="status">Share this code so players can join your match.</p>
+        </div>
         <div class="leaderboard" id="leaderboard"></div>
+        <div class="game-card hidden" id="admin-panel">
+          <h3>Admin controls</h3>
+          <p class="status">Manage scores, reset matches, or spin up a fresh game.</p>
+          <div class="admin-panel">
+            <div class="admin-grid">
+              <button class="btn ghost" type="button" id="clear-results">Clear match results</button>
+              <button class="btn secondary" type="button" id="reset-game">
+                Restart game (clear teams)
+              </button>
+              <button class="btn" type="button" id="new-game">Start new game code</button>
+            </div>
+            <p class="status" id="admin-action-status">Admin updates will sync on this device.</p>
+          </div>
+        </div>
       </section>
 
       <section class="card hidden" id="roster-section">
@@ -397,8 +504,10 @@
         <p class="status">See every country and keep your own entry accurate.</p>
         <div class="roster" id="roster"></div>
         <div class="game-card" id="roster-edit">
-          <h3>Your roster entry</h3>
-          <p class="status">Edit or remove only your own team details.</p>
+          <h3 id="roster-edit-title">Your roster entry</h3>
+          <p class="status" id="roster-edit-description">
+            Edit or remove only your own team details.
+          </p>
           <form id="roster-form">
             <div>
               <label for="rosterPlayerName">Your name</label>
@@ -438,6 +547,9 @@
         matches: "beerlympics_matches",
         activeTeamId: "beerlympics_active_team",
         teamCount: "beerlympics_team_count",
+        adminMode: "beerlympics_admin_mode",
+        activeGameCode: "beerlympics_active_game_code",
+        currentGameCode: "beerlympics_current_game_code",
       };
 
       const form = document.getElementById("team-form");
@@ -452,18 +564,72 @@
       const rosterForm = document.getElementById("roster-form");
       const rosterStatus = document.getElementById("roster-status");
       const rosterEdit = document.getElementById("roster-edit");
+      const rosterEditTitle = document.getElementById("roster-edit-title");
+      const rosterEditDescription = document.getElementById("roster-edit-description");
       const rosterPlayerName = document.getElementById("rosterPlayerName");
       const rosterPartnerName = document.getElementById("rosterPartnerName");
       const rosterCountry = document.getElementById("rosterCountry");
       const removeTeamButton = document.getElementById("remove-team");
+      const adminToggle = document.getElementById("admin-toggle");
+      const adminStatus = document.getElementById("admin-status");
+      const adminPanel = document.getElementById("admin-panel");
+      const adminActionStatus = document.getElementById("admin-action-status");
+      const gameCodeEl = document.getElementById("game-code");
+      const gameCodeInput = document.getElementById("gameCode");
+      const newGameButton = document.getElementById("new-game");
+      const resetGameButton = document.getElementById("reset-game");
+      const clearResultsButton = document.getElementById("clear-results");
       const tabs = document.querySelectorAll(".tab");
 
-      const getTeams = () => JSON.parse(localStorage.getItem(STORAGE_KEYS.teams) || "[]");
-      const getMatches = () => JSON.parse(localStorage.getItem(STORAGE_KEYS.matches) || "[]");
+      const ADMIN_PASSCODE = "3241";
 
-      const saveTeams = (teams) => localStorage.setItem(STORAGE_KEYS.teams, JSON.stringify(teams));
+      const normalizeGameCode = (value) => value.trim().replace(/\s+/g, "");
+      const generateGameCode = () =>
+        String(Math.floor(1000 + Math.random() * 9000));
+
+      const getGameStorageKey = (key, gameCode) => `${key}_${gameCode}`;
+
+      const getCurrentGameCode = () => localStorage.getItem(STORAGE_KEYS.currentGameCode);
+      const getActiveGameCode = () => localStorage.getItem(STORAGE_KEYS.activeGameCode);
+      const setActiveGameCode = (code) =>
+        localStorage.setItem(STORAGE_KEYS.activeGameCode, code);
+
+      const ensureGameCode = () => {
+        let code = getCurrentGameCode();
+        if (!code) {
+          code = generateGameCode();
+          localStorage.setItem(STORAGE_KEYS.currentGameCode, code);
+        }
+        if (!getActiveGameCode()) {
+          setActiveGameCode(code);
+        }
+        return code;
+      };
+
+      const getScopedKey = (key) => getGameStorageKey(key, getActiveGameCode());
+      const getTeams = () =>
+        JSON.parse(localStorage.getItem(getScopedKey(STORAGE_KEYS.teams)) || "[]");
+      const getMatches = () =>
+        JSON.parse(localStorage.getItem(getScopedKey(STORAGE_KEYS.matches)) || "[]");
+
+      const saveTeams = (teams) =>
+        localStorage.setItem(getScopedKey(STORAGE_KEYS.teams), JSON.stringify(teams));
       const saveMatches = (matches) =>
-        localStorage.setItem(STORAGE_KEYS.matches, JSON.stringify(matches));
+        localStorage.setItem(getScopedKey(STORAGE_KEYS.matches), JSON.stringify(matches));
+
+      const getActiveTeamId = () =>
+        localStorage.getItem(getScopedKey(STORAGE_KEYS.activeTeamId));
+      const setActiveTeamId = (id) =>
+        localStorage.setItem(getScopedKey(STORAGE_KEYS.activeTeamId), id);
+      const clearActiveTeamId = () =>
+        localStorage.removeItem(getScopedKey(STORAGE_KEYS.activeTeamId));
+
+      const getSavedTeamCount = () =>
+        Number(localStorage.getItem(getScopedKey(STORAGE_KEYS.teamCount)) || 0);
+      const setSavedTeamCount = (count) =>
+        localStorage.setItem(getScopedKey(STORAGE_KEYS.teamCount), String(count));
+
+      let adminEditingTeamId = null;
 
       const shuffle = (array) => {
         const copy = [...array];
@@ -559,11 +725,11 @@
       const ensureSchedule = (teams) => {
         const matches = getMatches();
         const hasResults = matches.some((match) => match.winnerId);
-        const savedCount = Number(localStorage.getItem(STORAGE_KEYS.teamCount) || 0);
+        const savedCount = getSavedTeamCount();
         if (!matches.length || (!hasResults && teams.length !== savedCount)) {
           const newMatches = buildSchedule(teams);
           saveMatches(newMatches);
-          localStorage.setItem(STORAGE_KEYS.teamCount, String(teams.length));
+          setSavedTeamCount(teams.length);
           return newMatches;
         }
         return matches;
@@ -594,6 +760,12 @@
             });
         });
 
+        base.forEach((team) => {
+          if (Number.isFinite(team.pointsOverride)) {
+            team.points = team.pointsOverride;
+          }
+        });
+
         return base.sort((a, b) => b.points - a.points || b.wins - a.wins);
       };
 
@@ -601,6 +773,7 @@
         const teams = getTeams();
         const matches = getMatches();
         const standings = computeStandings(teams, matches);
+        const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
 
         leaderboardEl.innerHTML = "";
 
@@ -612,7 +785,7 @@
 
         standings.forEach((team, index) => {
           const card = document.createElement("div");
-          card.className = "leaderboard-card";
+          card.className = `leaderboard-card${isAdmin ? " admin" : ""}`;
           card.innerHTML = `
             <div class="team-row">
               <span class="rank">#${index + 1}</span>
@@ -630,13 +803,51 @@
               <span class="stat-pill">${team.losses} L</span>
             </div>
           `;
+          if (isAdmin) {
+            const editWrap = document.createElement("div");
+            editWrap.className = "leaderboard-edit";
+            const input = document.createElement("input");
+            input.type = "number";
+            input.className = "small";
+            input.value = Number.isFinite(team.pointsOverride)
+              ? team.pointsOverride
+              : team.points;
+            input.addEventListener("change", () => {
+              const nextValue = Number(input.value);
+              const updatedTeams = getTeams().map((entry) =>
+                entry.id === team.id
+                  ? {
+                      ...entry,
+                      pointsOverride: Number.isFinite(nextValue) ? nextValue : undefined,
+                    }
+                  : entry
+              );
+              saveTeams(updatedTeams);
+              renderLeaderboard();
+            });
+            const clearButton = document.createElement("button");
+            clearButton.type = "button";
+            clearButton.className = "btn link";
+            clearButton.textContent = "Clear override";
+            clearButton.addEventListener("click", () => {
+              const updatedTeams = getTeams().map((entry) =>
+                entry.id === team.id ? { ...entry, pointsOverride: undefined } : entry
+              );
+              saveTeams(updatedTeams);
+              renderLeaderboard();
+            });
+            editWrap.appendChild(input);
+            editWrap.appendChild(clearButton);
+            card.appendChild(editWrap);
+          }
           leaderboardEl.appendChild(card);
         });
       };
 
       const renderRoster = () => {
         const teams = getTeams();
-        const activeTeamId = localStorage.getItem(STORAGE_KEYS.activeTeamId);
+        const activeTeamId = getActiveTeamId();
+        const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
         rosterEl.innerHTML = "";
 
         if (!teams.length) {
@@ -647,6 +858,10 @@
         }
 
         rosterEdit.classList.remove("hidden");
+        rosterEditTitle.textContent = isAdmin ? "Edit roster entry" : "Your roster entry";
+        rosterEditDescription.textContent = isAdmin
+          ? "Admins can update any team entry from this device."
+          : "Edit or remove only your own team details.";
         const grouped = teams.reduce((acc, team) => {
           const key = team.country || "Unknown";
           if (!acc[key]) acc[key] = [];
@@ -662,7 +877,7 @@
             group.innerHTML = `<h3>${country}</h3>`;
             grouped[country].forEach((team) => {
               const row = document.createElement("div");
-              row.className = "roster-team";
+              row.className = `roster-team${isAdmin ? " admin" : ""}`;
               row.innerHTML = `
                 <div>
                   <strong>${team.playerName} + ${team.partnerName}</strong>
@@ -673,29 +888,45 @@
               if (team.id === activeTeamId) {
                 row.style.borderColor = "rgba(91, 108, 255, 0.4)";
               }
+              if (isAdmin) {
+                const editButton = document.createElement("button");
+                editButton.type = "button";
+                editButton.className = "btn small ghost";
+                editButton.textContent = "Edit";
+                editButton.addEventListener("click", () => {
+                  adminEditingTeamId = team.id;
+                  rosterPlayerName.value = team.playerName;
+                  rosterPartnerName.value = team.partnerName;
+                  rosterCountry.value = team.country;
+                  rosterStatus.textContent = `Editing ${team.playerName} + ${team.partnerName}.`;
+                });
+                row.appendChild(editButton);
+              }
               group.appendChild(row);
             });
             rosterEl.appendChild(group);
           });
 
-        const activeTeam = teams.find((team) => team.id === activeTeamId);
-        if (activeTeam) {
-          rosterPlayerName.value = activeTeam.playerName;
-          rosterPartnerName.value = activeTeam.partnerName;
-          rosterCountry.value = activeTeam.country;
-          rosterStatus.textContent = "Only your team can be updated from this device.";
-        } else {
-          rosterPlayerName.value = "";
-          rosterPartnerName.value = "";
-          rosterCountry.value = "";
-          rosterStatus.textContent = "Register or rejoin to claim your team.";
+        if (!isAdmin || !adminEditingTeamId) {
+          const activeTeam = teams.find((team) => team.id === activeTeamId);
+          if (activeTeam) {
+            rosterPlayerName.value = activeTeam.playerName;
+            rosterPartnerName.value = activeTeam.partnerName;
+            rosterCountry.value = activeTeam.country;
+            rosterStatus.textContent = "Only your team can be updated from this device.";
+          } else {
+            rosterPlayerName.value = "";
+            rosterPartnerName.value = "";
+            rosterCountry.value = "";
+            rosterStatus.textContent = "Register or rejoin to claim your team.";
+          }
         }
       };
 
       const renderMatch = () => {
         const teams = getTeams();
         const matches = getMatches();
-        const activeTeamId = localStorage.getItem(STORAGE_KEYS.activeTeamId);
+        const activeTeamId = getActiveTeamId();
         const activeTeam = teams.find((team) => team.id === activeTeamId);
 
         if (!activeTeam) {
@@ -860,6 +1091,15 @@
         const playerName = formData.get("playerName").trim();
         const country = formData.get("country").trim();
         const partnerName = formData.get("partnerName").trim();
+        const submittedCode = normalizeGameCode(formData.get("gameCode") || "");
+
+        const currentGameCode = ensureGameCode();
+        if (!submittedCode || submittedCode !== currentGameCode) {
+          saveStatus.textContent = "Wrong game code. Ask the host for the current code.";
+          return;
+        }
+
+        setActiveGameCode(submittedCode);
 
         const teams = getTeams();
         const existing = findMatchingTeam(teams, playerName, partnerName, country);
@@ -889,7 +1129,7 @@
           saveStatus.textContent = "Welcome back! We found your team and refreshed your details.";
         }
 
-        localStorage.setItem(STORAGE_KEYS.activeTeamId, activeTeamId);
+        setActiveTeamId(activeTeamId);
         renderMatch();
         renderLeaderboard();
         renderRoster();
@@ -897,11 +1137,13 @@
 
       rosterForm.addEventListener("submit", (event) => {
         event.preventDefault();
-        const activeTeamId = localStorage.getItem(STORAGE_KEYS.activeTeamId);
-        if (!activeTeamId) return;
+        const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
+        const activeTeamId = getActiveTeamId();
+        const targetTeamId = isAdmin && adminEditingTeamId ? adminEditingTeamId : activeTeamId;
+        if (!targetTeamId) return;
         const teams = getTeams();
         const updatedTeams = teams.map((team) =>
-          team.id === activeTeamId
+          team.id === targetTeamId
             ? {
                 ...team,
                 playerName: rosterPlayerName.value.trim(),
@@ -911,28 +1153,104 @@
             : team
         );
         saveTeams(updatedTeams);
-        rosterStatus.textContent = "Roster entry updated for your team.";
+        rosterStatus.textContent = isAdmin
+          ? "Roster entry updated."
+          : "Roster entry updated for your team.";
+        if (isAdmin) {
+          adminEditingTeamId = null;
+        }
         renderLeaderboard();
         renderMatch();
         renderRoster();
       });
 
       removeTeamButton.addEventListener("click", () => {
-        const activeTeamId = localStorage.getItem(STORAGE_KEYS.activeTeamId);
-        if (!activeTeamId) return;
+        const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
+        const activeTeamId = getActiveTeamId();
+        const targetTeamId = isAdmin && adminEditingTeamId ? adminEditingTeamId : activeTeamId;
+        if (!targetTeamId) return;
         if (!confirm("Remove your team from the roster and schedule?")) return;
-        const teams = getTeams().filter((team) => team.id !== activeTeamId);
+        const teams = getTeams().filter((team) => team.id !== targetTeamId);
         saveTeams(teams);
         const updatedMatches = getMatches().filter(
-          (match) => !match.teamIds.includes(activeTeamId)
+          (match) => !match.teamIds.includes(targetTeamId)
         );
         saveMatches(updatedMatches);
         ensureSchedule(teams);
-        localStorage.removeItem(STORAGE_KEYS.activeTeamId);
-        rosterStatus.textContent = "Your team was removed. Rejoin anytime.";
+        if (!isAdmin || targetTeamId === activeTeamId) {
+          clearActiveTeamId();
+        }
+        rosterStatus.textContent = isAdmin
+          ? "Team entry removed."
+          : "Your team was removed. Rejoin anytime.";
+        if (isAdmin) {
+          adminEditingTeamId = null;
+        }
         renderLeaderboard();
         renderMatch();
         renderRoster();
+      });
+
+      adminToggle.addEventListener("change", () => {
+        if (adminToggle.checked) {
+          const entered = prompt("Enter admin passcode:");
+          if (entered === ADMIN_PASSCODE) {
+            localStorage.setItem(STORAGE_KEYS.adminMode, "true");
+            adminStatus.textContent = "Admin tools unlocked.";
+          } else {
+            adminToggle.checked = false;
+            localStorage.setItem(STORAGE_KEYS.adminMode, "false");
+            adminStatus.textContent = "Wrong passcode. Admin tools locked.";
+          }
+        } else {
+          localStorage.setItem(STORAGE_KEYS.adminMode, "false");
+          adminStatus.textContent = "Admin tools are locked.";
+        }
+        adminEditingTeamId = null;
+        renderLeaderboard();
+        renderRoster();
+      });
+
+      newGameButton.addEventListener("click", () => {
+        const newCode = generateGameCode();
+        localStorage.setItem(STORAGE_KEYS.currentGameCode, newCode);
+        setActiveGameCode(newCode);
+        saveTeams([]);
+        saveMatches([]);
+        setSavedTeamCount(0);
+        clearActiveTeamId();
+        adminActionStatus.textContent = `New game started. Code: ${newCode}`;
+        renderMatch();
+        renderLeaderboard();
+        renderRoster();
+        updateGameCodeDisplay();
+        updateGameCodeInput();
+      });
+
+      resetGameButton.addEventListener("click", () => {
+        if (!confirm("Clear all teams and matches for this game?")) return;
+        saveTeams([]);
+        saveMatches([]);
+        setSavedTeamCount(0);
+        clearActiveTeamId();
+        adminActionStatus.textContent = "Current game cleared.";
+        renderMatch();
+        renderLeaderboard();
+        renderRoster();
+      });
+
+      clearResultsButton.addEventListener("click", () => {
+        const updatedMatches = getMatches().map((match) => ({
+          ...match,
+          winnerId: null,
+          reported: [],
+          inProgress: false,
+          startedAt: null,
+        }));
+        saveMatches(updatedMatches);
+        adminActionStatus.textContent = "Match results cleared.";
+        renderMatch();
+        renderLeaderboard();
       });
 
       tabs.forEach((tab) => {
@@ -941,12 +1259,29 @@
         });
       });
 
+      const updateGameCodeDisplay = () => {
+        const currentCode = ensureGameCode();
+        gameCodeEl.textContent = currentCode || "----";
+      };
+
+      const updateGameCodeInput = () => {
+        gameCodeInput.value = getActiveGameCode() || getCurrentGameCode() || "";
+      };
+
       const refreshState = () => {
+        ensureGameCode();
         const teams = getTeams();
         ensureSchedule(teams);
         renderMatch();
         renderLeaderboard();
         renderRoster();
+        updateGameCodeDisplay();
+        updateGameCodeInput();
+
+        const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
+        adminToggle.checked = isAdmin;
+        adminStatus.textContent = isAdmin ? "Admin tools unlocked." : "Admin tools are locked.";
+        adminPanel.classList.toggle("hidden", !isAdmin);
       };
 
       window.addEventListener("storage", refreshState);
