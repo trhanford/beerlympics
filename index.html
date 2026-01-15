@@ -543,6 +543,7 @@
         setDoc,
         updateDoc,
         onSnapshot,
+        deleteField,
       } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -701,7 +702,7 @@
       async function createGameInCloud(code) {
         await setDoc(refFor(code), {
           started: true,
-          teams: [],
+          teams: {},
           matches: [],
         });
       }
@@ -712,14 +713,9 @@
       }
 
       async function upsertTeam(code, team) {
-        const data = await fetchGame(code);
-        const teams = data?.teams || [];
-
-        const existingIndex = teams.findIndex((entry) => entry.id === team.id);
-        if (existingIndex >= 0) teams[existingIndex] = team;
-        else teams.push(team);
-
-        await updateDoc(refFor(code), { teams });
+        await updateDoc(refFor(code), {
+          [`teams.${team.id}`]: team,
+        });
       }
 
       function subscribeToGame(code) {
@@ -727,7 +723,7 @@
           if (!snap.exists()) return;
           const data = snap.data();
           // Store shared state in memory:
-          window.__TEAMS__ = data.teams || [];
+          window.__TEAMS__ = Object.values(data.teams || {});
           window.__MATCHES__ = data.matches || [];
 
           // Then render using those arrays (we'll swap next):
@@ -758,6 +754,12 @@
         }
         return matrix[a.length][b.length];
       };
+
+      async function deleteTeamFromCloud(code, teamId) {
+        await updateDoc(refFor(code), {
+          [`teams.${teamId}`]: deleteField(),
+        });
+      }
 
       const areNamesClose = (a, b) => {
         const left = normalizeName(a);
@@ -1324,7 +1326,7 @@
         renderRoster();
       });
 
-      removeTeamButton.addEventListener("click", () => {
+      removeTeamButton.addEventListener("click", async () => {
         const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
         const activeTeamId = getActiveTeamId();
         const targetTeamId = isAdmin && adminEditingTeamId ? adminEditingTeamId : activeTeamId;
@@ -1332,6 +1334,14 @@
         if (!confirm("Remove your team from the roster and schedule?")) return;
         const teams = getTeams().filter((team) => team.id !== targetTeamId);
         saveTeams(teams);
+        const activeGameCode = getActiveGameCode();
+        if (activeGameCode) {
+          try {
+            await deleteTeamFromCloud(activeGameCode, targetTeamId);
+          } catch (error) {
+            console.error("Unable to remove team from cloud.", error);
+          }
+        }
         const updatedMatches = getMatches().filter(
           (match) => !match.teamIds.includes(targetTeamId)
         );
@@ -1430,7 +1440,19 @@
 
       window.addEventListener("storage", refreshState);
 
-      const init = () => {
+      const init = async () => {
+        const code = getActiveGameCode();
+        if (code) {
+          const game = await fetchGame(code);
+          if (!game) {
+            localStorage.removeItem(STORAGE_KEYS.activeGameCode);
+            localStorage.removeItem(STORAGE_KEYS.currentGameCode);
+            window.__TEAMS__ = [];
+            window.__MATCHES__ = [];
+          } else {
+            subscribeToGame(code);
+          }
+        }
         refreshState();
       };
 
