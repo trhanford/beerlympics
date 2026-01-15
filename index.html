@@ -1222,6 +1222,8 @@
 
         let activeTeamId = existing?.id;
         let updatedTeam = null;
+        let updatedTeams = teams;
+        let syncError = null;
 
         if (!existing) {
           const team = {
@@ -1233,17 +1235,30 @@
           };
           updatedTeam = team;
           activeTeamId = team.id;
-          const activeGameCode = getActiveGameCode();
-          if (activeGameCode) {
-            await upsertTeam(activeGameCode, team);
-          }
-          saveStatus.textContent = "All Set! You're live on the leaderboard.";
+          updatedTeams = [...teams, team];
         } else {
           updatedTeam = { ...existing, playerName, partnerName, country };
-          const activeGameCode = getActiveGameCode();
-          if (activeGameCode) {
+          updatedTeams = teams.map((team) => (team.id === existing.id ? updatedTeam : team));
+        }
+
+        saveTeams(updatedTeams);
+
+        const activeGameCode = getActiveGameCode();
+        if (activeGameCode) {
+          try {
             await upsertTeam(activeGameCode, updatedTeam);
+          } catch (error) {
+            console.error("Unable to sync team to cloud.", error);
+            syncError = error;
           }
+        }
+
+        if (syncError) {
+          saveStatus.textContent =
+            "Saved locally, but we couldn't sync to the shared game yet.";
+        } else if (!existing) {
+          saveStatus.textContent = "All Set! You're live on the leaderboard.";
+        } else {
           saveStatus.textContent = "Welcome back! We found your team and refreshed your details.";
         }
 
@@ -1430,11 +1445,15 @@
           return;
         }
 
-        const newCode = generateGameCode();
-        setGameCodes(newCode);
-        await createGameInCloud(newCode);
-        subscribeToGame(newCode);
-        saveStatus.textContent = `Game started! Share code ${newCode} with the crew.`;
+        const newCode = startNewGame();
+        try {
+          await createGameInCloud(newCode);
+          subscribeToGame(newCode);
+          saveStatus.textContent = `Game started! Share code ${newCode} with the crew.`;
+        } catch (error) {
+          console.error("Unable to create game in cloud.", error);
+          saveStatus.textContent = `Game started locally! Share code ${newCode} when ready.`;
+        }
         await registerTeam({ playerName, country, partnerName });
       });
 
