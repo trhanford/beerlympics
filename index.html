@@ -616,6 +616,9 @@
       const normalizeGameCode = (value) => value.trim().replace(/\s+/g, "");
       const generateGameCode = () =>
         String(Math.floor(1000 + Math.random() * 9000));
+      const db = () => window.__db__;
+      const gameRef = (code) =>
+        window.firebase_firestore_doc(db(), "games", code); // (we'll avoid this; see note below)
 
       const getGameStorageKey = (key, gameCode) => `${key}_${gameCode}`;
 
