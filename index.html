@@ -1,12 +1,680 @@
 <!doctype html>
 <html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Beerlympics</title>
+    <title>Beerlympics Party HQ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6fbff;
+        --bg-accent: #fff4d1;
+        --primary: #5b6cff;
+        --primary-dark: #3847d6;
+        --secondary: #ff7ab2;
+        --mint: #49d9c2;
+        --ink: #1b1f3b;
+        --ink-soft: #586181;
+        --card: #ffffff;
+        --shadow: 0 20px 50px rgba(19, 34, 68, 0.12);
+        --radius: 24px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Nunito", system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at top, #ffffff 0%, var(--bg) 45%, #e6f3ff 100%);
+        color: var(--ink);
+        min-height: 100vh;
+      }
+
+      header {
+        padding: 28px 20px 12px;
+        text-align: center;
+      }
+
+      header h1 {
+        font-family: "Baloo 2", cursive;
+        font-size: 2.2rem;
+        margin: 0 0 8px;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--ink-soft);
+      }
+
+      main {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding: 0 18px 32px;
+        max-width: 960px;
+        margin: 0 auto;
+      }
+
+      .card {
+        background: var(--card);
+        border-radius: var(--radius);
+        padding: 20px;
+        box-shadow: var(--shadow);
+        border: 2px solid rgba(91, 108, 255, 0.08);
+      }
+
+      .hero {
+        background: linear-gradient(135deg, #fff7db 0%, #f1f7ff 55%, #f8f2ff 100%);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .hero h2 {
+        margin: 0;
+        font-size: 1.5rem;
+      }
+
+      .hero-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--bg-accent);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-top: 12px;
+      }
+
+      .tab {
+        border: none;
+        padding: 10px 18px;
+        border-radius: 999px;
+        font-weight: 700;
+        background: #eff1ff;
+        color: var(--primary-dark);
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .tab.active {
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 10px 24px rgba(91, 108, 255, 0.35);
+      }
+
+      .tab:active {
+        transform: scale(0.98);
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      label {
+        font-weight: 700;
+        font-size: 0.95rem;
+      }
+
+      input {
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 2px solid #e4ebff;
+        font-size: 1rem;
+        font-family: inherit;
+      }
+
+      .btn {
+        border: none;
+        border-radius: 16px;
+        padding: 12px 16px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        background: var(--primary);
+        color: white;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .btn.secondary {
+        background: var(--secondary);
+      }
+
+      .btn.ghost {
+        background: #eef9ff;
+        color: var(--primary-dark);
+      }
+
+      .btn:active {
+        transform: translateY(1px) scale(0.98);
+      }
+
+      .status {
+        font-size: 0.9rem;
+        color: var(--ink-soft);
+        margin-top: 6px;
+      }
+
+      .game-card {
+        background: linear-gradient(135deg, #f4f7ff 0%, #ffffff 100%);
+        border-radius: 20px;
+        padding: 18px;
+        border: 2px dashed rgba(91, 108, 255, 0.25);
+      }
+
+      .game-card h3 {
+        margin: 0 0 8px;
+      }
+
+      .opponents {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .opponent-pill {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: #fff;
+        border: 1px solid #e8edff;
+        font-weight: 600;
+      }
+
+      .score-actions {
+        display: grid;
+        gap: 10px;
+      }
+
+      .leaderboard {
+        display: grid;
+        gap: 12px;
+      }
+
+      .leaderboard-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: #fefeff;
+        border: 1px solid #eef1ff;
+      }
+
+      .leaderboard-card .rank {
+        font-weight: 800;
+        font-size: 1.2rem;
+        color: var(--primary-dark);
+        margin-right: 12px;
+      }
+
+      .team-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .team-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+      }
+
+      .flag {
+        background: var(--mint);
+        color: #003833;
+        border-radius: 12px;
+        padding: 4px 8px;
+        font-size: 0.75rem;
+        font-weight: 800;
+      }
+
+      .stat-pill {
+        background: #eef1ff;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+      }
+
+      .split {
+        display: grid;
+        gap: 16px;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      @media (min-width: 768px) {
+        main {
+          padding: 0 40px 48px;
+        }
+
+        .split {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
   </head>
   <body>
     <h1>Beerlympics HQ 🍻</h1>
     <p>Rules, teams, schedule coming soon.</p>
+    <header>
+      <h1>Beerlympics Party HQ 🍻</h1>
+      <p>Mobile-first mission control for Saturday's legendary showdown.</p>
+      <div class="tabs">
+        <button class="tab active" data-view="player">Player Mode</button>
+        <button class="tab" data-view="leaderboard">Leaderboard Mode</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="card hero">
+        <h2>Welcome to the Cartoon Bracketverse</h2>
+        <p>
+          Enter your squad, get your matchup, and report wins. Leaderboard mode is
+          perfect for the party screen.
+        </p>
+        <div class="hero-badges">
+          <span class="badge">🎯 Live matchup</span>
+          <span class="badge">🏆 Points in real time</span>
+          <span class="badge">🎉 Kahoot-level vibes</span>
+        </div>
+      </section>
+
+      <section class="card" id="player-section">
+        <div class="split">
+          <div>
+            <h2>Join the Games</h2>
+            <p class="status">Tell us who you are and we will lock you in.</p>
+            <form id="team-form">
+              <div>
+                <label for="playerName">Your name</label>
+                <input id="playerName" name="playerName" placeholder="e.g. Jordan" required />
+              </div>
+              <div>
+                <label for="country">Country represented</label>
+                <input id="country" name="country" placeholder="e.g. Brazil" required />
+              </div>
+              <div>
+                <label for="partnerName">Partner name</label>
+                <input id="partnerName" name="partnerName" placeholder="e.g. Sam" required />
+              </div>
+              <button class="btn" type="submit">Lock in our team 🚀</button>
+              <p class="status" id="save-status">Nothing saved yet.</p>
+            </form>
+          </div>
+          <div>
+            <h2>Your Next Game</h2>
+            <div class="game-card" id="next-game">
+              <p class="status">Register to unlock your matchup.</p>
+            </div>
+            <div class="score-actions" id="score-actions"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card hidden" id="leaderboard-section">
+        <h2>Leaderboard Live</h2>
+        <p class="status">Project this on the big screen for instant bragging rights.</p>
+        <div class="leaderboard" id="leaderboard"></div>
+      </section>
+    </main>
+
+    <script>
+      const GAMES = [
+        { name: "Beer Pong", teams: 2 },
+        { name: "Flip Cup", teams: 4 },
+        { name: "Beerio Kart", teams: 2 },
+        { name: "Die", teams: 2 },
+        { name: "Drinkball", teams: 2 },
+      ];
+
+      const STORAGE_KEYS = {
+        teams: "beerlympics_teams",
+        matches: "beerlympics_matches",
+        activeTeamId: "beerlympics_active_team",
+        teamCount: "beerlympics_team_count",
+      };
+
+      const form = document.getElementById("team-form");
+      const saveStatus = document.getElementById("save-status");
+      const nextGameCard = document.getElementById("next-game");
+      const scoreActions = document.getElementById("score-actions");
+      const leaderboardSection = document.getElementById("leaderboard-section");
+      const playerSection = document.getElementById("player-section");
+      const leaderboardEl = document.getElementById("leaderboard");
+      const tabs = document.querySelectorAll(".tab");
+
+      const getTeams = () => JSON.parse(localStorage.getItem(STORAGE_KEYS.teams) || "[]");
+      const getMatches = () => JSON.parse(localStorage.getItem(STORAGE_KEYS.matches) || "[]");
+
+      const saveTeams = (teams) => localStorage.setItem(STORAGE_KEYS.teams, JSON.stringify(teams));
+      const saveMatches = (matches) =>
+        localStorage.setItem(STORAGE_KEYS.matches, JSON.stringify(matches));
+
+      const shuffle = (array) => {
+        const copy = [...array];
+        for (let i = copy.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      };
+
+      const initials = (value) =>
+        value
+          .split(/\s+/)
+          .map((part) => part[0])
+          .join("")
+          .slice(0, 3)
+          .toUpperCase();
+
+      const buildSchedule = (teams) => {
+        const shuffled = shuffle(teams);
+        const matches = [];
+
+        GAMES.forEach((game, gameIndex) => {
+          const groupSize = game.teams;
+          const pool = shuffle(shuffled);
+          for (let i = 0; i < pool.length; i += groupSize) {
+            const slice = pool.slice(i, i + groupSize);
+            if (slice.length === groupSize) {
+              matches.push({
+                id: `${gameIndex}-${i}-${Date.now()}`,
+                game: game.name,
+                teamIds: slice.map((team) => team.id),
+                winnerId: null,
+                reported: [],
+              });
+            }
+          }
+        });
+        return matches;
+      };
+
+      const ensureSchedule = (teams) => {
+        const matches = getMatches();
+        const hasResults = matches.some((match) => match.winnerId);
+        const savedCount = Number(localStorage.getItem(STORAGE_KEYS.teamCount) || 0);
+        if (!matches.length || (!hasResults && teams.length !== savedCount)) {
+          const newMatches = buildSchedule(teams);
+          saveMatches(newMatches);
+          localStorage.setItem(STORAGE_KEYS.teamCount, String(teams.length));
+          return newMatches;
+        }
+        return matches;
+      };
+
+      const computeStandings = (teams, matches) => {
+        const base = teams.map((team) => ({
+          ...team,
+          wins: 0,
+          losses: 0,
+          points: 0,
+        }));
+
+        matches.forEach((match) => {
+          if (!match.winnerId) return;
+          const winner = base.find((team) => team.id === match.winnerId);
+          if (winner) {
+            winner.wins += 1;
+            winner.points += 2;
+          }
+          match.teamIds
+            .filter((id) => id !== match.winnerId)
+            .forEach((loserId) => {
+              const loser = base.find((team) => team.id === loserId);
+              if (loser) {
+                loser.losses += 1;
+              }
+            });
+        });
+
+        return base.sort((a, b) => b.points - a.points || b.wins - a.wins);
+      };
+
+      const renderLeaderboard = () => {
+        const teams = getTeams();
+        const matches = getMatches();
+        const standings = computeStandings(teams, matches);
+
+        leaderboardEl.innerHTML = "";
+
+        if (!standings.length) {
+          leaderboardEl.innerHTML =
+            "<p class=\"status\">Waiting for squads to register.</p>";
+          return;
+        }
+
+        standings.forEach((team, index) => {
+          const card = document.createElement("div");
+          card.className = "leaderboard-card";
+          card.innerHTML = `
+            <div class="team-row">
+              <span class="rank">#${index + 1}</span>
+              <div class="team-info">
+                <div class="team-row">
+                  <span class="flag">${initials(team.country)}</span>
+                  <span>${team.playerName} + ${team.partnerName}</span>
+                </div>
+                <small class="status">${team.country}</small>
+              </div>
+            </div>
+            <div class="team-row">
+              <span class="stat-pill">${team.points} pts</span>
+              <span class="stat-pill">${team.wins} W</span>
+              <span class="stat-pill">${team.losses} L</span>
+            </div>
+          `;
+          leaderboardEl.appendChild(card);
+        });
+      };
+
+      const renderMatch = () => {
+        const teams = getTeams();
+        const matches = getMatches();
+        const activeTeamId = localStorage.getItem(STORAGE_KEYS.activeTeamId);
+        const activeTeam = teams.find((team) => team.id === activeTeamId);
+
+        if (!activeTeam) {
+          nextGameCard.innerHTML = "<p class=\"status\">Register to unlock your matchup.</p>";
+          scoreActions.innerHTML = "";
+          return;
+        }
+
+        const nextMatch = matches.find(
+          (match) => match.teamIds.includes(activeTeamId) && !match.winnerId
+        );
+
+        if (!nextMatch) {
+          nextGameCard.innerHTML = `
+            <h3>All done for now 🎉</h3>
+            <p class="status">No pending matches. Hang tight or celebrate!</p>
+          `;
+          scoreActions.innerHTML = "";
+          return;
+        }
+
+        const opponents = nextMatch.teamIds
+          .filter((id) => id !== activeTeamId)
+          .map((id) => teams.find((team) => team.id === id));
+
+        nextGameCard.innerHTML = `
+          <h3>${nextMatch.game}</h3>
+          <p class="status">Match ID: ${nextMatch.id}</p>
+          <div class="opponents">
+            ${opponents
+              .map(
+                (team) => `
+                <div class="opponent-pill">
+                  <span>${team.playerName} + ${team.partnerName}</span>
+                  <span class="flag">${initials(team.country)}</span>
+                </div>
+              `
+              )
+              .join("")}
+          </div>
+        `;
+
+        scoreActions.innerHTML = "";
+        const winButton = document.createElement("button");
+        winButton.className = "btn";
+        winButton.textContent = "We won! 🏆";
+        winButton.addEventListener("click", () => {
+          const updatedMatches = getMatches().map((match) =>
+            match.id === nextMatch.id
+              ? { ...match, winnerId: activeTeamId }
+              : match
+          );
+          saveMatches(updatedMatches);
+          renderMatch();
+          renderLeaderboard();
+        });
+
+        const loseButton = document.createElement("button");
+        loseButton.className = "btn secondary";
+        loseButton.textContent = "We lost 😅";
+        loseButton.addEventListener("click", () => {
+          const updatedMatches = getMatches();
+          const matchIndex = updatedMatches.findIndex((match) => match.id === nextMatch.id);
+          if (matchIndex === -1) return;
+
+          const match = updatedMatches[matchIndex];
+          if (match.teamIds.length === 2) {
+            const opponentId = match.teamIds.find((id) => id !== activeTeamId);
+            updatedMatches[matchIndex] = { ...match, winnerId: opponentId };
+            saveMatches(updatedMatches);
+            renderMatch();
+            renderLeaderboard();
+            return;
+          }
+
+          scoreActions.innerHTML = "";
+          const prompt = document.createElement("div");
+          prompt.className = "game-card";
+          prompt.innerHTML = `
+            <h3>Who won this flip cup?</h3>
+            <p class="status">Tap the winner so the bracket stays accurate.</p>
+          `;
+          const buttonWrap = document.createElement("div");
+          buttonWrap.className = "score-actions";
+
+          match.teamIds.forEach((id) => {
+            const team = teams.find((item) => item.id === id);
+            const button = document.createElement("button");
+            button.className = "btn ghost";
+            button.textContent = `${team.playerName} + ${team.partnerName}`;
+            button.addEventListener("click", () => {
+              updatedMatches[matchIndex] = { ...match, winnerId: id };
+              saveMatches(updatedMatches);
+              renderMatch();
+              renderLeaderboard();
+            });
+            buttonWrap.appendChild(button);
+          });
+
+          scoreActions.appendChild(prompt);
+          scoreActions.appendChild(buttonWrap);
+        });
+
+        scoreActions.appendChild(winButton);
+        scoreActions.appendChild(loseButton);
+      };
+
+      const setView = (view) => {
+        const isLeaderboard = view === "leaderboard";
+        playerSection.classList.toggle("hidden", isLeaderboard);
+        leaderboardSection.classList.toggle("hidden", !isLeaderboard);
+        tabs.forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.view === view);
+        });
+        renderLeaderboard();
+      };
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const formData = new FormData(form);
+        const playerName = formData.get("playerName").trim();
+        const country = formData.get("country").trim();
+        const partnerName = formData.get("partnerName").trim();
+
+        const teams = getTeams();
+        const existing = teams.find(
+          (team) =>
+            team.playerName.toLowerCase() === playerName.toLowerCase() &&
+            team.partnerName.toLowerCase() === partnerName.toLowerCase()
+        );
+
+        let activeTeamId = existing?.id;
+
+        if (!existing) {
+          const team = {
+            id: crypto.randomUUID(),
+            playerName,
+            partnerName,
+            country,
+            createdAt: new Date().toISOString(),
+          };
+          teams.push(team);
+          saveTeams(teams);
+          activeTeamId = team.id;
+          ensureSchedule(teams);
+          saveStatus.textContent = "Saved locally! You're live on the leaderboard.";
+        } else {
+          saveStatus.textContent = "Welcome back! We found your team.";
+        }
+
+        localStorage.setItem(STORAGE_KEYS.activeTeamId, activeTeamId);
+        renderMatch();
+        renderLeaderboard();
+      });
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          setView(tab.dataset.view);
+        });
+      });
+
+      window.addEventListener("storage", () => {
+        renderMatch();
+        renderLeaderboard();
+      });
+
+      const init = () => {
+        renderMatch();
+        renderLeaderboard();
+      };
+
+      init();
+    </script>
   </body>
 </html>
