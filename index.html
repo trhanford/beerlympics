@@ -727,6 +727,31 @@
         return game.hostId === ensureHostId();
       }
 
+      // Host-only: create matches whenever the roster changes.
+      // Debounced + locked so we don't spam Firestore writes.
+      let fillMatchesTimer = null;
+      let fillMatchesInFlight = false;
+
+      function scheduleFillMatches(code) {
+        if (!code) return;
+        if (!isHost()) return;
+        if (fillMatchesTimer) return;
+
+        fillMatchesTimer = setTimeout(async () => {
+          fillMatchesTimer = null;
+          if (fillMatchesInFlight) return;
+
+          fillMatchesInFlight = true;
+          try {
+            await fillMatches(code);
+          } catch (error) {
+            console.error("Unable to auto-create matches.", error);
+          } finally {
+            fillMatchesInFlight = false;
+          }
+        }, 250);
+      }
+
       function subscribeToGame(code) {
         if (unsubscribeGame) unsubscribeGame();
         if (unsubscribeTeams) unsubscribeTeams();
@@ -739,6 +764,7 @@
           renderMatch();
           updateGameCodeDisplay();
           updateTabsVisibility();
+          scheduleFillMatches(code);
         });
 
         unsubscribeTeams = onSnapshot(teamsCollection(code), (snap) => {
@@ -746,6 +772,7 @@
           renderLeaderboard();
           renderRoster();
           renderMatch();
+          scheduleFillMatches(code);
         });
 
         unsubscribeMatches = onSnapshot(matchesCollection(code), (snap) => {
@@ -1560,10 +1587,7 @@
         renderLeaderboard();
         renderRoster();
         updateTabsVisibility();
-
-        if (isHost()) {
-          void fillMatches(activeGameCode);
-        }
+        scheduleFillMatches(activeGameCode);
       };
 
       form.addEventListener("submit", async (event) => {
