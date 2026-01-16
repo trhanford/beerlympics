@@ -641,6 +641,8 @@
         return JSON.parse(localStorage.getItem(getScopedKey(STORAGE_KEYS.matches)) || "[]");
       };
 
+      let suspendCloudSync = false;
+
       const saveTeams = (teams) => {
         window.__TEAMS__ = teams;
         localStorage.setItem(getScopedKey(STORAGE_KEYS.teams), JSON.stringify(teams));
@@ -649,7 +651,7 @@
         window.__MATCHES__ = matches;
         localStorage.setItem(getScopedKey(STORAGE_KEYS.matches), JSON.stringify(matches));
         const activeGameCode = getActiveGameCode();
-        if (activeGameCode) {
+        if (activeGameCode && !suspendCloudSync) {
           void saveMatchesToCloud(activeGameCode, matches);
         }
       };
@@ -691,12 +693,25 @@
 
       const refFor = (code) => doc(db, "games", code);
 
-      async function saveTeamsToCloud(code, teams) {
-        await updateDoc(refFor(code), { teams });
+      async function ensureGameDoc(code) {
+        const snap = await getDoc(refFor(code));
+        if (snap.exists()) return;
+        await setDoc(refFor(code), {
+          started: true,
+          teams: {},
+          matches: [],
+        });
       }
 
       async function saveMatchesToCloud(code, matches) {
-        await updateDoc(refFor(code), { matches });
+        await ensureGameDoc(code);
+        await setDoc(
+          refFor(code),
+          {
+            matches,
+          },
+          { merge: true }
+        );
       }
 
       async function createGameInCloud(code) {
@@ -712,14 +727,31 @@
         return snap.exists() ? snap.data() : null;
       }
 
-      async function upsertTeam(code, team) {
+      async function upsertTeamToCloud(code, team) {
+        await ensureGameDoc(code);
         await updateDoc(refFor(code), {
           [`teams.${team.id}`]: team,
         });
       }
 
+      async function clearTeamsInCloud(code) {
+        await ensureGameDoc(code);
+        await setDoc(
+          refFor(code),
+          {
+            teams: {},
+          },
+          { merge: true }
+        );
+      }
+
+      let unsubscribeGame = null;
+
       function subscribeToGame(code) {
-        return onSnapshot(refFor(code), (snap) => {
+        if (unsubscribeGame) {
+          unsubscribeGame();
+        }
+        unsubscribeGame = onSnapshot(refFor(code), (snap) => {
           if (!snap.exists()) return;
           const data = snap.data();
           // Store shared state in memory:
@@ -733,6 +765,7 @@
           updateGameCodeDisplay();
           updateTabsVisibility();
         });
+        return unsubscribeGame;
       }
 
       const levenshtein = (a, b) => {
@@ -756,6 +789,7 @@
       };
 
       async function deleteTeamFromCloud(code, teamId) {
+        await ensureGameDoc(code);
         await updateDoc(refFor(code), {
           [`teams.${teamId}`]: deleteField(),
         });
@@ -902,7 +936,7 @@
             input.value = Number.isFinite(team.pointsOverride)
               ? team.pointsOverride
               : team.points;
-            input.addEventListener("change", () => {
+            input.addEventListener("change", async () => {
               const nextValue = Number(input.value);
               const updatedTeams = getTeams().map((entry) =>
                 entry.id === team.id
@@ -913,17 +947,35 @@
                   : entry
               );
               saveTeams(updatedTeams);
+              const activeGameCode = getActiveGameCode();
+              const updatedTeam = updatedTeams.find((entry) => entry.id === team.id);
+              if (activeGameCode && updatedTeam) {
+                try {
+                  await upsertTeamToCloud(activeGameCode, updatedTeam);
+                } catch (error) {
+                  console.error("Unable to sync score override.", error);
+                }
+              }
               renderLeaderboard();
             });
             const clearButton = document.createElement("button");
             clearButton.type = "button";
             clearButton.className = "btn link";
             clearButton.textContent = "Clear override";
-            clearButton.addEventListener("click", () => {
+            clearButton.addEventListener("click", async () => {
               const updatedTeams = getTeams().map((entry) =>
                 entry.id === team.id ? { ...entry, pointsOverride: undefined } : entry
               );
               saveTeams(updatedTeams);
+              const activeGameCode = getActiveGameCode();
+              const updatedTeam = updatedTeams.find((entry) => entry.id === team.id);
+              if (activeGameCode && updatedTeam) {
+                try {
+                  await upsertTeamToCloud(activeGameCode, updatedTeam);
+                } catch (error) {
+                  console.error("Unable to sync score override.", error);
+                }
+              }
               renderLeaderboard();
             });
             editWrap.appendChild(input);
@@ -1187,6 +1239,7 @@
         });
         renderLeaderboard();
         renderRoster();
+        renderMatch();
       };
 
       const updateTabsVisibility = () => {
@@ -1203,13 +1256,17 @@
         }
       };
 
-      const startNewGame = () => {
+      const startNewGame = async () => {
         const newCode = generateGameCode();
         setGameCodes(newCode);
+        suspendCloudSync = true;
         saveTeams([]);
         saveMatches([]);
+        suspendCloudSync = false;
         setSavedTeamCount(0);
         clearActiveTeamId();
+        await createGameInCloud(newCode);
+        subscribeToGame(newCode);
         updateGameCodeDisplay();
         updateTabsVisibility();
         renderLeaderboard();
@@ -1243,17 +1300,17 @@
           updatedTeams = teams.map((team) => (team.id === existing.id ? updatedTeam : team));
         }
 
-        saveTeams(updatedTeams);
-
         const activeGameCode = getActiveGameCode();
         if (activeGameCode) {
           try {
-            await upsertTeam(activeGameCode, updatedTeam);
+            await upsertTeamToCloud(activeGameCode, updatedTeam);
           } catch (error) {
             console.error("Unable to sync team to cloud.", error);
             syncError = error;
           }
         }
+
+        saveTeams(updatedTeams);
 
         if (syncError) {
           saveStatus.textContent =
@@ -1297,7 +1354,7 @@
         await registerTeam({ playerName, country, partnerName });
       });
 
-      rosterForm.addEventListener("submit", (event) => {
+      rosterForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
         const activeTeamId = getActiveTeamId();
@@ -1314,7 +1371,16 @@
               }
             : team
         );
+        const updatedTeam = updatedTeams.find((team) => team.id === targetTeamId);
         saveTeams(updatedTeams);
+        const activeGameCode = getActiveGameCode();
+        if (activeGameCode && updatedTeam) {
+          try {
+            await upsertTeamToCloud(activeGameCode, updatedTeam);
+          } catch (error) {
+            console.error("Unable to sync roster updates.", error);
+          }
+        }
         rosterStatus.textContent = isAdmin
           ? "Roster entry updated."
           : "Roster entry updated for your team.";
@@ -1366,24 +1432,27 @@
           const entered = prompt("Enter admin passcode:");
           if (entered === ADMIN_PASSCODE) {
             localStorage.setItem(STORAGE_KEYS.adminMode, "true");
-            adminStatus.textContent = "Admin tools unlocked.";
           } else {
             adminToggle.checked = false;
             localStorage.setItem(STORAGE_KEYS.adminMode, "false");
-            adminStatus.textContent = "Wrong passcode. Admin tools locked.";
           }
         } else {
           localStorage.setItem(STORAGE_KEYS.adminMode, "false");
-          adminStatus.textContent = "Admin tools are locked.";
         }
         adminEditingTeamId = null;
-        renderLeaderboard();
-        renderRoster();
+        refreshState();
       });
 
       newGameButton.addEventListener("click", () => {
-        const newCode = startNewGame();
-        adminActionStatus.textContent = `New game started. Code: ${newCode}`;
+        void (async () => {
+          try {
+            const newCode = await startNewGame();
+            adminActionStatus.textContent = `New game started. Code: ${newCode}`;
+          } catch (error) {
+            console.error("Unable to start new game.", error);
+            adminActionStatus.textContent = "Could not start a new game. Try again.";
+          }
+        })();
       });
 
       resetGameButton.addEventListener("click", () => {
@@ -1392,6 +1461,10 @@
         saveMatches([]);
         setSavedTeamCount(0);
         clearActiveTeamId();
+        const activeGameCode = getActiveGameCode();
+        if (activeGameCode) {
+          void clearTeamsInCloud(activeGameCode);
+        }
         adminActionStatus.textContent = "Current game cleared.";
         renderMatch();
         renderLeaderboard();
@@ -1467,11 +1540,9 @@
           return;
         }
 
-        const newCode = startNewGame();
-        setGameCodes(newCode);
+        let newCode = "";
         try {
-          await createGameInCloud(newCode);
-          subscribeToGame(newCode);
+          newCode = await startNewGame();
           saveStatus.textContent = `Game started! Share code ${newCode} with the crew.`;
         } catch (error) {
           console.error("Unable to create game in cloud.", error);
