@@ -160,7 +160,8 @@
         font-size: 0.95rem;
       }
 
-      input {
+      input,
+      select {
         padding: 12px 14px;
         border-radius: 16px;
         border: 2px solid #e4ebff;
@@ -403,6 +404,19 @@
         gap: 10px;
       }
 
+      .admin-merge {
+        display: grid;
+        gap: 10px;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px dashed #e2e8ff;
+      }
+
+      .merge-row {
+        display: grid;
+        gap: 12px;
+      }
+
       .game-code {
         font-size: 1.6rem;
         font-weight: 800;
@@ -448,6 +462,10 @@
 
         .current-matches-card {
           display: block;
+        }
+
+        .merge-row {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
       }
     </style>
@@ -593,6 +611,26 @@
             </div>
             <p class="status" id="roster-status">Claim your team to edit it here.</p>
           </form>
+          <div class="admin-merge hidden" id="merge-panel">
+            <h4>Merge duplicate teams</h4>
+            <p class="status">
+              Move the source team's results into the destination team, then delete the duplicate.
+            </p>
+            <div class="merge-row">
+              <div>
+                <label for="merge-source">Source team (delete)</label>
+                <select id="merge-source"></select>
+              </div>
+              <div>
+                <label for="merge-target">Destination team (keep)</label>
+                <select id="merge-target"></select>
+              </div>
+            </div>
+            <button class="btn small secondary" type="button" id="merge-button">
+              Merge teams
+            </button>
+            <p class="status" id="merge-status">Select two teams to merge.</p>
+          </div>
         </div>
       </section>
     </main>
@@ -661,6 +699,11 @@
       const rosterPartnerName = document.getElementById("rosterPartnerName");
       const rosterCountry = document.getElementById("rosterCountry");
       const removeTeamButton = document.getElementById("remove-team");
+      const mergePanel = document.getElementById("merge-panel");
+      const mergeSourceSelect = document.getElementById("merge-source");
+      const mergeTargetSelect = document.getElementById("merge-target");
+      const mergeButton = document.getElementById("merge-button");
+      const mergeStatus = document.getElementById("merge-status");
       const adminToggle = document.getElementById("admin-toggle");
       const adminStatus = document.getElementById("admin-status");
       const adminPanel = document.getElementById("admin-panel");
@@ -923,6 +966,51 @@
       async function deleteTeamFromCloud(code, teamId) {
         await deleteDoc(doc(teamsCollection(code), teamId));
       }
+
+      const formatTeamLabel = (team) =>
+        `${team.playerName} + ${team.partnerName} (${team.country || "Unknown"})`;
+
+      const renderMergeOptions = (teams) => {
+        if (!mergePanel) return;
+        const adminMode = isAdmin();
+        mergePanel.classList.toggle("hidden", !adminMode);
+        if (!adminMode) return;
+
+        const currentSource = mergeSourceSelect.value;
+        const currentTarget = mergeTargetSelect.value;
+
+        const buildOptions = (selectEl, selectedId) => {
+          selectEl.innerHTML = "";
+          const placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = "Select a team";
+          placeholder.disabled = true;
+          placeholder.selected = true;
+          selectEl.appendChild(placeholder);
+          teams.forEach((team) => {
+            const option = document.createElement("option");
+            option.value = team.id;
+            option.textContent = formatTeamLabel(team);
+            if (team.id === selectedId) {
+              option.selected = true;
+            }
+            selectEl.appendChild(option);
+          });
+        };
+
+        buildOptions(mergeSourceSelect, currentSource);
+        buildOptions(mergeTargetSelect, currentTarget);
+
+        if (teams.length < 2) {
+          mergeButton.disabled = true;
+          mergeStatus.textContent = "Need at least two teams to merge.";
+        } else {
+          mergeButton.disabled = false;
+          if (!mergeSourceSelect.value || !mergeTargetSelect.value) {
+            mergeStatus.textContent = "Select a source and destination team.";
+          }
+        }
+      };
 
       const areNamesClose = (a, b) => {
         const left = normalizeName(a);
@@ -1378,6 +1466,8 @@
           }
           rosterStatus.textContent = "Register or rejoin to claim your team.";
         }
+
+        renderMergeOptions(teams);
       };
 
       const getFlipCupPairings = (teamIds) => {
@@ -1887,6 +1977,92 @@
         renderLeaderboard();
         renderMatch();
         renderRoster();
+      });
+
+      mergeButton.addEventListener("click", async () => {
+        if (!isAdmin()) return;
+        const sourceTeamId = mergeSourceSelect.value;
+        const targetTeamId = mergeTargetSelect.value;
+        if (!sourceTeamId || !targetTeamId) {
+          mergeStatus.textContent = "Select a source and destination team.";
+          return;
+        }
+        if (sourceTeamId === targetTeamId) {
+          mergeStatus.textContent = "Choose two different teams to merge.";
+          return;
+        }
+        const teams = getTeams();
+        const sourceTeam = teams.find((team) => team.id === sourceTeamId);
+        const targetTeam = teams.find((team) => team.id === targetTeamId);
+        if (!sourceTeam || !targetTeam) {
+          mergeStatus.textContent = "Those teams are no longer available.";
+          return;
+        }
+        const confirmed = confirm(
+          `Merge ${formatTeamLabel(sourceTeam)} into ${formatTeamLabel(
+            targetTeam
+          )}? This will delete the source team.`
+        );
+        if (!confirmed) return;
+
+        const activeGameCode = getActiveGameCode();
+        if (!activeGameCode) return;
+
+        mergeStatus.textContent = "Merging teams...";
+        const impactedMatches = getMatches().filter((match) =>
+          match.teamIds?.includes(sourceTeamId)
+        );
+        for (const match of impactedMatches) {
+          await closeMatchForRemoval(activeGameCode, match, sourceTeamId);
+        }
+
+        try {
+          await runTransaction(db, async (transaction) => {
+            const sourceRef = doc(teamsCollection(activeGameCode), sourceTeamId);
+            const targetRef = doc(teamsCollection(activeGameCode), targetTeamId);
+            const [sourceSnap, targetSnap] = await Promise.all([
+              transaction.get(sourceRef),
+              transaction.get(targetRef),
+            ]);
+            if (!sourceSnap.exists() || !targetSnap.exists()) return;
+            const source = sourceSnap.data();
+            const target = targetSnap.data();
+            const mergedLastOpponents = [
+              ...new Set([...(target.lastOpponents || []), ...(source.lastOpponents || [])]),
+            ].slice(0, 3);
+            transaction.update(targetRef, {
+              wins: (target.wins || 0) + (source.wins || 0),
+              losses: (target.losses || 0) + (source.losses || 0),
+              points: (target.points || 0) + (source.points || 0),
+              powerupsRemaining: Math.max(
+                target.powerupsRemaining ?? 2,
+                source.powerupsRemaining ?? 2
+              ),
+              lastOpponents: mergedLastOpponents,
+              lastGameType: target.lastGameType || source.lastGameType || null,
+              flipCupStreak: Math.max(target.flipCupStreak || 0, source.flipCupStreak || 0),
+            });
+            transaction.delete(sourceRef);
+          });
+        } catch (error) {
+          console.error("Unable to merge teams.", error);
+          mergeStatus.textContent = "Merge failed. Please try again.";
+          return;
+        }
+
+        if (getActiveTeamId() === sourceTeamId) {
+          setActiveTeamId(targetTeamId);
+        }
+        if (adminEditingTeamId === sourceTeamId) {
+          adminEditingTeamId = targetTeamId;
+        }
+        mergeStatus.textContent = `Merged ${formatTeamLabel(sourceTeam)} into ${formatTeamLabel(
+          targetTeam
+        )}.`;
+        renderLeaderboard();
+        renderMatch();
+        renderRoster();
+        scheduleFillMatches(activeGameCode);
       });
 
       adminToggle.addEventListener("change", () => {
