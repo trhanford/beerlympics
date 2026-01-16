@@ -947,30 +947,38 @@
           return (a.losses || 0) - (b.losses || 0);
         });
 
+      const countFreshTeamsForType = (teams, gameType) => {
+        const fresh = teams.filter((team) => team.lastGameType !== gameType.id).length;
+        return fresh;
+      };
+
       const pickPair = (teams, gameTypeId) => {
-        const preferred = teams.filter((team) => team.lastGameType !== gameTypeId);
-        const pool = preferred.length >= 2 ? preferred : teams;
-        for (const team of pool) {
-          const opponents = pool.filter((candidate) => candidate.id !== team.id);
-          let opponent = opponents.find(
-            (candidate) =>
-              !hasRecentOpponent(team, candidate.id) &&
-              !hasRecentOpponent(candidate, team.id) &&
-              candidate.lastGameType !== gameTypeId
-          );
-          if (!opponent) {
-            opponent = opponents.find(
+        // Tier 1: both teams are "fresh" for this gameType.
+        const freshTeams = teams.filter((team) => team.lastGameType !== gameTypeId);
+
+        const tryPool = (pool) => {
+          for (const team of pool) {
+            const opponents = pool.filter((candidate) => candidate.id !== team.id);
+            let opponent = opponents.find(
               (candidate) =>
                 !hasRecentOpponent(team, candidate.id) &&
-                !hasRecentOpponent(candidate, team.id)
+                !hasRecentOpponent(candidate, team.id) &&
+                candidate.lastGameType !== gameTypeId
             );
+            if (!opponent && opponents.length > 0) opponent = opponents[0];
+            if (opponent) return [team, opponent];
           }
-          if (!opponent && opponents.length > 0) {
-            opponent = opponents[0];
-          }
-          if (opponent) return [team, opponent];
+          return null;
+        };
+
+        // Prefer fresh vs fresh.
+        if (freshTeams.length >= 2) {
+          const pair = tryPool(freshTeams);
+          if (pair) return pair;
         }
-        return null;
+
+        // Tier 2: allow one repeat if needed (still try to avoid opponent repeats).
+        return tryPool(teams);
       };
 
       const pickFlipCupGroup = (teams) => {
@@ -1069,10 +1077,32 @@
           getTeams().filter((team) => !team.currentMatchId)
         );
         const anyInProgress = activeMatches.some((m) => m.status === "in_progress");
+        const totalTeams = getTeams().length;
+        const gameTypesOrdered = [...GAME_TYPES]
+          .filter((gameType) => !activeByType.has(gameType.id))
+          .map((gameType) => ({
+            ...gameType,
+            freshCount: countFreshTeamsForType(availableTeams, gameType),
+          }))
+          // Prefer types where we can form a match WITHOUT giving anyone the same game twice in a row.
+          .sort((a, b) => {
+            const aCanFresh = a.freshCount >= a.teams ? 1 : 0;
+            const bCanFresh = b.freshCount >= b.teams ? 1 : 0;
+            if (bCanFresh !== aCanFresh) return bCanFresh - aCanFresh;
+            if (b.freshCount !== a.freshCount) return b.freshCount - a.freshCount;
+            // If tied, prefer 4-team games first (helps keep everyone busy)
+            return b.teams - a.teams;
+          });
 
-        for (const gameType of GAME_TYPES) {
-          if (activeByType.has(gameType.id)) continue;
-          if (anyInProgress && gameType.teams === 2 && availableTeams.length < 4) {
+        for (const gameType of gameTypesOrdered) {
+          // Only keep the "avoid instant rematch" gate when the entire game only has 4 teams.
+          // With 6/8/10+ teams, this gate causes idle teams.
+          if (
+            totalTeams <= 4 &&
+            anyInProgress &&
+            gameType.teams === 2 &&
+            availableTeams.length < 4
+          ) {
             continue;
           }
           if (availableTeams.length < gameType.teams) continue;
