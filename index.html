@@ -835,10 +835,27 @@
         return distance <= limit;
       };
 
+      const areCountriesClose = (a, b) => {
+        const left = normalizeCountry(a);
+        const right = normalizeCountry(b);
+        if (!left || !right) return false;
+        if (left === right) return true;
+      
+        const distance = levenshtein(left, right);
+      
+        // Allow small typos, keep it strict to avoid accidental merges.
+        const limit = Math.min(
+          3,
+          Math.max(1, Math.floor(Math.max(left.length, right.length) / 6))
+        );
+      
+        return distance <= limit;
+      };
+
       const findMatchingTeam = (teams, playerName, partnerName, country) => {
         const normalizedCountry = normalizeCountry(country);
         return teams.find((team) => {
-          const sameCountry = normalizeCountry(team.country) === normalizedCountry;
+          const sameCountry = areCountriesClose(team.country, country);
           if (!sameCountry) return false;
           const sameOrder =
             areNamesClose(playerName, team.playerName) &&
@@ -1509,7 +1526,7 @@
         const activeGameCode = getActiveGameCode();
         if (!activeGameCode) return;
 
-        const teamId = getActiveTeamId() ?? crypto.randomUUID();
+        const teamId = existing?.id || getActiveTeamId() || crypto.randomUUID();
         const team = {
           id: teamId,
           playerName,
