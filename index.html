@@ -1503,7 +1503,7 @@
         const activeGameCode = getActiveGameCode();
         if (!activeGameCode) return;
 
-        const teamId = existing?.id || getActiveTeamId() || crypto.randomUUID();
+        const teamId = existing?.id || crypto.randomUUID();
         const team = {
           id: teamId,
           playerName,
