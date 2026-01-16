@@ -1067,59 +1067,46 @@
 
       async function fillMatches(gameCode) {
         if (!isHost()) return;
-        const activeMatches = getMatches();
-        const activeByType = new Set(
-          activeMatches
-            .filter((match) => match.status === "in_progress")
-            .map((match) => match.gameType)
+        // 1) Build sets
+        const activeMatches = getMatches().filter(
+          (match) => match.status === "in_progress"
         );
+        const activeByType = new Set(activeMatches.map((match) => match.gameType));
         let availableTeams = sortTeamsForMatch(
           getTeams().filter((team) => !team.currentMatchId)
         );
-        const anyInProgress = activeMatches.some((m) => m.status === "in_progress");
-        const totalTeams = getTeams().length;
-        const gameTypesOrdered = [...GAME_TYPES]
-          .filter((gameType) => !activeByType.has(gameType.id))
-          .map((gameType) => ({
-            ...gameType,
-            freshCount: countFreshTeamsForType(availableTeams, gameType),
-          }))
-          // Prefer types where we can form a match WITHOUT giving anyone the same game twice in a row.
-          .sort((a, b) => {
-            const aCanFresh = a.freshCount >= a.teams ? 1 : 0;
-            const bCanFresh = b.freshCount >= b.teams ? 1 : 0;
-            if (bCanFresh !== aCanFresh) return bCanFresh - aCanFresh;
-            if (b.freshCount !== a.freshCount) return b.freshCount - a.freshCount;
-            // If tied, prefer 4-team games first (helps keep everyone busy)
-            return b.teams - a.teams;
-          });
 
-        for (const gameType of gameTypesOrdered) {
-          // Only keep the "avoid instant rematch" gate when the entire game only has 4 teams.
-          // With 6/8/10+ teams, this gate causes idle teams.
-          if (
-            totalTeams <= 4 &&
-            anyInProgress &&
-            gameType.teams === 2 &&
-            availableTeams.length < 4
-          ) {
-            continue;
-          }
-          if (availableTeams.length < gameType.teams) continue;
-          if (gameType.teams === 4) {
-            const group = pickFlipCupGroup(availableTeams);
-            if (!group) continue;
-            await createMatchForTeams(gameCode, gameType.id, group);
+        // 2) Flip Cup first (optional, but keeps everyone playing)
+        if (!activeByType.has("flip_cup") && availableTeams.length >= 4) {
+          const group = pickFlipCupGroup(availableTeams);
+          if (group) {
+            await createMatchForTeams(gameCode, "flip_cup", group);
             availableTeams = availableTeams.filter(
-              (team) => !group.find((member) => member.id === team.id)
+              (team) => !group.some((member) => member.id === team.id)
             );
-            continue;
           }
+        }
+
+        // 3) Rotate 2-team games so Beer Pong isn't always first
+        const twoTeamTypes = GAME_TYPES.filter(
+          (gameType) => gameType.teams === 2 && !activeByType.has(gameType.id)
+        );
+        if (!twoTeamTypes.length) return;
+
+        const rotation = getMatches().length % twoTeamTypes.length;
+        const rotatedTwoTeamTypes = [
+          ...twoTeamTypes.slice(rotation),
+          ...twoTeamTypes.slice(0, rotation),
+        ];
+
+        // 4) Create as many 2-team matches as possible, using different game types first
+        for (const gameType of rotatedTwoTeamTypes) {
+          if (availableTeams.length < 2) break;
           const pair = pickPair(availableTeams, gameType.id);
           if (!pair) continue;
           await createMatchForTeams(gameCode, gameType.id, pair);
           availableTeams = availableTeams.filter(
-            (team) => !pair.find((member) => member.id === team.id)
+            (team) => !pair.some((member) => member.id === team.id)
           );
         }
       }
