@@ -249,6 +249,44 @@
         gap: 12px;
       }
 
+      .current-matches-grid {
+        display: grid;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .current-match-card {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid #eef1ff;
+        padding: 14px 16px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .current-match-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .current-match-teams {
+        display: grid;
+        gap: 8px;
+      }
+
+      .current-match-team {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: #f7f9ff;
+        font-weight: 600;
+      }
+
       .leaderboard-card {
         display: flex;
         justify-content: space-between;
@@ -483,6 +521,11 @@
           <div class="game-code" id="game-code">----</div>
           <p class="status">Share this code so players can join your match.</p>
         </div>
+        <div class="game-card">
+          <h3>Current Matches</h3>
+          <p class="status">Live battles happening right now.</p>
+          <div class="current-matches-grid" id="current-matches"></div>
+        </div>
         <div class="leaderboard" id="leaderboard"></div>
         <div class="game-card hidden" id="admin-panel">
           <h3>Admin controls</h3>
@@ -603,6 +646,7 @@
       const adminPanel = document.getElementById("admin-panel");
       const adminActionStatus = document.getElementById("admin-action-status");
       const gameCodeEl = document.getElementById("game-code");
+      const currentMatchesEl = document.getElementById("current-matches");
       const newGameButton = document.getElementById("new-game");
       const resetGameButton = document.getElementById("reset-game");
       const clearResultsButton = document.getElementById("clear-results");
@@ -1020,7 +1064,54 @@
           return (a.losses || 0) - (b.losses || 0);
         });
 
+      const renderCurrentMatches = () => {
+        if (!currentMatchesEl) return;
+        const matches = getMatches().filter((match) => match.status === "in_progress");
+        const teams = getTeams();
+        currentMatchesEl.innerHTML = "";
+
+        if (!matches.length) {
+          currentMatchesEl.innerHTML =
+            "<p class=\"status\">No matches are live at the moment.</p>";
+          return;
+        }
+
+        matches.forEach((match) => {
+          const card = document.createElement("div");
+          card.className = "current-match-card";
+          const gameType = GAME_TYPES.find((entry) => entry.id === match.gameType);
+          const matchTeams = match.teamIds
+            .map((id) => teams.find((team) => team.id === id))
+            .filter(Boolean);
+          const teamRows =
+            matchTeams.length > 0
+              ? matchTeams
+                  .map(
+                    (team) => `
+                      <div class="current-match-team">
+                        <span>${team.playerName} + ${team.partnerName}</span>
+                        <span class="flag">${initials(team.country)}</span>
+                      </div>
+                    `
+                  )
+                  .join("")
+              : "<p class=\"status\">Teams syncing...</p>";
+
+          card.innerHTML = `
+            <div class="current-match-header">
+              <strong>${gameType?.name || match.gameType}</strong>
+              <span class="status">Match ${match.id.slice(0, 6)}</span>
+            </div>
+            <div class="current-match-teams">
+              ${teamRows}
+            </div>
+          `;
+          currentMatchesEl.appendChild(card);
+        });
+      };
+
       const renderLeaderboard = () => {
+        renderCurrentMatches();
         const teams = getTeams();
         const standings = computeStandings(teams);
         const isAdminMode = isAdmin();
