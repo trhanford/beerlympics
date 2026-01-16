@@ -989,17 +989,6 @@
           }
           return null;
         };
-      
-        // Prefer "fresh" teams first (same as you had)
-        const freshTeams = teams.filter((team) => team.lastGameType !== gameTypeId);
-        if (freshTeams.length >= 2) {
-          const pair = tryPool(freshTeams);
-          if (pair) return pair;
-        }
-      
-        return tryPool(teams);
-      };
-
 
         // Prefer fresh vs fresh.
         if (freshTeams.length >= 2) {
