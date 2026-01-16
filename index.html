@@ -2083,54 +2083,36 @@
       };
 
       const pickPair = (teams, gameTypeId) => {
-        const isRecentOpponentPair = (a, b) =>
-          hasRecentOpponent(a, b.id) || hasRecentOpponent(b, a.id);
-      
-        const isImmediateRematchSameGame = (a, b) =>
-          isRecentOpponentPair(a, b) &&
-          a.lastGameType === gameTypeId &&
-          b.lastGameType === gameTypeId;
-      
-        const tryPool = (pool) => {
-          for (const team of pool) {
-            const opponents = pool.filter((candidate) => candidate.id !== team.id);
-            if (!opponents.length) continue;
-      
-            // Tier 1: avoid recent opponents AND avoid repeating this game type for either team
-            let opponent = opponents.find(
-              (candidate) =>
-                !isRecentOpponentPair(team, candidate) &&
-                team.lastGameType !== gameTypeId &&
-                candidate.lastGameType !== gameTypeId
-            );
-            if (opponent) return [team, opponent];
-      
-            // Tier 2: avoid recent opponents (allow repeating the game type if needed)
-            opponent = opponents.find((candidate) => !isRecentOpponentPair(team, candidate));
-            if (opponent) return [team, opponent];
-      
-            // Tier 3: allow a recent opponent ONLY if it would not be the same game again
-            opponent = opponents.find((candidate) => !isImmediateRematchSameGame(team, candidate));
-            if (opponent) return [team, opponent];
+        // Strict rules (requested):
+        // - No team can play the same GAME twice in a row.
+        // - No team can play the same OPPONENT twice in a row.
+        // If no legal pairing exists for this game type, return null so
+        // fillMatches() can try another game type (or wait for more teams).
 
-      
-            // Tier 4: the ONLY remaining option is same opponent + same game again -> WAIT
-            // Return null so these teams stay "available" until others finish.
-            return null;
-          }
+        const immediateOpponentId = (team) => (team.lastOpponents || [])[0] || null;
+        const isImmediateOpponentPair = (a, b) =>
+          immediateOpponentId(a) === b.id || immediateOpponentId(b) === a.id;
+
+        // Hard filter: no one repeating this game type.
+        const eligible = teams.filter((t) => t.lastGameType !== gameTypeId);
+        if (eligible.length < 2) return null;
+
+        const pool = sortTeamsForMatch(eligible);
+        for (const team of pool) {
+          const opponents = pool.filter((candidate) => candidate.id !== team.id);
+          if (!opponents.length) continue;
+
+          // Prefer: not an immediate rematch.
+          let opponent = opponents.find((candidate) => !isImmediateOpponentPair(team, candidate));
+          if (opponent) return [team, opponent];
+
+          // If every possible opponent is an immediate rematch, we must WAIT.
+          // (This prevents two teams from instantly re-playing each other when
+          // only they become available.)
           return null;
-        };
-        
-        const freshTeams = teams.filter((team) => team.lastGameType !== gameTypeId);
-
-        // Prefer fresh vs fresh.
-        if (freshTeams.length >= 2) {
-          const pair = tryPool(freshTeams);
-          if (pair) return pair;
         }
 
-        // Tier 2: allow one repeat if needed (still try to avoid opponent repeats).
-        return tryPool(teams);
+        return null;
       };
 
       const pickFlipCupGroup = (teams) => {
