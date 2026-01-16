@@ -540,6 +540,7 @@
         getFirestore,
         doc,
         getDoc,
+        getDocs,
         setDoc,
         updateDoc,
         onSnapshot,
@@ -715,6 +716,11 @@
         return snap.exists() ? snap.data() : null;
       }
 
+      async function fetchTeamsOnce(code) {
+        const snap = await getDocs(teamsCollection(code));
+        return snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+      }
+
       function isHost() {
         const game = getGame();
         if (!game) return false;
@@ -840,22 +846,15 @@
         const right = normalizeCountry(b);
         if (!left || !right) return false;
         if (left === right) return true;
-      
+
         const distance = levenshtein(left, right);
-      
-        // Allow small typos, keep it strict to avoid accidental merges.
-        const limit = Math.min(
-          3,
-          Math.max(1, Math.floor(Math.max(left.length, right.length) / 6))
-        );
-      
+        const limit = Math.max(1, Math.floor(Math.max(left.length, right.length) / 5));
         return distance <= limit;
       };
 
       const findMatchingTeam = (teams, playerName, partnerName, country) => {
-        const normalizedCountry = normalizeCountry(country);
         return teams.find((team) => {
-          const sameCountry = areCountriesClose(team.country, country);
+          const sameCountry = areCountriesClose(country, team.country);
           if (!sameCountry) return false;
           const sameOrder =
             areNamesClose(playerName, team.playerName) &&
@@ -1521,10 +1520,11 @@
       };
 
       const registerTeam = async ({ playerName, country, partnerName }) => {
-        const teams = getTeams();
-        const existing = findMatchingTeam(teams, playerName, partnerName, country);
         const activeGameCode = getActiveGameCode();
         if (!activeGameCode) return;
+        // pull the latest teams from Firestore so matching works even before onSnapshot finishes
+        const teams = await fetchTeamsOnce(activeGameCode);
+        const existing = findMatchingTeam(teams, playerName, partnerName, country);
 
         const teamId = existing?.id || getActiveTeamId() || crypto.randomUUID();
         const team = {
