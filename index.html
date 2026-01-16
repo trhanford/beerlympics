@@ -989,6 +989,8 @@
           }
           return null;
         };
+        
+        const freshTeams = teams.filter((team) => team.lastGameType !== gameTypeId);
 
         // Prefer fresh vs fresh.
         if (freshTeams.length >= 2) {
