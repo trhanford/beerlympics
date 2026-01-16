@@ -1551,27 +1551,32 @@
 
       startGameButton.addEventListener("click", async () => {
         const formData = new FormData(form);
-        const playerName = formData.get("playerName").trim();
-        const country = formData.get("country").trim();
-        const partnerName = formData.get("partnerName").trim();
+        const playerName = (formData.get("playerName") || "").trim();
+        const country = (formData.get("country") || "").trim();
+        const partnerName = (formData.get("partnerName") || "").trim();
 
         if (!playerName || !country || !partnerName) {
           saveStatus.textContent = "Fill in your name, country, and partner before starting.";
           return;
         }
 
-        let newCode = "";
+        saveStatus.textContent = "Starting game...";
         try {
-          saveStatus.textContent = "Starting a new game...";
-          newCode = await startNewGame();
+          const newCode = await startNewGame();
           saveStatus.textContent = `Game started! Share code ${newCode} with the crew.`;
+          await registerTeam({ playerName, country, partnerName });
         } catch (error) {
           console.error("Unable to create game in cloud.", error);
-          saveStatus.textContent =
-            "Firebase failed to create the game. Check console and try again.";
-          return;
+          saveStatus.textContent = `Start failed: ${error?.message || error}`;
         }
-        await registerTeam({ playerName, country, partnerName });
+      });
+
+      window.addEventListener("error", (event) => {
+        saveStatus.textContent = `JS error: ${event.message}`;
+      });
+
+      window.addEventListener("unhandledrejection", (event) => {
+        saveStatus.textContent = `Promise error: ${event.reason?.message || event.reason}`;
       });
 
       init();
