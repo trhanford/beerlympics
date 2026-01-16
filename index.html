@@ -625,6 +625,22 @@
         setActiveGameCode(code);
       };
 
+      const withTimeout = (promise, timeoutMs, message) =>
+        new Promise((resolve, reject) => {
+          const timer = setTimeout(() => {
+            reject(new Error(message));
+          }, timeoutMs);
+          promise
+            .then((value) => {
+              clearTimeout(timer);
+              resolve(value);
+            })
+            .catch((error) => {
+              clearTimeout(timer);
+              reject(error);
+            });
+        });
+
       const isAdmin = () => localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
 
       const getScopedKey = (key) => getGameStorageKey(key, getActiveGameCode());
@@ -1265,7 +1281,11 @@
         suspendCloudSync = false;
         setSavedTeamCount(0);
         clearActiveTeamId();
-        await createGameInCloud(newCode);
+        await withTimeout(
+          createGameInCloud(newCode),
+          7000,
+          "Timed out while creating the game."
+        );
         subscribeToGame(newCode);
         updateGameCodeDisplay();
         updateTabsVisibility();
@@ -1542,6 +1562,7 @@
 
         let newCode = "";
         try {
+          saveStatus.textContent = "Starting a new game...";
           newCode = await startNewGame();
           saveStatus.textContent = `Game started! Share code ${newCode} with the crew.`;
         } catch (error) {
