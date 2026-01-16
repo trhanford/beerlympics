@@ -669,12 +669,18 @@
       let unsubscribeMatches = null;
       let adminEditingTeamId = null;
 
+      const activeTeamStorageKey = (code = getActiveGameCode()) =>
+        code ? `${STORAGE_KEYS.activeTeamId}:${code}` : STORAGE_KEYS.activeTeamId;
+
       const getActiveTeamId = () =>
-        localStorage.getItem(STORAGE_KEYS.activeTeamId) || null;
+        localStorage.getItem(activeTeamStorageKey()) || null;
+      
       const setActiveTeamId = (id) =>
-        localStorage.setItem(STORAGE_KEYS.activeTeamId, id);
-      const clearActiveTeamId = () =>
-        localStorage.removeItem(STORAGE_KEYS.activeTeamId);
+        localStorage.setItem(activeTeamStorageKey(), id);
+      
+      const clearActiveTeamId = (code = getActiveGameCode()) =>
+        localStorage.removeItem(activeTeamStorageKey(code));
+
 
       const initials = (value) =>
         value
