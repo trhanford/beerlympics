@@ -1823,6 +1823,13 @@
         });
       }
 
+      async function claimHost(code) {
+        if (!code) return;
+        await updateDoc(gameRef(code), { hostId: ensureHostId() });
+        scheduleFillMatches(code);
+        showToast("Host mode claimed on this device.", "success");
+      }
+
       async function fetchGame(code) {
         const snap = await getDoc(gameRef(code));
         return snap.exists() ? snap.data() : null;
@@ -2996,6 +3003,7 @@
           "Timed out while creating the game."
         );
         subscribeToGame(newCode);
+        await claimHost(newCode);
         updateGameCodeDisplay();
         updateTabsVisibility();
         renderLeaderboard();
