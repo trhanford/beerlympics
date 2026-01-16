@@ -57,6 +57,22 @@
         border: 2px solid rgba(255, 255, 255, 0.7);
       }
 
+      body[data-view="leaderboard"] header h1 {
+        font-family: "Nunito", system-ui, -apple-system, sans-serif;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        background: #ffffff;
+        color: #101632;
+        border-radius: 18px;
+        border: 1px solid rgba(16, 22, 50, 0.12);
+        box-shadow: 0 16px 35px rgba(16, 22, 50, 0.12);
+      }
+
+      body[data-view="leaderboard"] header h1 .title-emoji {
+        display: none;
+      }
+
       header p {
         margin: 0;
         color: var(--ink-soft);
@@ -1129,6 +1145,10 @@
           display: none;
         }
 
+        body.mobile-app[data-mobile-state="playing"] .team-setup-column {
+          display: none;
+        }
+
         body.mobile-app[data-mobile-state="playing"] .mobile-play-panel {
           background: #ffffff;
           padding: 18px;
@@ -1152,7 +1172,7 @@
       </div>
     </div>
     <header>
-      <h1>Beerlympics Party HQ 🍻</h1>
+      <h1>Beerlympics Party HQ <span class="title-emoji">🍻</span></h1>
       <p>Mobile-first mission control for Saturday's legendary showdown.</p>
       <div class="mode-banner">
         <div class="mode-pill" id="mode-pill">🎈 Player Mode</div>
@@ -1221,7 +1241,7 @@
           </div>
         </div>
         <div class="split">
-          <div>
+          <div class="team-setup-column">
             <div class="section-title">
               <span>🧑‍🤝‍🧑</span>
               <h2>Team Setup</h2>
@@ -1303,6 +1323,13 @@
               <p class="status">Register to unlock your matchup.</p>
             </div>
             <div class="score-actions" id="score-actions"></div>
+            <button
+              class="btn ghost mobile-only hidden"
+              type="button"
+              id="manual-refresh"
+            >
+              Havent played in a while? Manual refresh
+            </button>
           </div>
         </div>
       </section>
@@ -1503,8 +1530,12 @@
       const mobileRegisterPanel = document.getElementById("mobile-register-panel");
       const mobileAccessPanel = document.getElementById("mobile-access-panel");
       const mobilePlayPanel = document.getElementById("mobile-play-panel");
+      const manualRefreshButton = document.getElementById("manual-refresh");
 
       const ADMIN_PASSCODE = "3241";
+
+      const MANUAL_REFRESH_DELAY_MS = 2 * 60 * 1000;
+      let manualRefreshTimeout;
 
       const normalizeGameCode = (value) => value.trim().replace(/\s+/g, "");
       const generateGameCode = () =>
@@ -1584,6 +1615,18 @@
         return accessReady ? "access" : "register";
       };
 
+      const scheduleManualRefreshPrompt = (state) => {
+        if (!manualRefreshButton) return;
+        manualRefreshButton.classList.add("hidden");
+        if (manualRefreshTimeout) {
+          clearTimeout(manualRefreshTimeout);
+        }
+        if (state !== "playing") return;
+        manualRefreshTimeout = setTimeout(() => {
+          manualRefreshButton.classList.remove("hidden");
+        }, MANUAL_REFRESH_DELAY_MS);
+      };
+
       const updateMobileState = (forcedState) => {
         const isMobile = isMobileLayout();
         document.body.classList.toggle("mobile-app", isMobile);
@@ -1593,6 +1636,7 @@
         }
         const nextState = forcedState || computeMobileState();
         setMobileState(nextState);
+        scheduleManualRefreshPrompt(nextState);
       };
 
       const runMobileWelcome = () => {
@@ -2707,7 +2751,7 @@
           const powerupsRemaining = activeTeam.powerupsRemaining ?? 0;
           powerupStatus.className = `powerups${match.doubleDown?.[activeTeamId] ? " active" : ""}`;
           powerupStatus.innerHTML = `
-            <span>Powerups</span>
+            <span>Powerups remaining:</span>
             <span class="charges">${"⚡".repeat(Math.max(powerupsRemaining, 0)) || "—"}</span>
           `;
           scoreActions.appendChild(powerupStatus);
@@ -2717,7 +2761,7 @@
           const isDoubleDown = Boolean(match.doubleDown?.[activeTeamId]);
           doubleDownButton.textContent = isDoubleDown
             ? "Double Down active 💥"
-            : "Use Double Down 💥";
+            : "Use Double Points Powerup 💥";
           doubleDownButton.disabled = activeTeam.powerupsRemaining <= 0 && !isDoubleDown;
           doubleDownButton.addEventListener("click", () => {
             void toggleDoubleDown(activeTeamId, match.id);
@@ -2887,8 +2931,8 @@
               const points = calculatePoints(team.id, isWinner, match);
               const shouldCharge = match.doubleDown?.[team.id] && !doubleDownCharged[team.id];
               const powerupsRemaining = shouldCharge
-                ? Math.max((team.powerupsRemaining ?? 2) - 1, 0)
-                : team.powerupsRemaining ?? 2;
+                ? Math.max((team.powerupsRemaining ?? 3) - 1, 0)
+                : team.powerupsRemaining ?? 3;
               if (shouldCharge) {
                 doubleDownCharged[team.id] = true;
               }
@@ -2936,8 +2980,8 @@
             const points = calculatePoints(team.id, isWinner, match);
             const shouldCharge = match.doubleDown?.[team.id] && !doubleDownCharged[team.id];
             const powerupsRemaining = shouldCharge
-              ? Math.max((team.powerupsRemaining ?? 2) - 1, 0)
-              : team.powerupsRemaining ?? 2;
+              ? Math.max((team.powerupsRemaining ?? 3) - 1, 0)
+              : team.powerupsRemaining ?? 3;
             if (shouldCharge) {
               doubleDownCharged[team.id] = true;
             }
@@ -3072,7 +3116,7 @@
           wins: existing?.wins || 0,
           losses: existing?.losses || 0,
           points: existing?.points || 0,
-          powerupsRemaining: existing?.powerupsRemaining ?? 2,
+          powerupsRemaining: existing?.powerupsRemaining ?? 3,
           currentMatchId: existing?.currentMatchId || null,
           lastOpponents: existing?.lastOpponents || [],
           lastGameType: existing?.lastGameType || null,
@@ -3167,6 +3211,13 @@
           } else {
             updateMobileState("access");
           }
+        });
+      }
+
+      if (manualRefreshButton) {
+        manualRefreshButton.addEventListener("click", () => {
+          refreshState();
+          showToast("Refreshing the latest matchup...", "info");
         });
       }
 
@@ -3305,8 +3356,8 @@
               losses: (target.losses || 0) + (source.losses || 0),
               points: (target.points || 0) + (source.points || 0),
               powerupsRemaining: Math.max(
-                target.powerupsRemaining ?? 2,
-                source.powerupsRemaining ?? 2
+                target.powerupsRemaining ?? 3,
+                source.powerupsRemaining ?? 3
               ),
               lastOpponents: mergedLastOpponents,
               lastGameType: target.lastGameType || source.lastGameType || null,
