@@ -1515,14 +1515,9 @@
         window.matchMedia ? window.matchMedia("(max-width: 767px)").matches : false;
 
       const setMobileState = (state) => {
+        // IMPORTANT: never remove panels from the DOM.
+        // Removing causes the Step 1 form to disappear until a full refresh.
         document.body.dataset.mobileState = state;
-        if (state === "access") {
-          mobileRegisterPanel?.remove();
-        }
-        if (state === "playing") {
-          mobileRegisterPanel?.remove();
-          mobileAccessPanel?.remove();
-        }
       };
 
       const computeMobileState = () => {
@@ -1821,13 +1816,6 @@
           },
           hostId,
         });
-      }
-
-      async function claimHost(code) {
-        if (!code) return;
-        await updateDoc(gameRef(code), { hostId: ensureHostId() });
-        scheduleFillMatches(code);
-        showToast("Host mode claimed on this device.", "success");
       }
 
       async function fetchGame(code) {
@@ -3003,7 +2991,6 @@
           "Timed out while creating the game."
         );
         subscribeToGame(newCode);
-        await claimHost(newCode);
         updateGameCodeDisplay();
         updateTabsVisibility();
         renderLeaderboard();
@@ -3016,8 +3003,17 @@
       const registerTeam = async ({ playerName, country, partnerName }) => {
         const activeGameCode = getActiveGameCode();
         if (!activeGameCode) return;
-        // pull the latest teams from Firestore so matching works even before onSnapshot finishes
-        const teams = await fetchTeamsOnce(activeGameCode);
+
+        // Pull the latest teams from Firestore so matching works even before onSnapshot finishes.
+        // On some mobile networks/browsers, getDocs can fail intermittently; don't let that kill join.
+        let teams = [];
+        try {
+          teams = await withTimeout(fetchTeamsOnce(activeGameCode), 7000, "Timed out loading teams.");
+        } catch (error) {
+          console.warn("Unable to fetch teams list; falling back to local snapshot.", error);
+          teams = getTeams ? getTeams() : [];
+        }
+
         const existing = findMatchingTeam(teams, playerName, partnerName, country);
 
         const teamId = existing?.id || getActiveTeamId() || crypto.randomUUID();
@@ -3070,6 +3066,7 @@
           showToast("Fill in team info and the game code first.", "warning");
           return;
         }
+
         const formData = new FormData(form);
         const playerName = formData.get("playerName").trim();
         const country = formData.get("country").trim();
@@ -3084,19 +3081,32 @@
         }
 
         setButtonLoading(joinGameButton, true, "Joining...");
-        const game = await fetchGame(submittedCode);
-        if (!game) {
-          saveStatus.textContent =
-            "No game found for that code. Ask the host to start one.";
-          showToast("No game found for that code.", "warning");
-          setButtonLoading(joinGameButton, false);
-          return;
-        }
+        try {
+          const game = await withTimeout(fetchGame(submittedCode), 7000, "Timed out joining the game.");
+          if (!game) {
+            saveStatus.textContent =
+              "No game found for that code. Ask the host to start one.";
+            showToast("No game found for that code.", "warning");
+            return;
+          }
 
-        setGameCodes(submittedCode);
-        subscribeToGame(submittedCode);
-        await registerTeam({ playerName, country, partnerName });
-        setButtonLoading(joinGameButton, false);
+          setGameCodes(submittedCode);
+          subscribeToGame(submittedCode);
+          await registerTeam({ playerName, country, partnerName });
+        } catch (error) {
+          console.error("Join failed.", error);
+          const message = error?.message || String(error);
+          // Surface permission issues explicitly (these look like "network hiccup" otherwise).
+          if (/permission|insufficient permissions/i.test(message)) {
+            showToast("Join blocked by Firestore rules (permissions).", "warning");
+            saveStatus.textContent = `Join blocked: ${message}`;
+          } else {
+            showToast("Could not join right now. Try again.", "warning");
+            saveStatus.textContent = `Join failed: ${message}`;
+          }
+        } finally {
+          setButtonLoading(joinGameButton, false);
+        }
       });
 
       if (mobileContinueButton) {
@@ -3105,10 +3115,8 @@
           sessionStorage.setItem(MOBILE_STORAGE_KEYS.accessReady, "true");
           if (mobileRegisterPanel) {
             mobileRegisterPanel.classList.add("is-exiting");
-            setTimeout(() => {
-              mobileRegisterPanel?.remove();
-              updateMobileState("access");
-            }, 280);
+            // Allow the exit animation, then just change state (do NOT remove the panel).
+            setTimeout(() => updateMobileState("access"), 280);
           } else {
             updateMobileState("access");
           }
