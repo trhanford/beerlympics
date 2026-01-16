@@ -878,21 +878,23 @@
         }
       }
 
-      async function closeMatchForRemoval(code, match) {
+      async function closeMatchForRemoval(code, match, removedTeamId = null) {
         await runTransaction(db, async (transaction) => {
           const matchRef = doc(matchesCollection(code), match.id);
           const matchSnap = await transaction.get(matchRef);
           if (!matchSnap.exists()) return;
           const matchData = matchSnap.data();
           const teamIds = matchData.teamIds || [];
-          teamIds.forEach((teamId) => {
-            transaction.update(doc(teamsCollection(code), teamId), {
-              currentMatchId: null,
+          teamIds
+            .filter((teamId) => teamId && teamId !== removedTeamId)
+            .forEach((teamId) => {
+              transaction.update(doc(teamsCollection(code), teamId), {
+                currentMatchId: null,
+              });
             });
-          });
           transaction.update(matchRef, {
             status: "complete",
-            result: { abandoned: true },
+            result: { abandoned: true, removedTeamId },
             completedAt: serverTimestamp(),
           });
         });
@@ -1419,9 +1421,10 @@
           return;
         }
 
-        const opponents = match.teamIds
+        const opponents = (match.teamIds || [])
           .filter((id) => id !== activeTeamId)
-          .map((id) => teams.find((team) => team.id === id));
+          .map((id) => teams.find((team) => team.id === id))
+          .filter(Boolean);
 
         const gameType = GAME_TYPES.find((entry) => entry.id === match.gameType);
 
@@ -1429,16 +1432,20 @@
           <h3>${gameType?.name || match.gameType}</h3>
           <p class="status">Match ID: ${match.id}</p>
           <div class="opponents">
-            ${opponents
-              .map(
-                (team) => `
-                <div class="opponent-pill">
-                  <span>${team.playerName} + ${team.partnerName}</span>
-                  <span class="flag">${initials(team.country)}</span>
-                </div>
-              `
-              )
-              .join("")}
+            ${
+              opponents.length
+                ? opponents
+                    .map(
+                      (team) => `
+                    <div class="opponent-pill">
+                      <span>${team.playerName} + ${team.partnerName}</span>
+                      <span class="flag">${initials(team.country)}</span>
+                    </div>
+                  `
+                    )
+                    .join("")
+                : `<p class="status">Opponent team was removed. Waiting for a new matchup…</p>`
+            }
           </div>
         `;
 
@@ -1855,18 +1862,18 @@
         if (!targetTeamId) return;
         if (!confirm("Remove your team from the roster and schedule?")) return;
         const activeGameCode = getActiveGameCode();
+        const impactedMatches = getMatches().filter((match) =>
+          match.teamIds?.includes(targetTeamId)
+        );
         if (activeGameCode) {
+          for (const match of impactedMatches) {
+            await closeMatchForRemoval(activeGameCode, match, targetTeamId);
+          }
           try {
             await deleteTeamFromCloud(activeGameCode, targetTeamId);
           } catch (error) {
             console.error("Unable to remove team from cloud.", error);
           }
-        }
-        const impactedMatches = getMatches().filter((match) =>
-          match.teamIds?.includes(targetTeamId)
-        );
-        for (const match of impactedMatches) {
-          await closeMatchForRemoval(activeGameCode, match);
         }
         if (!isAdmin || targetTeamId === activeTeamId) {
           clearActiveTeamId();
