@@ -24,6 +24,7 @@
         --card: #ffffff;
         --shadow: 0 20px 50px rgba(19, 34, 68, 0.12);
         --radius: 24px;
+        --leaderboard-flag-url: none;
       }
 
       * {
@@ -39,14 +40,21 @@
       }
 
       header {
-        padding: 28px 20px 12px;
+        padding: 24px 20px 12px;
         text-align: center;
       }
 
       header h1 {
         font-family: "Baloo 2", cursive;
-        font-size: 2.2rem;
-        margin: 0 0 8px;
+        font-size: clamp(2.8rem, 6vw, 4.6rem);
+        margin: 0 auto 12px;
+        padding: 18px 20px;
+        border-radius: 999px;
+        width: min(100%, 880px);
+        color: #0e1438;
+        background: linear-gradient(120deg, #ffe177 0%, #ffd1f1 45%, #c9e7ff 100%);
+        box-shadow: 0 18px 45px rgba(20, 26, 66, 0.18);
+        border: 2px solid rgba(255, 255, 255, 0.7);
       }
 
       header p {
@@ -423,9 +431,30 @@
         margin-bottom: 16px;
         background: linear-gradient(
           135deg,
-          rgba(var(--leaderboard-accent-rgb, 91, 108, 255), 0.18),
-          rgba(var(--leaderboard-secondary-rgb, 255, 122, 178), 0.12)
+          rgba(var(--leaderboard-accent-rgb, 91, 108, 255), 0.42),
+          rgba(var(--leaderboard-secondary-rgb, 255, 122, 178), 0.32)
         );
+        border: 2px solid rgba(var(--leaderboard-accent-rgb, 91, 108, 255), 0.35);
+        box-shadow: 0 14px 30px rgba(25, 30, 78, 0.18);
+        overflow: hidden;
+      }
+
+      .leaderboard-heading::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: var(--leaderboard-flag-url);
+        background-size: cover;
+        background-position: center;
+        filter: blur(14px) saturate(1.2);
+        opacity: 0.35;
+        transform: scale(1.1);
+        pointer-events: none;
+      }
+
+      .leaderboard-heading > * {
+        position: relative;
+        z-index: 1;
       }
 
       .leaderboard-split {
@@ -798,6 +827,10 @@
 
       .desktop-only {
         display: block;
+      }
+
+      body[data-view="leaderboard"] .hero {
+        display: none;
       }
 
       .mobile-welcome-screen {
@@ -2331,10 +2364,18 @@
         const root = document.documentElement;
         root.style.setProperty("--leaderboard-accent-rgb", rgbToCss(colors.primary));
         root.style.setProperty("--leaderboard-secondary-rgb", rgbToCss(colors.secondary));
+        root.style.setProperty(
+          "--leaderboard-flag-url",
+          iso2 ? `url("https://flagcdn.com/w320/${iso2}.png")` : "none"
+        );
         leaderboardSection.style.setProperty("--leaderboard-accent-rgb", rgbToCss(colors.primary));
         leaderboardSection.style.setProperty(
           "--leaderboard-secondary-rgb",
           rgbToCss(colors.secondary)
+        );
+        leaderboardSection.style.setProperty(
+          "--leaderboard-flag-url",
+          iso2 ? `url("https://flagcdn.com/w320/${iso2}.png")` : "none"
         );
         leaderboardTab?.classList.add("leaderboard-accent");
       };
@@ -2413,6 +2454,8 @@
             "--leaderboard-secondary-rgb",
             rgbToCss(DEFAULT_LEADERBOARD_COLORS.secondary)
           );
+          leaderboardSection.style.setProperty("--leaderboard-flag-url", "none");
+          root.style.setProperty("--leaderboard-flag-url", "none");
           leaderboardTab?.classList.add("leaderboard-accent");
           return;
         }
@@ -2954,6 +2997,7 @@
           roster: rosterSection,
           control: controlSection,
         };
+        document.body.dataset.view = view;
         Object.entries(sections).forEach(([key, section]) => {
           section.classList.toggle("hidden", key !== view);
         });
