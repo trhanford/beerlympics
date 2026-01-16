@@ -854,7 +854,7 @@
         inset: 0;
         display: grid;
         place-items: center;
-        background: radial-gradient(circle at top, #ffffff 0%, #fff0c9 40%, #ffd7f1 100%);
+        background: transparent;
         z-index: 300;
         opacity: 0;
         pointer-events: none;
@@ -870,6 +870,9 @@
         box-shadow: 0 24px 60px rgba(36, 33, 84, 0.2);
         font-family: "Baloo 2", cursive;
         max-width: 320px;
+        transform: translateY(24px);
+        opacity: 0;
+        animation: welcomeSlideUp 520ms ease-out forwards;
       }
 
       .mobile-welcome-card h1 {
@@ -891,8 +894,31 @@
         opacity: 1;
         pointer-events: auto;
         transform: scale(1);
+        background: radial-gradient(circle at top, #ffffff 0%, #fff0c9 40%, #ffd7f1 100%);
       }
 
+      @keyframes welcomeSlideUp {
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .welcome-continue {
+        opacity: 0;
+        transform: translateY(10px);
+        animation: welcomeBtnIn 420ms ease-out forwards;
+        animation-delay: 420ms;
+        margin-top: 18px;
+        width: 100%;
+      }
+
+      @keyframes welcomeBtnIn {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
       .mobile-dock {
         display: flex;
         align-items: center;
@@ -1017,6 +1043,10 @@
 
       @media (max-width: 767px) {
         body.mobile-app {
+          background: var(--bg);
+        }
+
+        body.mobile-app[data-mobile-state="welcome"] {
           background: radial-gradient(circle at top, #ffffff 0%, #f7f0ff 45%, #d9f2ff 100%);
         }
 
@@ -1030,6 +1060,15 @@
 
         body.mobile-app .mobile-only {
           display: block;
+        }
+
+        body.mobile-app .mobile-welcome-screen {
+          padding: 24px;
+        }
+
+        body.mobile-app .mobile-welcome-card {
+          width: min(90vw, 360px);
+          margin: 0 auto;
         }
 
         body.mobile-app main {
@@ -1169,6 +1208,9 @@
         <div class="mobile-welcome-logo">🏅</div>
         <h1>Welcome to the 2026 Annual Beerlympics!</h1>
         <p>Warm up those throwing arms—games are about to begin.</p>
+        <button id="welcomeContinueBtn" class="btn primary welcome-continue" type="button">
+          Continue
+        </button>
       </div>
     </div>
     <header>
@@ -1527,6 +1569,7 @@
       const mobileWelcome = document.getElementById("mobile-welcome");
       const mobileDock = document.getElementById("mobile-dock");
       const mobileContinueButton = document.getElementById("mobile-continue");
+      const welcomeContinueButton = document.getElementById("welcomeContinueBtn");
       const mobileRegisterPanel = document.getElementById("mobile-register-panel");
       const mobileAccessPanel = document.getElementById("mobile-access-panel");
       const mobilePlayPanel = document.getElementById("mobile-play-panel");
@@ -1649,10 +1692,6 @@
         }
         document.body.classList.add("mobile-app");
         setMobileState("welcome");
-        sessionStorage.setItem(MOBILE_STORAGE_KEYS.welcomeSeen, "true");
-        setTimeout(() => {
-          updateMobileState();
-        }, 1500);
       };
 
       const triggerConfetti = () => {
@@ -3211,6 +3250,13 @@
           } else {
             updateMobileState("access");
           }
+        });
+      }
+
+      if (welcomeContinueButton) {
+        welcomeContinueButton.addEventListener("click", () => {
+          sessionStorage.setItem(MOBILE_STORAGE_KEYS.welcomeSeen, "true");
+          updateMobileState("register");
         });
       }
 
