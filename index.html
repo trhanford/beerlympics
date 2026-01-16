@@ -543,7 +543,11 @@
         setDoc,
         updateDoc,
         onSnapshot,
-        deleteField,
+        deleteDoc,
+        collection,
+        serverTimestamp,
+        runTransaction,
+        writeBatch,
       } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -559,22 +563,20 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
 
-      const GAMES = [
-        { name: "Beer Pong", teams: 2 },
-        { name: "Flip Cup", teams: 4 },
-        { name: "Beerio Kart", teams: 2 },
-        { name: "Die", teams: 2 },
-        { name: "Drinkball", teams: 2 },
+      const GAME_TYPES = [
+        { id: "beer_pong", name: "Beer Pong", teams: 2 },
+        { id: "flip_cup", name: "Flip Cup", teams: 4 },
+        { id: "beerio_kart", name: "Beerio Kart", teams: 2 },
+        { id: "die", name: "Die", teams: 2 },
+        { id: "drinkball", name: "Drinkball", teams: 2 },
       ];
 
       const STORAGE_KEYS = {
-        teams: "beerlympics_teams",
-        matches: "beerlympics_matches",
         activeTeamId: "beerlympics_active_team",
-        teamCount: "beerlympics_team_count",
         adminMode: "beerlympics_admin_mode",
         activeGameCode: "beerlympics_active_game_code",
         currentGameCode: "beerlympics_current_game_code",
+        hostId: "beerlympics_host_id",
       };
 
       const form = document.getElementById("team-form");
@@ -611,7 +613,6 @@
       const normalizeGameCode = (value) => value.trim().replace(/\s+/g, "");
       const generateGameCode = () =>
         String(Math.floor(1000 + Math.random() * 9000));
-      const getGameStorageKey = (key, gameCode) => `${key}_${gameCode}`;
 
       const getCurrentGameCode = () => localStorage.getItem(STORAGE_KEYS.currentGameCode);
       const getActiveGameCode = () => localStorage.getItem(STORAGE_KEYS.activeGameCode);
@@ -644,57 +645,36 @@
 
       const isAdmin = () => localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
 
-      const getScopedKey = (key) => getGameStorageKey(key, getActiveGameCode());
-      const getTeams = () => {
-        if (Array.isArray(window.__TEAMS__)) {
-          return window.__TEAMS__;
+      const ensureHostId = () => {
+        let hostId = localStorage.getItem(STORAGE_KEYS.hostId);
+        if (!hostId) {
+          hostId = crypto.randomUUID();
+          localStorage.setItem(STORAGE_KEYS.hostId, hostId);
         }
-        return JSON.parse(localStorage.getItem(getScopedKey(STORAGE_KEYS.teams)) || "[]");
-      };
-      const getMatches = () => {
-        if (Array.isArray(window.__MATCHES__)) {
-          return window.__MATCHES__;
-        }
-        return JSON.parse(localStorage.getItem(getScopedKey(STORAGE_KEYS.matches)) || "[]");
+        return hostId;
       };
 
-      let suspendCloudSync = false;
-
-      const saveTeams = (teams) => {
-        window.__TEAMS__ = teams;
-        localStorage.setItem(getScopedKey(STORAGE_KEYS.teams), JSON.stringify(teams));
-      };
-      const saveMatches = (matches) => {
-        window.__MATCHES__ = matches;
-        localStorage.setItem(getScopedKey(STORAGE_KEYS.matches), JSON.stringify(matches));
-        const activeGameCode = getActiveGameCode();
-        if (activeGameCode && !suspendCloudSync) {
-          void saveMatchesToCloud(activeGameCode, matches);
-        }
+      const state = {
+        game: null,
+        teams: [],
+        matches: [],
       };
 
-      const getActiveTeamId = () =>
-        localStorage.getItem(getScopedKey(STORAGE_KEYS.activeTeamId));
-      const setActiveTeamId = (id) =>
-        localStorage.setItem(getScopedKey(STORAGE_KEYS.activeTeamId), id);
-      const clearActiveTeamId = () =>
-        localStorage.removeItem(getScopedKey(STORAGE_KEYS.activeTeamId));
+      const getTeams = () => state.teams;
+      const getMatches = () => state.matches;
+      const getGame = () => state.game;
 
-      const getSavedTeamCount = () =>
-        Number(localStorage.getItem(getScopedKey(STORAGE_KEYS.teamCount)) || 0);
-      const setSavedTeamCount = (count) =>
-        localStorage.setItem(getScopedKey(STORAGE_KEYS.teamCount), String(count));
-
+      let unsubscribeGame = null;
+      let unsubscribeTeams = null;
+      let unsubscribeMatches = null;
       let adminEditingTeamId = null;
 
-      const shuffle = (array) => {
-        const copy = [...array];
-        for (let i = copy.length - 1; i > 0; i -= 1) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [copy[i], copy[j]] = [copy[j], copy[i]];
-        }
-        return copy;
-      };
+      const getActiveTeamId = () =>
+        localStorage.getItem(STORAGE_KEYS.activeTeamId) || null;
+      const setActiveTeamId = (id) =>
+        localStorage.setItem(STORAGE_KEYS.activeTeamId, id);
+      const clearActiveTeamId = () =>
+        localStorage.removeItem(STORAGE_KEYS.activeTeamId);
 
       const initials = (value) =>
         value
@@ -708,81 +688,111 @@
       const normalizeName = (value) => normalizeText(value).replace(/[^a-z0-9]/g, "");
       const normalizeCountry = (value) => normalizeText(value).replace(/[^a-z]/g, "");
 
-      const refFor = (code) => doc(db, "games", code);
+      const gameRef = (code) => doc(db, "games", code);
+      const teamsCollection = (code) => collection(db, "games", code, "teams");
+      const matchesCollection = (code) => collection(db, "games", code, "matches");
 
-      async function ensureGameDoc(code) {
-        const snap = await getDoc(refFor(code));
-        if (snap.exists()) return;
-        await setDoc(refFor(code), {
+      async function createGame(code) {
+        const hostId = ensureHostId();
+        await setDoc(gameRef(code), {
           started: true,
-          teams: {},
-          matches: [],
-        });
-      }
-
-      async function saveMatchesToCloud(code, matches) {
-        await ensureGameDoc(code);
-        await setDoc(
-          refFor(code),
-          {
-            matches,
+          createdAt: serverTimestamp(),
+          settings: {
+            doubleDownFlipCupMode: "all_rounds",
           },
-          { merge: true }
-        );
-      }
-
-      async function createGameInCloud(code) {
-        await setDoc(refFor(code), {
-          started: true,
-          teams: {},
-          matches: [],
+          hostId,
         });
       }
 
       async function fetchGame(code) {
-        const snap = await getDoc(refFor(code));
+        const snap = await getDoc(gameRef(code));
         return snap.exists() ? snap.data() : null;
       }
 
-      async function upsertTeamToCloud(code, team) {
-        await ensureGameDoc(code);
-        await updateDoc(refFor(code), {
-          [`teams.${team.id}`]: team,
-        });
+      function isHost() {
+        const game = getGame();
+        if (!game) return false;
+        return game.hostId === ensureHostId();
       }
-
-      async function clearTeamsInCloud(code) {
-        await ensureGameDoc(code);
-        await setDoc(
-          refFor(code),
-          {
-            teams: {},
-          },
-          { merge: true }
-        );
-      }
-
-      let unsubscribeGame = null;
 
       function subscribeToGame(code) {
-        if (unsubscribeGame) {
-          unsubscribeGame();
-        }
-        unsubscribeGame = onSnapshot(refFor(code), (snap) => {
-          if (!snap.exists()) return;
-          const data = snap.data();
-          // Store shared state in memory:
-          window.__TEAMS__ = Object.values(data.teams || {});
-          window.__MATCHES__ = data.matches || [];
+        if (unsubscribeGame) unsubscribeGame();
+        if (unsubscribeTeams) unsubscribeTeams();
+        if (unsubscribeMatches) unsubscribeMatches();
 
-          // Then render using those arrays (we'll swap next):
+        unsubscribeGame = onSnapshot(gameRef(code), (snap) => {
+          state.game = snap.exists() ? { id: snap.id, ...snap.data() } : null;
           renderLeaderboard();
           renderRoster();
           renderMatch();
           updateGameCodeDisplay();
           updateTabsVisibility();
         });
-        return unsubscribeGame;
+
+        unsubscribeTeams = onSnapshot(teamsCollection(code), (snap) => {
+          state.teams = snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+          renderLeaderboard();
+          renderRoster();
+          renderMatch();
+        });
+
+        unsubscribeMatches = onSnapshot(matchesCollection(code), (snap) => {
+          state.matches = snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+          renderLeaderboard();
+          renderMatch();
+        });
+      }
+
+      async function clearTeamsInCloud(code) {
+        const batch = writeBatch(db);
+        getTeams().forEach((team) => {
+          batch.delete(doc(teamsCollection(code), team.id));
+        });
+        getMatches().forEach((match) => {
+          batch.delete(doc(matchesCollection(code), match.id));
+        });
+        await batch.commit();
+      }
+
+      async function clearMatchResults() {
+        const activeGameCode = getActiveGameCode();
+        if (!activeGameCode) return;
+        const batch = writeBatch(db);
+        getMatches().forEach((match) => {
+          batch.update(doc(matchesCollection(activeGameCode), match.id), {
+            status: "pending",
+            result: null,
+            doubleDown: {},
+            doubleDownCharged: {},
+          });
+        });
+        getTeams().forEach((team) => {
+          batch.update(doc(teamsCollection(activeGameCode), team.id), { currentMatchId: null });
+        });
+        await batch.commit();
+        if (isHost()) {
+          await fillMatches(activeGameCode);
+        }
+      }
+
+      async function closeMatchForRemoval(code, match) {
+        await runTransaction(db, async (transaction) => {
+          const matchRef = doc(matchesCollection(code), match.id);
+          const matchSnap = await transaction.get(matchRef);
+          if (!matchSnap.exists()) return;
+          const matchData = matchSnap.data();
+          const teamIds = matchData.teamIds || [];
+          teamIds.forEach((teamId) => {
+            transaction.update(doc(teamsCollection(code), teamId), {
+              currentMatchId: null,
+            });
+          });
+          transaction.update(matchRef, {
+            status: "complete",
+            result: { abandoned: true },
+            completedAt: serverTimestamp(),
+          });
+        });
       }
 
       const levenshtein = (a, b) => {
@@ -806,10 +816,7 @@
       };
 
       async function deleteTeamFromCloud(code, teamId) {
-        await ensureGameDoc(code);
-        await updateDoc(refFor(code), {
-          [`teams.${teamId}`]: deleteField(),
-        });
+        await deleteDoc(doc(teamsCollection(code), teamId));
       }
 
       const areNamesClose = (a, b) => {
@@ -837,84 +844,137 @@
         });
       };
 
-      const buildSchedule = (teams) => {
-        const shuffled = shuffle(teams);
-        const matches = [];
+      const hasRecentOpponent = (team, opponentId) =>
+        (team.lastOpponents || []).includes(opponentId);
 
-        GAMES.forEach((game, gameIndex) => {
-          const groupSize = game.teams;
-          const pool = shuffle(shuffled);
-          for (let i = 0; i < pool.length; i += groupSize) {
-            const slice = pool.slice(i, i + groupSize);
-            if (slice.length === groupSize) {
-              matches.push({
-                id: `${gameIndex}-${i}-${Date.now()}`,
-                game: game.name,
-                teamIds: slice.map((team) => team.id),
-                winnerId: null,
-                reported: [],
-                inProgress: false,
-                startedAt: null,
-              });
-            }
-          }
+      const sortTeamsForMatch = (teams) =>
+        [...teams].sort((a, b) => {
+          if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
+          if ((b.points || 0) !== (a.points || 0)) return (b.points || 0) - (a.points || 0);
+          return (a.losses || 0) - (b.losses || 0);
         });
-        return matches;
-      };
 
-      const ensureSchedule = (teams) => {
-        if (!isAdmin()) return getMatches();
-        const matches = getMatches();
-        const hasResults = matches.some((match) => match.winnerId);
-        const savedCount = getSavedTeamCount();
-        if (!matches.length || (!hasResults && teams.length !== savedCount)) {
-          const newMatches = buildSchedule(teams);
-          saveMatches(newMatches);
-          setSavedTeamCount(teams.length);
-          return newMatches;
+      const pickPair = (teams, gameTypeId) => {
+        const preferred = teams.filter((team) => team.lastGameType !== gameTypeId);
+        const pool = preferred.length >= 2 ? preferred : teams;
+        for (const team of pool) {
+          const opponents = pool.filter((candidate) => candidate.id !== team.id);
+          let opponent = opponents.find(
+            (candidate) =>
+              !hasRecentOpponent(team, candidate.id) &&
+              !hasRecentOpponent(candidate, team.id) &&
+              candidate.lastGameType !== gameTypeId
+          );
+          if (!opponent) {
+            opponent = opponents.find(
+              (candidate) =>
+                !hasRecentOpponent(team, candidate.id) &&
+                !hasRecentOpponent(candidate, team.id)
+            );
+          }
+          if (!opponent && opponents.length > 0) {
+            opponent = opponents[0];
+          }
+          if (opponent) return [team, opponent];
         }
-        return matches;
+        return null;
       };
 
-      const computeStandings = (teams, matches) => {
-        const base = teams.map((team) => ({
-          ...team,
-          wins: 0,
-          losses: 0,
-          points: 0,
-        }));
-
-        matches.forEach((match) => {
-          if (!match.winnerId) return;
-          const winner = base.find((team) => team.id === match.winnerId);
-          if (winner) {
-            winner.wins += 1;
-            winner.points += 2;
+      const pickFlipCupGroup = (teams) => {
+        const preferred = teams.filter((team) => team.lastGameType !== "flip_cup");
+        const pool = preferred.length >= 4 ? preferred : teams;
+        const group = [];
+        for (const team of pool) {
+          if (
+            group.every(
+              (existing) =>
+                !hasRecentOpponent(team, existing.id) &&
+                !hasRecentOpponent(existing, team.id)
+            )
+          ) {
+            group.push(team);
           }
-          match.teamIds
-            .filter((id) => id !== match.winnerId)
-            .forEach((loserId) => {
-              const loser = base.find((team) => team.id === loserId);
-              if (loser) {
-                loser.losses += 1;
-              }
-            });
-        });
-
-        base.forEach((team) => {
-          if (Number.isFinite(team.pointsOverride)) {
-            team.points = team.pointsOverride;
+          if (group.length === 4) break;
+        }
+        if (group.length < 4) {
+          for (const team of pool) {
+            if (!group.find((entry) => entry.id === team.id)) {
+              group.push(team);
+            }
+            if (group.length === 4) break;
           }
-        });
-
-        return base.sort((a, b) => b.points - a.points || b.wins - a.wins);
+        }
+        return group.length === 4 ? group : null;
       };
+
+      async function createMatchForTeams(code, gameTypeId, teams) {
+        const matchRef = doc(matchesCollection(code));
+        const matchId = matchRef.id;
+        await runTransaction(db, async (transaction) => {
+          const teamRefs = teams.map((team) => doc(teamsCollection(code), team.id));
+          const teamSnaps = await Promise.all(teamRefs.map((ref) => transaction.get(ref)));
+          if (teamSnaps.some((snap) => !snap.exists())) return;
+          if (teamSnaps.some((snap) => snap.data().currentMatchId)) return;
+          transaction.set(matchRef, {
+            id: matchId,
+            gameType: gameTypeId,
+            status: "in_progress",
+            teamIds: teams.map((team) => team.id),
+            createdAt: serverTimestamp(),
+            doubleDown: {},
+            doubleDownCharged: {},
+            result: null,
+          });
+          teamRefs.forEach((teamRef) => {
+            transaction.update(teamRef, { currentMatchId: matchId });
+          });
+        });
+      }
+
+      async function fillMatches(gameCode) {
+        if (!isHost()) return;
+        const activeMatches = getMatches();
+        const activeByType = new Set(
+          activeMatches
+            .filter((match) => match.status === "in_progress")
+            .map((match) => match.gameType)
+        );
+        let availableTeams = sortTeamsForMatch(
+          getTeams().filter((team) => !team.currentMatchId)
+        );
+
+        for (const gameType of GAME_TYPES) {
+          if (activeByType.has(gameType.id)) continue;
+          if (availableTeams.length < gameType.teams) continue;
+          if (gameType.teams === 4) {
+            const group = pickFlipCupGroup(availableTeams);
+            if (!group) continue;
+            await createMatchForTeams(gameCode, gameType.id, group);
+            availableTeams = availableTeams.filter(
+              (team) => !group.find((member) => member.id === team.id)
+            );
+            continue;
+          }
+          const pair = pickPair(availableTeams, gameType.id);
+          if (!pair) continue;
+          await createMatchForTeams(gameCode, gameType.id, pair);
+          availableTeams = availableTeams.filter(
+            (team) => !pair.find((member) => member.id === team.id)
+          );
+        }
+      }
+
+      const computeStandings = (teams) =>
+        [...teams].sort((a, b) => {
+          if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
+          if ((b.points || 0) !== (a.points || 0)) return (b.points || 0) - (a.points || 0);
+          return (a.losses || 0) - (b.losses || 0);
+        });
 
       const renderLeaderboard = () => {
         const teams = getTeams();
-        const matches = getMatches();
-        const standings = computeStandings(teams, matches);
-        const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
+        const standings = computeStandings(teams);
+        const isAdminMode = isAdmin();
 
         leaderboardEl.innerHTML = "";
 
@@ -926,7 +986,7 @@
 
         standings.forEach((team, index) => {
           const card = document.createElement("div");
-          card.className = `leaderboard-card${isAdmin ? " admin" : ""}`;
+          card.className = `leaderboard-card${isAdminMode ? " admin" : ""}`;
           card.innerHTML = `
             <div class="team-row">
               <span class="rank">#${index + 1}</span>
@@ -939,61 +999,48 @@
               </div>
             </div>
             <div class="team-row">
-              <span class="stat-pill">${team.points} pts</span>
-              <span class="stat-pill">${team.wins} W</span>
-              <span class="stat-pill">${team.losses} L</span>
+              <span class="stat-pill">${team.points || 0} pts</span>
+              <span class="stat-pill">${team.wins || 0} W</span>
+              <span class="stat-pill">${team.losses || 0} L</span>
             </div>
           `;
-          if (isAdmin) {
+          if (isAdminMode) {
             const editWrap = document.createElement("div");
             editWrap.className = "leaderboard-edit";
             const input = document.createElement("input");
             input.type = "number";
             input.className = "small";
-            input.value = Number.isFinite(team.pointsOverride)
-              ? team.pointsOverride
-              : team.points;
+            input.value = team.points || 0;
             input.addEventListener("change", async () => {
               const nextValue = Number(input.value);
-              const updatedTeams = getTeams().map((entry) =>
-                entry.id === team.id
-                  ? {
-                      ...entry,
-                      pointsOverride: Number.isFinite(nextValue) ? nextValue : undefined,
-                    }
-                  : entry
-              );
-              saveTeams(updatedTeams);
               const activeGameCode = getActiveGameCode();
-              const updatedTeam = updatedTeams.find((entry) => entry.id === team.id);
-              if (activeGameCode && updatedTeam) {
+              if (activeGameCode) {
                 try {
-                  await upsertTeamToCloud(activeGameCode, updatedTeam);
+                  await updateDoc(doc(teamsCollection(activeGameCode), team.id), {
+                    points: Number.isFinite(nextValue) ? nextValue : team.points || 0,
+                  });
                 } catch (error) {
                   console.error("Unable to sync score override.", error);
                 }
               }
-              renderLeaderboard();
             });
             const clearButton = document.createElement("button");
             clearButton.type = "button";
-            clearButton.className = "btn link";
-            clearButton.textContent = "Clear override";
+            clearButton.className = "btn small ghost";
+            clearButton.textContent = "Reset";
             clearButton.addEventListener("click", async () => {
-              const updatedTeams = getTeams().map((entry) =>
-                entry.id === team.id ? { ...entry, pointsOverride: undefined } : entry
-              );
-              saveTeams(updatedTeams);
               const activeGameCode = getActiveGameCode();
-              const updatedTeam = updatedTeams.find((entry) => entry.id === team.id);
-              if (activeGameCode && updatedTeam) {
+              if (activeGameCode) {
                 try {
-                  await upsertTeamToCloud(activeGameCode, updatedTeam);
+                  await updateDoc(doc(teamsCollection(activeGameCode), team.id), {
+                    points: 0,
+                    wins: 0,
+                    losses: 0,
+                  });
                 } catch (error) {
-                  console.error("Unable to sync score override.", error);
+                  console.error("Unable to reset team points.", error);
                 }
               }
-              renderLeaderboard();
             });
             editWrap.appendChild(input);
             editWrap.appendChild(clearButton);
@@ -1096,9 +1143,17 @@
         }
       };
 
+      const getFlipCupPairings = (teamIds) => {
+        const [t1, t2, t3, t4] = teamIds;
+        return [
+          { pairA: [t1, t2], pairB: [t3, t4] },
+          { pairA: [t4, t1], pairB: [t2, t3] },
+          { pairA: [t3, t1], pairB: [t2, t4] },
+        ];
+      };
+
       const renderMatch = () => {
         const teams = getTeams();
-        const matches = getMatches();
         const activeTeamId = getActiveTeamId();
         const activeTeam = teams.find((team) => team.id === activeTeamId);
 
@@ -1108,23 +1163,13 @@
           return;
         }
 
-        const activeGames = new Set(
-          matches
-            .filter((match) => match.inProgress && !match.winnerId)
-            .map((match) => match.game)
-        );
+        const match = activeTeam.currentMatchId
+          ? getMatches().find((entry) => entry.id === activeTeam.currentMatchId)
+          : null;
 
-        const pendingMatches = matches.filter(
-          (match) => match.teamIds.includes(activeTeamId) && !match.winnerId
-        );
-
-        const nextMatch =
-          pendingMatches.find((match) => match.inProgress) ||
-          pendingMatches.find((match) => !activeGames.has(match.game));
-
-        if (!nextMatch) {
-          const hasPending = matches.some(
-            (match) => match.teamIds.includes(activeTeamId) && !match.winnerId
+        if (!match) {
+          const hasPending = getMatches().some((entry) =>
+            entry.teamIds?.includes(activeTeamId)
           );
           nextGameCard.innerHTML = hasPending
             ? `
@@ -1139,22 +1184,15 @@
           return;
         }
 
-        if (!nextMatch.inProgress) {
-          const updatedMatches = matches.map((match) =>
-            match.id === nextMatch.id
-              ? { ...match, inProgress: true, startedAt: new Date().toISOString() }
-              : match
-          );
-          saveMatches(updatedMatches);
-        }
-
-        const opponents = nextMatch.teamIds
+        const opponents = match.teamIds
           .filter((id) => id !== activeTeamId)
           .map((id) => teams.find((team) => team.id === id));
 
+        const gameType = GAME_TYPES.find((entry) => entry.id === match.gameType);
+
         nextGameCard.innerHTML = `
-          <h3>${nextMatch.game}</h3>
-          <p class="status">Match ID: ${nextMatch.id}</p>
+          <h3>${gameType?.name || match.gameType}</h3>
+          <p class="status">Match ID: ${match.id}</p>
           <div class="opponents">
             ${opponents
               .map(
@@ -1170,77 +1208,245 @@
         `;
 
         scoreActions.innerHTML = "";
-        const winButton = document.createElement("button");
-        winButton.className = "btn";
-        winButton.textContent = "We won! 🏆";
-        winButton.addEventListener("click", () => {
-          const updatedMatches = getMatches().map((match) =>
-            match.id === nextMatch.id
-              ? { ...match, winnerId: activeTeamId, inProgress: false }
-              : match
-          );
-          saveMatches(updatedMatches);
-          renderMatch();
-          renderLeaderboard();
-        });
+        if (match.status !== "complete") {
+          const powerupStatus = document.createElement("div");
+          powerupStatus.className = "status";
+          powerupStatus.textContent = `Powerups left: ${activeTeam.powerupsRemaining ?? 0}`;
+          scoreActions.appendChild(powerupStatus);
 
-        const loseButton = document.createElement("button");
-        loseButton.className = "btn secondary";
-        loseButton.textContent = "We lost 😅";
-        loseButton.addEventListener("click", () => {
-          const updatedMatches = getMatches();
-          const matchIndex = updatedMatches.findIndex((match) => match.id === nextMatch.id);
-          if (matchIndex === -1) return;
+          const doubleDownButton = document.createElement("button");
+          doubleDownButton.className = "btn ghost";
+          const isDoubleDown = Boolean(match.doubleDown?.[activeTeamId]);
+          doubleDownButton.textContent = isDoubleDown
+            ? "Double Down active 💥"
+            : "Use Double Down 💥";
+          doubleDownButton.disabled = activeTeam.powerupsRemaining <= 0 && !isDoubleDown;
+          doubleDownButton.addEventListener("click", () => {
+            void toggleDoubleDown(activeTeamId, match.id);
+          });
+          scoreActions.appendChild(doubleDownButton);
+        }
 
-          const match = updatedMatches[matchIndex];
-          if (match.teamIds.length === 2) {
+        if (match.gameType !== "flip_cup") {
+          const winButton = document.createElement("button");
+          winButton.className = "btn";
+          winButton.textContent = "We won! 🏆";
+          winButton.addEventListener("click", () => {
+            void recordResult(match.id, { winnerTeamId: activeTeamId });
+          });
+
+          const loseButton = document.createElement("button");
+          loseButton.className = "btn secondary";
+          loseButton.textContent = "We lost 😅";
+          loseButton.addEventListener("click", () => {
             const opponentId = match.teamIds.find((id) => id !== activeTeamId);
-            updatedMatches[matchIndex] = {
-              ...match,
-              winnerId: opponentId,
-              inProgress: false,
-            };
-            saveMatches(updatedMatches);
-            renderMatch();
-            renderLeaderboard();
+            if (!opponentId) return;
+            void recordResult(match.id, { winnerTeamId: opponentId });
+          });
+
+          scoreActions.appendChild(winButton);
+          scoreActions.appendChild(loseButton);
+          return;
+        }
+
+        const rounds = match.result?.rounds || [];
+        const currentRound = rounds.length + 1;
+        const pairing = getFlipCupPairings(match.teamIds)[currentRound - 1];
+        const roundCard = document.createElement("div");
+        roundCard.className = "game-card";
+        roundCard.innerHTML = `
+          <h3>Flip Cup Round ${Math.min(currentRound, 3)}</h3>
+          <p class="status">Round history: ${rounds.length}/3 completed</p>
+        `;
+        scoreActions.appendChild(roundCard);
+
+        if (currentRound <= 3 && pairing && match.status !== "complete") {
+          const buttonWrap = document.createElement("div");
+          buttonWrap.className = "score-actions";
+          const sideAButton = document.createElement("button");
+          sideAButton.className = "btn";
+          sideAButton.textContent = `${pairing.pairA
+            .map((id) => teams.find((team) => team.id === id))
+            .map((team) => `${team.playerName} + ${team.partnerName}`)
+            .join(" & ")} won`;
+          sideAButton.addEventListener("click", () => {
+            void recordResult(match.id, { winnerSide: "A" });
+          });
+          const sideBButton = document.createElement("button");
+          sideBButton.className = "btn secondary";
+          sideBButton.textContent = `${pairing.pairB
+            .map((id) => teams.find((team) => team.id === id))
+            .map((team) => `${team.playerName} + ${team.partnerName}`)
+            .join(" & ")} won`;
+          sideBButton.addEventListener("click", () => {
+            void recordResult(match.id, { winnerSide: "B" });
+          });
+          buttonWrap.appendChild(sideAButton);
+          buttonWrap.appendChild(sideBButton);
+          scoreActions.appendChild(buttonWrap);
+        } else if (match.status === "complete") {
+          const done = document.createElement("div");
+          done.className = "status";
+          done.textContent = "Flip cup complete! 🎉";
+          scoreActions.appendChild(done);
+        }
+      };
+
+      async function toggleDoubleDown(teamId, matchId) {
+        const activeGameCode = getActiveGameCode();
+        if (!activeGameCode) return;
+        await runTransaction(db, async (transaction) => {
+          const matchRef = doc(matchesCollection(activeGameCode), matchId);
+          const teamRef = doc(teamsCollection(activeGameCode), teamId);
+          const [matchSnap, teamSnap] = await Promise.all([
+            transaction.get(matchRef),
+            transaction.get(teamRef),
+          ]);
+          if (!matchSnap.exists() || !teamSnap.exists()) return;
+          const match = matchSnap.data();
+          const team = teamSnap.data();
+          if (match.status === "complete") return;
+          const charged = match.doubleDownCharged || {};
+          if (charged[teamId]) return;
+          const doubleDown = { ...(match.doubleDown || {}) };
+          const currentlyOn = Boolean(doubleDown[teamId]);
+          if (!currentlyOn && (team.powerupsRemaining ?? 0) <= 0) return;
+          if (currentlyOn) {
+            delete doubleDown[teamId];
+          } else {
+            doubleDown[teamId] = true;
+          }
+          transaction.update(matchRef, { doubleDown });
+        });
+      }
+
+      const calculatePoints = (teamId, isWinner, match) => {
+        const base = isWinner ? 4 : 1;
+        return match.doubleDown?.[teamId] ? base * 2 : base;
+      };
+
+      const computeFlipCupFinalWinners = (rounds, teamIds) => {
+        const winCounts = Object.fromEntries(teamIds.map((id) => [id, 0]));
+        rounds.forEach((round) => {
+          const winners = round.winnerSide === "A" ? round.pairA : round.pairB;
+          winners.forEach((id) => {
+            winCounts[id] = (winCounts[id] || 0) + 1;
+          });
+        });
+        return [...teamIds]
+          .sort((a, b) => winCounts[b] - winCounts[a])
+          .slice(0, 2);
+      };
+
+      async function recordResult(matchId, payload) {
+        const activeGameCode = getActiveGameCode();
+        if (!activeGameCode) return;
+        await runTransaction(db, async (transaction) => {
+          const matchRef = doc(matchesCollection(activeGameCode), matchId);
+          const matchSnap = await transaction.get(matchRef);
+          if (!matchSnap.exists()) return;
+          const match = matchSnap.data();
+          if (match.status === "complete") return;
+          const teamRefs = match.teamIds.map((id) => doc(teamsCollection(activeGameCode), id));
+          const teamSnaps = await Promise.all(teamRefs.map((ref) => transaction.get(ref)));
+          if (teamSnaps.some((snap) => !snap.exists())) return;
+          const teams = teamSnaps.map((snap) => ({ id: snap.id, ...snap.data() }));
+          const doubleDownCharged = { ...(match.doubleDownCharged || {}) };
+
+          if (match.gameType !== "flip_cup") {
+            const winnerTeamId = payload.winnerTeamId;
+            if (!match.teamIds.includes(winnerTeamId)) return;
+            const loserTeamId = match.teamIds.find((id) => id !== winnerTeamId);
+            teams.forEach((team) => {
+              const isWinner = team.id === winnerTeamId;
+              const points = calculatePoints(team.id, isWinner, match);
+              const shouldCharge = match.doubleDown?.[team.id] && !doubleDownCharged[team.id];
+              const powerupsRemaining = shouldCharge
+                ? Math.max((team.powerupsRemaining ?? 2) - 1, 0)
+                : team.powerupsRemaining ?? 2;
+              if (shouldCharge) {
+                doubleDownCharged[team.id] = true;
+              }
+              const opponents = team.id === winnerTeamId ? [loserTeamId] : [winnerTeamId];
+              transaction.update(doc(teamsCollection(activeGameCode), team.id), {
+                wins: (team.wins || 0) + (isWinner ? 1 : 0),
+                losses: (team.losses || 0) + (isWinner ? 0 : 1),
+                points: (team.points || 0) + points,
+                currentMatchId: null,
+                lastOpponents: [...opponents, ...(team.lastOpponents || [])].slice(0, 3),
+                lastGameType: match.gameType,
+                powerupsRemaining,
+              });
+            });
+            transaction.update(matchRef, {
+              status: "complete",
+              result: { winnerTeamId, loserTeamId },
+              completedAt: serverTimestamp(),
+              doubleDownCharged,
+            });
             return;
           }
 
-          scoreActions.innerHTML = "";
-          const prompt = document.createElement("div");
-          prompt.className = "game-card";
-          prompt.innerHTML = `
-            <h3>Who won this flip cup?</h3>
-            <p class="status">Tap the winner so the bracket stays accurate.</p>
-          `;
-          const buttonWrap = document.createElement("div");
-          buttonWrap.className = "score-actions";
-
-          match.teamIds.forEach((id) => {
-            const team = teams.find((item) => item.id === id);
-            const button = document.createElement("button");
-            button.className = "btn ghost";
-            button.textContent = `${team.playerName} + ${team.partnerName}`;
-            button.addEventListener("click", () => {
-              updatedMatches[matchIndex] = {
-                ...match,
-                winnerId: id,
-                inProgress: false,
-              };
-              saveMatches(updatedMatches);
-              renderMatch();
-              renderLeaderboard();
+          const rounds = match.result?.rounds || [];
+          if (rounds.length >= 3) return;
+          const pairing = getFlipCupPairings(match.teamIds)[rounds.length];
+          if (!pairing) return;
+          const winnerSide = payload.winnerSide;
+          if (!["A", "B"].includes(winnerSide)) return;
+          const winners = winnerSide === "A" ? pairing.pairA : pairing.pairB;
+          const roundIndex = rounds.length + 1;
+          const updatedRounds = [
+            ...rounds,
+            {
+              roundIndex,
+              pairA: pairing.pairA,
+              pairB: pairing.pairB,
+              winnerSide,
+            },
+          ];
+          const otherTeams = match.teamIds;
+          teams.forEach((team) => {
+            const isWinner = winners.includes(team.id);
+            const points = calculatePoints(team.id, isWinner, match);
+            const shouldCharge = match.doubleDown?.[team.id] && !doubleDownCharged[team.id];
+            const powerupsRemaining = shouldCharge
+              ? Math.max((team.powerupsRemaining ?? 2) - 1, 0)
+              : team.powerupsRemaining ?? 2;
+            if (shouldCharge) {
+              doubleDownCharged[team.id] = true;
+            }
+            transaction.update(doc(teamsCollection(activeGameCode), team.id), {
+              wins: (team.wins || 0) + (isWinner ? 1 : 0),
+              losses: (team.losses || 0) + (isWinner ? 0 : 1),
+              points: (team.points || 0) + points,
+              currentMatchId: roundIndex === 3 ? null : team.currentMatchId,
+              lastOpponents: otherTeams.filter((id) => id !== team.id).slice(0, 3),
+              lastGameType: roundIndex === 3 ? match.gameType : team.lastGameType || null,
+              powerupsRemaining,
             });
-            buttonWrap.appendChild(button);
           });
 
-          scoreActions.appendChild(prompt);
-          scoreActions.appendChild(buttonWrap);
+          const matchUpdate = {
+            result: {
+              rounds: updatedRounds,
+              finalWinners:
+                roundIndex === 3
+                  ? computeFlipCupFinalWinners(updatedRounds, match.teamIds)
+                  : null,
+            },
+            doubleDownCharged,
+          };
+          if (roundIndex === 3) {
+            matchUpdate.status = "complete";
+            matchUpdate.completedAt = serverTimestamp();
+          }
+          transaction.update(matchRef, matchUpdate);
         });
 
-        scoreActions.appendChild(winButton);
-        scoreActions.appendChild(loseButton);
-      };
+        if (isHost()) {
+          await fillMatches(activeGameCode);
+        }
+      }
 
       const setView = (view) => {
         const sections = {
@@ -1276,14 +1482,9 @@
       const startNewGame = async () => {
         const newCode = generateGameCode();
         setGameCodes(newCode);
-        suspendCloudSync = true;
-        saveTeams([]);
-        saveMatches([]);
-        suspendCloudSync = false;
-        setSavedTeamCount(0);
         clearActiveTeamId();
         await withTimeout(
-          createGameInCloud(newCode),
+          createGame(newCode),
           7000,
           "Timed out while creating the game."
         );
@@ -1299,54 +1500,47 @@
       const registerTeam = async ({ playerName, country, partnerName }) => {
         const teams = getTeams();
         const existing = findMatchingTeam(teams, playerName, partnerName, country);
-
-        let activeTeamId = existing?.id;
-        let updatedTeam = null;
-        let updatedTeams = teams;
-        let syncError = null;
-
-        if (!existing) {
-          const team = {
-            id: crypto.randomUUID(),
-            playerName,
-            partnerName,
-            country,
-            createdAt: new Date().toISOString(),
-          };
-          updatedTeam = team;
-          activeTeamId = team.id;
-          updatedTeams = [...teams, team];
-        } else {
-          updatedTeam = { ...existing, playerName, partnerName, country };
-          updatedTeams = teams.map((team) => (team.id === existing.id ? updatedTeam : team));
-        }
-
         const activeGameCode = getActiveGameCode();
-        if (activeGameCode) {
-          try {
-            await upsertTeamToCloud(activeGameCode, updatedTeam);
-          } catch (error) {
-            console.error("Unable to sync team to cloud.", error);
-            syncError = error;
-          }
-        }
+        if (!activeGameCode) return;
 
-        saveTeams(updatedTeams);
+        const teamId = existing?.id || getActiveTeamId() || crypto.randomUUID();
+        const team = {
+          id: teamId,
+          playerName,
+          partnerName,
+          country,
+          wins: existing?.wins || 0,
+          losses: existing?.losses || 0,
+          points: existing?.points || 0,
+          powerupsRemaining: existing?.powerupsRemaining ?? 2,
+          currentMatchId: existing?.currentMatchId || null,
+          lastOpponents: existing?.lastOpponents || [],
+          lastGameType: existing?.lastGameType || null,
+          createdAt: existing?.createdAt || new Date().toISOString(),
+        };
 
-        if (syncError) {
+        try {
+          await setDoc(doc(teamsCollection(activeGameCode), teamId), team, { merge: true });
+        } catch (error) {
+          console.error("Unable to sync team to cloud.", error);
           saveStatus.textContent =
             "Saved locally, but we couldn't sync to the shared game yet.";
-        } else if (!existing) {
-          saveStatus.textContent = "All Set! You're live on the leaderboard.";
-        } else {
-          saveStatus.textContent = "Welcome back! We found your team and refreshed your details.";
+          return;
         }
 
-        setActiveTeamId(activeTeamId);
+        saveStatus.textContent = existing
+          ? "Welcome back! We found your team and refreshed your details."
+          : "All Set! You're live on the leaderboard.";
+
+        setActiveTeamId(teamId);
         renderMatch();
         renderLeaderboard();
         renderRoster();
         updateTabsVisibility();
+
+        if (isHost()) {
+          void fillMatches(activeGameCode);
+        }
       };
 
       form.addEventListener("submit", async (event) => {
@@ -1393,11 +1587,12 @@
             : team
         );
         const updatedTeam = updatedTeams.find((team) => team.id === targetTeamId);
-        saveTeams(updatedTeams);
         const activeGameCode = getActiveGameCode();
         if (activeGameCode && updatedTeam) {
           try {
-            await upsertTeamToCloud(activeGameCode, updatedTeam);
+            await setDoc(doc(teamsCollection(activeGameCode), updatedTeam.id), updatedTeam, {
+              merge: true,
+            });
           } catch (error) {
             console.error("Unable to sync roster updates.", error);
           }
@@ -1419,8 +1614,6 @@
         const targetTeamId = isAdmin && adminEditingTeamId ? adminEditingTeamId : activeTeamId;
         if (!targetTeamId) return;
         if (!confirm("Remove your team from the roster and schedule?")) return;
-        const teams = getTeams().filter((team) => team.id !== targetTeamId);
-        saveTeams(teams);
         const activeGameCode = getActiveGameCode();
         if (activeGameCode) {
           try {
@@ -1429,11 +1622,12 @@
             console.error("Unable to remove team from cloud.", error);
           }
         }
-        const updatedMatches = getMatches().filter(
-          (match) => !match.teamIds.includes(targetTeamId)
+        const impactedMatches = getMatches().filter((match) =>
+          match.teamIds?.includes(targetTeamId)
         );
-        saveMatches(updatedMatches);
-        ensureSchedule(teams);
+        for (const match of impactedMatches) {
+          await closeMatchForRemoval(activeGameCode, match);
+        }
         if (!isAdmin || targetTeamId === activeTeamId) {
           clearActiveTeamId();
         }
@@ -1478,9 +1672,6 @@
 
       resetGameButton.addEventListener("click", () => {
         if (!confirm("Clear all teams and matches for this game?")) return;
-        saveTeams([]);
-        saveMatches([]);
-        setSavedTeamCount(0);
         clearActiveTeamId();
         const activeGameCode = getActiveGameCode();
         if (activeGameCode) {
@@ -1493,14 +1684,7 @@
       });
 
       clearResultsButton.addEventListener("click", () => {
-        const updatedMatches = getMatches().map((match) => ({
-          ...match,
-          winnerId: null,
-          reported: [],
-          inProgress: false,
-          startedAt: null,
-        }));
-        saveMatches(updatedMatches);
+        void clearMatchResults();
         adminActionStatus.textContent = "Match results cleared.";
         renderMatch();
         renderLeaderboard();
@@ -1518,18 +1702,16 @@
       };
 
       const refreshState = () => {
-        const teams = getTeams();
-        ensureSchedule(teams);
         renderMatch();
         renderLeaderboard();
         renderRoster();
         updateGameCodeDisplay();
         updateTabsVisibility();
 
-        const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
-        adminToggle.checked = isAdmin;
-        adminStatus.textContent = isAdmin ? "Admin tools unlocked." : "Admin tools are locked.";
-        adminPanel.classList.toggle("hidden", !isAdmin);
+        const isAdminMode = isAdmin();
+        adminToggle.checked = isAdminMode;
+        adminStatus.textContent = isAdminMode ? "Admin tools unlocked." : "Admin tools are locked.";
+        adminPanel.classList.toggle("hidden", !isAdminMode);
       };
 
       window.addEventListener("storage", refreshState);
@@ -1541,8 +1723,8 @@
           if (!game) {
             localStorage.removeItem(STORAGE_KEYS.activeGameCode);
             localStorage.removeItem(STORAGE_KEYS.currentGameCode);
-            window.__TEAMS__ = [];
-            window.__MATCHES__ = [];
+            state.teams = [];
+            state.matches = [];
           } else {
             subscribeToGame(code);
           }
