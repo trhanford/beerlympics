@@ -249,6 +249,15 @@
         gap: 12px;
       }
 
+      .leaderboard-split {
+        display: grid;
+        gap: 16px;
+      }
+
+      .current-matches-card {
+        display: none;
+      }
+
       .current-matches-grid {
         display: grid;
         gap: 12px;
@@ -431,6 +440,15 @@
         .split {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
+
+        .leaderboard-split {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+          align-items: start;
+        }
+
+        .current-matches-card {
+          display: block;
+        }
       }
     </style>
   </head>
@@ -521,12 +539,14 @@
           <div class="game-code" id="game-code">----</div>
           <p class="status">Share this code so players can join your match.</p>
         </div>
-        <div class="game-card">
-          <h3>Current Matches</h3>
-          <p class="status">Live battles happening right now.</p>
-          <div class="current-matches-grid" id="current-matches"></div>
+        <div class="leaderboard-split">
+          <div class="game-card current-matches-card">
+            <h3>Current Matches</h3>
+            <p class="status">Live battles happening right now.</p>
+            <div class="current-matches-grid" id="current-matches"></div>
+          </div>
+          <div class="leaderboard" id="leaderboard"></div>
         </div>
-        <div class="leaderboard" id="leaderboard"></div>
         <div class="game-card hidden" id="admin-panel">
           <h3>Admin controls</h3>
           <p class="status">Manage scores, reset matches, or spin up a fresh game.</p>
