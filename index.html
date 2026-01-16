@@ -974,30 +974,63 @@
       };
 
       const pickFlipCupGroup = (teams) => {
-        const preferred = teams.filter((team) => team.lastGameType !== "flip_cup");
-        const pool = preferred.length >= 4 ? preferred : teams;
-        const group = [];
-        for (const team of pool) {
-          if (
-            group.every(
-              (existing) =>
-                !hasRecentOpponent(team, existing.id) &&
-                !hasRecentOpponent(existing, team.id)
-            )
-          ) {
-            group.push(team);
-          }
-          if (group.length === 4) break;
-        }
-        if (group.length < 4) {
-          for (const team of pool) {
-            if (!group.find((entry) => entry.id === team.id)) {
+        // Hard block: nobody can exceed a streak of 2
+        const hardAllowed = teams.filter((t) => (t.flipCupStreak || 0) < 2);
+        const working = hardAllowed.length >= 4 ? hardAllowed : teams;
+
+        const nonRepeat = working.filter((t) => t.lastGameType !== "flip_cup");
+        const repeatOk = working.filter(
+          (t) => t.lastGameType === "flip_cup" && (t.flipCupStreak || 0) < 2
+        );
+
+        // Prefer 0 repeat teams; if not possible, allow at most 1 repeat team.
+        const candidatePools = [
+          nonRepeat,
+          [...nonRepeat, ...repeatOk],
+        ];
+
+        for (const pool of candidatePools) {
+          if (pool.length < 4) continue;
+
+          const sorted = sortTeamsForMatch(pool);
+          const group = [];
+          let repeatCount = 0;
+
+          for (const team of sorted) {
+            const isRepeat = team.lastGameType === "flip_cup";
+            if (isRepeat && repeatCount >= 1) continue;
+
+            if (
+              group.every(
+                (existing) =>
+                  !hasRecentOpponent(team, existing.id) &&
+                  !hasRecentOpponent(existing, team.id)
+              )
+            ) {
               group.push(team);
+              if (isRepeat) repeatCount += 1;
             }
             if (group.length === 4) break;
           }
+
+          // Fallback fill (still respecting repeat cap + streak cap)
+          if (group.length < 4) {
+            for (const team of sorted) {
+              if (group.some((g) => g.id === team.id)) continue;
+              const isRepeat = team.lastGameType === "flip_cup";
+              if (isRepeat && repeatCount >= 1) continue;
+              if ((team.flipCupStreak || 0) >= 2) continue;
+
+              group.push(team);
+              if (isRepeat) repeatCount += 1;
+              if (group.length === 4) break;
+            }
+          }
+
+          if (group.length === 4) return group;
         }
-        return group.length === 4 ? group : null;
+
+        return null;
       };
 
       async function createMatchForTeams(code, gameTypeId, teams) {
@@ -1519,6 +1552,7 @@
                 currentMatchId: null,
                 lastOpponents: [...opponents, ...(team.lastOpponents || [])].slice(0, 3),
                 lastGameType: match.gameType,
+                flipCupStreak: 0,
                 powerupsRemaining,
               });
             });
@@ -1566,6 +1600,12 @@
               currentMatchId: roundIndex === 3 ? null : team.currentMatchId,
               lastOpponents: otherTeams.filter((id) => id !== team.id).slice(0, 3),
               lastGameType: roundIndex === 3 ? match.gameType : team.lastGameType || null,
+              flipCupStreak:
+                roundIndex === 3
+                  ? team.lastGameType === "flip_cup"
+                    ? Math.min((team.flipCupStreak || 0) + 1, 2)
+                    : 1
+                  : team.flipCupStreak || 0,
               powerupsRemaining,
             });
           });
