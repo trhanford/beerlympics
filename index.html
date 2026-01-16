@@ -1539,7 +1539,6 @@
           return;
         }
         const nextState = forcedState || computeMobileState();
-        if (document.body.dataset.mobileState === "welcome" && !forcedState) return;
         setMobileState(nextState);
       };
 
