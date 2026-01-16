@@ -1061,6 +1061,25 @@
           display: block;
         }
 
+        /* Step 2: remove any leftover hero/top spacer from Step 1 */
+        body.mobile-app[data-mobile-state="access"] .mobile-hero,
+        body.mobile-app[data-mobile-state="access"] .mobile-welcome,
+        body.mobile-app[data-mobile-state="access"] .mobile-welcome-spacer,
+        body.mobile-app[data-mobile-state="access"] .mobile-intro {
+          display: none !important;
+          height: 0 !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+
+        /* Step 2: pull the access panel back to the top */
+        body.mobile-app[data-mobile-state="access"] .mobile-access-panel,
+        body.mobile-app[data-mobile-state="access"] .mobile-step-panel,
+        body.mobile-app[data-mobile-state="access"] .mobile-panel {
+          margin-top: 0 !important;
+          padding-top: 0 !important;
+        }
+
 
         body.mobile-app[data-mobile-state="register"] .mobile-access-panel {
           display: none;
