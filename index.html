@@ -1058,8 +1058,9 @@
         }
 
         body.mobile-app[data-mobile-state="access"] .mobile-register-panel {
-          display: block;
+          display: none;
         }
+
 
         /* Step 2: remove any leftover hero/top spacer from Step 1 */
         body.mobile-app[data-mobile-state="access"] .mobile-hero,
@@ -2108,9 +2109,9 @@
             opponent = opponents.find((candidate) => !isRecentOpponentPair(team, candidate));
             if (opponent) return [team, opponent];
       
-            // Tier 3: allow a recent opponent ONLY if it would not be the same game again
-            opponent = opponents.find((candidate) => !isImmediateRematchSameGame(team, candidate));
-            if (opponent) return [team, opponent];
+            // Tier 3: if only recent opponents are available, WAIT.
+            // (Prevents "same people again" when games don't finish at the same time.)
+            return null;
       
             // Tier 4: the ONLY remaining option is same opponent + same game again -> WAIT
             // Return null so these teams stay "available" until others finish.
