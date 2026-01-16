@@ -649,7 +649,7 @@
         window.__MATCHES__ = matches;
         localStorage.setItem(getScopedKey(STORAGE_KEYS.matches), JSON.stringify(matches));
         const activeGameCode = getActiveGameCode();
-        if (activeGameCode && isAdmin()) {
+        if (activeGameCode) {
           void saveMatchesToCloud(activeGameCode, matches);
         }
       };
@@ -1468,13 +1468,16 @@
         }
 
         const newCode = startNewGame();
+        setGameCodes(newCode);
         try {
           await createGameInCloud(newCode);
           subscribeToGame(newCode);
           saveStatus.textContent = `Game started! Share code ${newCode} with the crew.`;
         } catch (error) {
           console.error("Unable to create game in cloud.", error);
-          saveStatus.textContent = `Game started locally! Share code ${newCode} when ready.`;
+          saveStatus.textContent =
+            "Firebase failed to create the game. Check console and try again.";
+          return;
         }
         await registerTeam({ playerName, country, partnerName });
       });
