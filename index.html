@@ -1035,9 +1035,13 @@
         let availableTeams = sortTeamsForMatch(
           getTeams().filter((team) => !team.currentMatchId)
         );
+        const anyInProgress = activeMatches.some((m) => m.status === "in_progress");
 
         for (const gameType of GAME_TYPES) {
           if (activeByType.has(gameType.id)) continue;
+          if (anyInProgress && gameType.teams === 2 && availableTeams.length < 4) {
+            continue;
+          }
           if (availableTeams.length < gameType.teams) continue;
           if (gameType.teams === 4) {
             const group = pickFlipCupGroup(availableTeams);
