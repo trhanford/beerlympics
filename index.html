@@ -792,6 +792,157 @@
         display: none;
       }
 
+      .mobile-only {
+        display: none;
+      }
+
+      .desktop-only {
+        display: block;
+      }
+
+      .mobile-welcome-screen {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(circle at top, #ffffff 0%, #fff0c9 40%, #ffd7f1 100%);
+        z-index: 300;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.5s ease, transform 0.5s ease;
+        transform: scale(1.02);
+      }
+
+      .mobile-welcome-card {
+        text-align: center;
+        padding: 32px 24px;
+        border-radius: 28px;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 24px 60px rgba(36, 33, 84, 0.2);
+        font-family: "Baloo 2", cursive;
+        max-width: 320px;
+      }
+
+      .mobile-welcome-card h1 {
+        font-size: 1.8rem;
+        margin: 12px 0 10px;
+      }
+
+      .mobile-welcome-card p {
+        font-family: "Nunito", sans-serif;
+        margin: 0;
+        color: var(--ink-soft);
+      }
+
+      .mobile-welcome-logo {
+        font-size: 2.2rem;
+      }
+
+      body[data-mobile-state="welcome"] .mobile-welcome-screen {
+        opacity: 1;
+        pointer-events: auto;
+        transform: scale(1);
+      }
+
+      .mobile-dock {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 18px 40px rgba(28, 34, 68, 0.16);
+        margin-bottom: 16px;
+        opacity: 0;
+        transform: translateY(-6px);
+        transition: opacity 0.4s ease, transform 0.4s ease;
+      }
+
+      .mobile-dock-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #ffdf7a, #ffd1f1);
+        display: grid;
+        place-items: center;
+        font-size: 1.4rem;
+      }
+
+      .mobile-dock-text {
+        display: grid;
+        gap: 2px;
+      }
+
+      .mobile-dock-title {
+        font-weight: 800;
+        font-family: "Baloo 2", cursive;
+      }
+
+      .mobile-dock-subtitle {
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+      }
+
+      .mobile-panel {
+        display: grid;
+        gap: 14px;
+      }
+
+      .mobile-panel.is-exiting {
+        opacity: 0;
+        transform: translateY(-8px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+      }
+
+      .mobile-panel-header {
+        background: #f7f7ff;
+        border-radius: 18px;
+        padding: 12px 16px;
+        border: 1px solid #e2e6ff;
+      }
+
+      .mobile-panel-header h3 {
+        margin: 6px 0;
+      }
+
+      .mobile-panel-kicker {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.16rem;
+        color: var(--primary-dark);
+        font-weight: 800;
+      }
+
+      .mobile-register-panel .field {
+        opacity: 1;
+      }
+
+      .access-card {
+        border-style: solid;
+        border-width: 2px;
+        border-color: rgba(91, 108, 255, 0.15);
+      }
+
+      .mobile-play-panel {
+        display: grid;
+        gap: 12px;
+      }
+
+      .mobile-play-panel .section-title {
+        margin-bottom: 4px;
+      }
+
+      @keyframes slide-up {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
       @media (min-width: 768px) {
         main {
           padding: 0 40px 48px;
@@ -814,9 +965,138 @@
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
       }
+
+      @media (max-width: 767px) {
+        body.mobile-app {
+          background: radial-gradient(circle at top, #ffffff 0%, #f7f0ff 45%, #d9f2ff 100%);
+        }
+
+        body.mobile-app header {
+          display: none;
+        }
+
+        body.mobile-app .desktop-only {
+          display: none;
+        }
+
+        body.mobile-app .mobile-only {
+          display: block;
+        }
+
+        body.mobile-app main {
+          padding: 16px 18px 32px;
+        }
+
+        body.mobile-app #player-section {
+          padding: 18px;
+        }
+
+        body.mobile-app .stepper {
+          display: none;
+        }
+
+        body.mobile-app .split {
+          gap: 18px;
+        }
+
+        body.mobile-app .mobile-dock {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        body.mobile-app[data-mobile-state="welcome"] .mobile-dock {
+          opacity: 0;
+          transform: translateY(-8px);
+        }
+
+        body.mobile-app[data-mobile-state="welcome"] main {
+          filter: blur(6px);
+        }
+
+        body.mobile-app .mobile-register-panel {
+          background: #ffffff;
+          padding: 18px;
+          border-radius: 22px;
+          box-shadow: var(--shadow);
+          border: 1px solid rgba(91, 108, 255, 0.12);
+        }
+
+        body.mobile-app .mobile-access-panel {
+          background: #ffffff;
+          padding: 18px;
+          border-radius: 22px;
+          box-shadow: var(--shadow);
+          border: 1px solid rgba(255, 122, 178, 0.18);
+        }
+
+        body.mobile-app .access-card {
+          padding: 18px;
+          border-radius: 20px;
+        }
+
+        body.mobile-app .access-card .btn {
+          width: 100%;
+        }
+
+        body.mobile-app .mobile-access-panel .access-card,
+        body.mobile-app .mobile-access-panel .btn {
+          animation: slide-up 0.4s ease both;
+        }
+
+        body.mobile-app .mobile-access-panel .access-card:nth-of-type(2) {
+          animation-delay: 0.08s;
+        }
+
+        body.mobile-app[data-mobile-state="register"] .mobile-register-panel {
+          animation: slide-up 0.4s ease both;
+        }
+
+        body.mobile-app[data-mobile-state="register"] .mobile-register-panel .field {
+          opacity: 0;
+          animation: slide-up 0.35s ease forwards;
+          animation-delay: calc(var(--field-index) * 0.08s + 0.05s);
+        }
+
+        body.mobile-app[data-mobile-state="access"] .mobile-register-panel {
+          display: none;
+        }
+
+        body.mobile-app[data-mobile-state="register"] .mobile-access-panel {
+          display: none;
+        }
+
+        body.mobile-app[data-mobile-state="register"] .mobile-play-panel,
+        body.mobile-app[data-mobile-state="access"] .mobile-play-panel {
+          display: none;
+        }
+
+        body.mobile-app[data-mobile-state="playing"] .mobile-register-panel,
+        body.mobile-app[data-mobile-state="playing"] .mobile-access-panel {
+          display: none;
+        }
+
+        body.mobile-app[data-mobile-state="playing"] .mobile-play-panel {
+          background: #ffffff;
+          padding: 18px;
+          border-radius: 24px;
+          box-shadow: var(--shadow);
+          border: 1px solid rgba(91, 108, 255, 0.12);
+        }
+
+        body.mobile-app[data-mobile-state="playing"] .mobile-play-panel .section-title {
+          margin-top: 0;
+        }
+      }
     </style>
   </head>
   <body>
+    <div class="mobile-welcome-screen mobile-only" id="mobile-welcome">
+      <div class="mobile-welcome-card">
+        <div class="mobile-welcome-logo">🏅</div>
+        <h1>Welcome to the 2026 Annual Beerlympics!</h1>
+        <p>Warm up those throwing arms—games are about to begin.</p>
+      </div>
+    </div>
     <header>
       <h1>Beerlympics Party HQ 🍻</h1>
       <p>Mobile-first mission control for Saturday's legendary showdown.</p>
@@ -833,7 +1113,7 @@
     </header>
 
     <main>
-      <section class="card hero">
+      <section class="card hero desktop-only">
         <h2>Welcome to the 2026 Beerlympics</h2>
         <p>
           Follow the three quick steps below to lock in your squad, join a code, and play.
@@ -853,6 +1133,13 @@
       </section>
 
       <section class="card" id="player-section">
+        <div class="mobile-dock mobile-only" id="mobile-dock">
+          <div class="mobile-dock-icon">🍻</div>
+          <div class="mobile-dock-text">
+            <span class="mobile-dock-title">Beerlympics 2026</span>
+            <span class="mobile-dock-subtitle">Annual Beerlympics</span>
+          </div>
+        </div>
         <div class="stepper" id="stepper">
           <div class="step active" data-step="1">
             <div class="step-circle">1</div>
@@ -885,56 +1172,75 @@
               <span>🧑‍🤝‍🧑</span>
               <h2>Team Setup</h2>
             </div>
-            <p class="status">Tell us who you are so we can find or create your team.</p>
+            <p class="status desktop-only">
+              Tell us who you are so we can find or create your team.
+            </p>
             <form id="team-form">
-              <div>
+              <div class="mobile-panel mobile-register-panel" id="mobile-register-panel">
+                <div class="mobile-panel-header mobile-only">
+                  <span class="mobile-panel-kicker">Step 1</span>
+                  <h3>Register your team</h3>
+                  <p>Drop in the player details to unlock the game lobby.</p>
+                </div>
+                <div class="field" style="--field-index: 0">
                 <label for="playerName">Your name</label>
                 <input id="playerName" name="playerName" placeholder="e.g. Jordan" required />
                 <p class="hint" id="playerName-hint">First name is perfect.</p>
               </div>
-              <div>
+                <div class="field" style="--field-index: 1">
                 <label for="country">Country represented</label>
                 <input id="country" name="country" placeholder="e.g. Brazil" required />
                 <p class="hint" id="country-hint">We’ll match the flag automatically.</p>
               </div>
-              <div>
+                <div class="field" style="--field-index: 2">
                 <label for="partnerName">Partner name</label>
                 <input id="partnerName" name="partnerName" placeholder="e.g. Sam" required />
                 <p class="hint" id="partnerName-hint">We’ll pair you up on the bracket.</p>
               </div>
-              <div class="game-card">
-                <div class="section-title">
-                  <span>🔐</span>
-                  <h3>Join a game</h3>
-                </div>
-                <label for="gameCode">Game code</label>
-                <input
-                  id="gameCode"
-                  name="gameCode"
-                  placeholder="e.g. 7421"
-                  inputmode="numeric"
-                />
-                <p class="hint" id="gameCode-hint">Ask the host for the 4-digit code.</p>
-                <button class="btn" type="submit" id="join-game">
-                  Lock in our team 🚀
+                <button class="btn secondary mobile-only" type="button" id="mobile-continue">
+                  Continue to game access
                 </button>
               </div>
-              <div class="game-card">
-                <div class="section-title">
-                  <span>🎬</span>
-                  <h3>Start a new game</h3>
+              <div class="mobile-panel mobile-access-panel" id="mobile-access-panel">
+                <div class="mobile-panel-header mobile-only">
+                  <span class="mobile-panel-kicker">Step 2</span>
+                  <h3>Game access</h3>
+                  <p>Join an existing lobby or spin up a new one.</p>
                 </div>
-                <p class="status">
-                  Hosting tonight? Create a fresh code for everyone.
-                </p>
-                <button class="btn ghost" type="button" id="start-game">
-                  I'm starting the games 🎬
-                </button>
+                <div class="game-card access-card">
+                  <div class="section-title">
+                    <span>🔐</span>
+                    <h3>Join a game</h3>
+                  </div>
+                  <label for="gameCode">Game code</label>
+                  <input
+                    id="gameCode"
+                    name="gameCode"
+                    placeholder="e.g. 7421"
+                    inputmode="numeric"
+                  />
+                  <p class="hint" id="gameCode-hint">Ask the host for the 4-digit code.</p>
+                  <button class="btn" type="submit" id="join-game">
+                    Lock in our team 🚀
+                  </button>
+                </div>
+                <div class="game-card access-card">
+                  <div class="section-title">
+                    <span>🎬</span>
+                    <h3>Start a new game</h3>
+                  </div>
+                  <p class="status">
+                    Hosting tonight? Create a fresh code for everyone.
+                  </p>
+                  <button class="btn ghost" type="button" id="start-game">
+                    I'm starting the games 🎬
+                  </button>
+                </div>
+                <p class="status" id="save-status">Nothing saved yet.</p>
               </div>
-              <p class="status" id="save-status">Nothing saved yet.</p>
             </form>
           </div>
-          <div>
+          <div class="mobile-panel mobile-play-panel" id="mobile-play-panel">
             <div class="section-title">
               <span>🎯</span>
               <h2>Your Next Game</h2>
@@ -1137,6 +1443,12 @@
       const partnerNameHint = document.getElementById("partnerName-hint");
       const countryHint = document.getElementById("country-hint");
       const gameCodeHint = document.getElementById("gameCode-hint");
+      const mobileWelcome = document.getElementById("mobile-welcome");
+      const mobileDock = document.getElementById("mobile-dock");
+      const mobileContinueButton = document.getElementById("mobile-continue");
+      const mobileRegisterPanel = document.getElementById("mobile-register-panel");
+      const mobileAccessPanel = document.getElementById("mobile-access-panel");
+      const mobilePlayPanel = document.getElementById("mobile-play-panel");
 
       const ADMIN_PASSCODE = "3241";
 
@@ -1192,6 +1504,63 @@
           button.dataset.defaultLabel = button.dataset.defaultLabel || button.textContent;
           button.textContent = isLoading ? label : button.dataset.defaultLabel;
         }
+      };
+
+      const MOBILE_STORAGE_KEYS = {
+        welcomeSeen: "beerlympics_mobile_welcome_seen",
+        accessReady: "beerlympics_mobile_access_ready",
+      };
+
+      const isMobileLayout = () =>
+        window.matchMedia ? window.matchMedia("(max-width: 767px)").matches : false;
+
+      const setMobileState = (state) => {
+        document.body.dataset.mobileState = state;
+        if (state === "access") {
+          mobileRegisterPanel?.remove();
+        }
+        if (state === "playing") {
+          mobileRegisterPanel?.remove();
+          mobileAccessPanel?.remove();
+        }
+      };
+
+      const computeMobileState = () => {
+        if (!isMobileLayout()) return "desktop";
+        const hasTeam = Boolean(getActiveTeamId());
+        const hasGame = Boolean(getActiveGameCode());
+        if (hasTeam && hasGame) return "playing";
+        const accessReady =
+          sessionStorage.getItem(MOBILE_STORAGE_KEYS.accessReady) === "true";
+        return accessReady ? "access" : "register";
+      };
+
+      const updateMobileState = (forcedState) => {
+        const isMobile = isMobileLayout();
+        document.body.classList.toggle("mobile-app", isMobile);
+        if (!isMobile) {
+          document.body.dataset.mobileState = "desktop";
+          return;
+        }
+        const nextState = forcedState || computeMobileState();
+        if (document.body.dataset.mobileState === "welcome" && !forcedState) return;
+        setMobileState(nextState);
+      };
+
+      const runMobileWelcome = () => {
+        if (!isMobileLayout()) return;
+        const hasSeen =
+          sessionStorage.getItem(MOBILE_STORAGE_KEYS.welcomeSeen) === "true";
+        if (hasSeen) {
+          updateMobileState();
+          return;
+        }
+        document.body.classList.add("mobile-app");
+        setMobileState("welcome");
+        sessionStorage.setItem(MOBILE_STORAGE_KEYS.welcomeSeen, "true");
+        setTimeout(() => {
+          updateMobileState();
+        }, 1500);
       };
 
       const triggerConfetti = () => {
@@ -1257,6 +1626,9 @@
         const hasCoreInfo = Boolean(playerName && partnerName && country);
         joinGameButton.disabled = !hasCoreInfo || !gameCode;
         startGameButton.disabled = !hasCoreInfo;
+        if (mobileContinueButton) {
+          mobileContinueButton.disabled = !hasCoreInfo;
+        }
 
         updateStepIndicator({ hasCoreInfo, hasCode: Boolean(gameCode) });
       };
@@ -2679,6 +3051,7 @@
         renderLeaderboard();
         renderRoster();
         updateTabsVisibility();
+        updateMobileState("playing");
         scheduleFillMatches(activeGameCode);
         updateStepIndicator({ hasCoreInfo: true, hasCode: true });
       };
@@ -2717,6 +3090,22 @@
         await registerTeam({ playerName, country, partnerName });
         setButtonLoading(joinGameButton, false);
       });
+
+      if (mobileContinueButton) {
+        mobileContinueButton.addEventListener("click", () => {
+          if (mobileContinueButton.disabled) return;
+          sessionStorage.setItem(MOBILE_STORAGE_KEYS.accessReady, "true");
+          if (mobileRegisterPanel) {
+            mobileRegisterPanel.classList.add("is-exiting");
+            setTimeout(() => {
+              mobileRegisterPanel?.remove();
+              updateMobileState("access");
+            }, 280);
+          } else {
+            updateMobileState("access");
+          }
+        });
+      }
 
       [playerNameInput, partnerNameInput, countryInput, gameCodeInput].forEach((input) => {
         input.addEventListener("input", validateTeamInputs);
@@ -2971,11 +3360,13 @@
           modePill.textContent = "🎈 Player Mode";
         }
         updateStepIndicator();
+        updateMobileState();
       };
 
       window.addEventListener("storage", refreshState);
 
       const init = async () => {
+        runMobileWelcome();
         const code = getActiveGameCode();
         if (code) {
           const game = await fetchGame(code);
@@ -3035,6 +3426,8 @@
         saveStatus.textContent = `Promise error: ${event.reason?.message || event.reason}`;
         showToast("Network hiccup. We’ll keep trying.", "warning");
       });
+
+      window.addEventListener("resize", () => updateMobileState());
 
       init();
     </script>
