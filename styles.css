@@ -1121,3 +1121,271 @@ body.mobile-app[data-mobile-state="playing"] .team-setup-column {
     height: 96px;
   }
 }
+
+
+/* ===== Mobile rebuild overrides ===== */
+html, body {
+  min-height: 100%;
+}
+
+body.mobile-app {
+  color: #fff;
+  background: transparent !important;
+  overflow-x: hidden;
+}
+
+body.mobile-app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(255,255,255,0.10), transparent 34%),
+    radial-gradient(circle at 10% 92%, rgba(206, 184, 143, 0.16), transparent 34%),
+    linear-gradient(180deg, #040404 0%, #17120b 42%, #5b4a2d 78%, #f4efe6 100%);
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+body.mobile-app::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.04) 24%, rgba(255,255,255,0.06) 100%);
+}
+
+body.mobile-app header,
+body.mobile-app #roster-section,
+body.mobile-app #control-section,
+body.mobile-app #leaderboard-section,
+body.mobile-app .hero,
+body.mobile-app .stepper,
+body.mobile-app .team-setup-column,
+body.mobile-app .desktop-only,
+body.mobile-app .tabs,
+body.mobile-app .top-header {
+  display: none !important;
+}
+
+body.mobile-app main {
+  width: 100%;
+  max-width: none;
+  min-height: 100dvh;
+  padding: max(18px, env(safe-area-inset-top, 0px)) 16px max(28px, env(safe-area-inset-bottom, 0px));
+  display: block;
+}
+
+body.mobile-app #player-section,
+body.mobile-app .mobile-play-panel {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+body.mobile-app .mobile-play-panel {
+  display: none;
+}
+
+body.mobile-app[data-mobile-state="playing"] .mobile-play-panel {
+  display: grid !important;
+  gap: 14px;
+}
+
+body.mobile-app .mobile-dock {
+  display: flex !important;
+  margin-bottom: 16px;
+  background: rgba(8, 8, 8, 0.46);
+  border: 1px solid rgba(255,255,255,0.14);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #fff;
+}
+
+body.mobile-app .mobile-dock-icon {
+  background: linear-gradient(145deg, rgba(212, 187, 127, 0.22), rgba(255,255,255,0.08));
+}
+
+body.mobile-app .mobile-dock-title {
+  color: #fff;
+}
+
+body.mobile-app .mobile-dock-subtitle,
+body.mobile-app .status,
+body.mobile-app .hint {
+  color: rgba(255,255,255,0.78);
+}
+
+body.mobile-app .mobile-welcome-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  padding: max(20px, env(safe-area-inset-top, 0px)) 18px max(20px, env(safe-area-inset-bottom, 0px));
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  background: transparent !important;
+}
+
+body.mobile-app[data-mobile-state="onboarding-code"] .mobile-welcome-screen,
+body.mobile-app[data-mobile-state="onboarding-team"] .mobile-welcome-screen {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+body.mobile-app .mobile-welcome-card {
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: translateY(18px) scale(0.985);
+  width: min(100%, 420px);
+  max-width: 420px;
+  border-radius: 28px;
+  padding: 26px 22px 22px;
+  background: rgba(7, 7, 7, 0.72);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.42);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  gap: 14px;
+}
+
+body.mobile-app .mobile-welcome-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.22), rgba(212,187,127,0.42), rgba(255,255,255,0.08));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+body.mobile-app .mobile-welcome-card h1,
+body.mobile-app .mobile-welcome-card h2,
+body.mobile-app .mobile-welcome-card label {
+  color: #fff;
+}
+
+body.mobile-app .mobile-welcome-card h1,
+body.mobile-app .mobile-welcome-card h2 {
+  font-size: clamp(2rem, 8vw, 2.6rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  margin: 0 0 2px;
+}
+
+body.mobile-app .mobile-welcome-card label {
+  font-size: 0.92rem;
+  margin-bottom: 4px;
+}
+
+body.mobile-app .mobile-welcome-card input {
+  background: rgba(255,255,255,0.96);
+  color: #111;
+  border-radius: 16px;
+  min-height: 54px;
+  font-size: 1.04rem;
+  border: 1px solid rgba(255,255,255,0.16);
+}
+
+body.mobile-app .mobile-onboarding-note {
+  color: rgba(255,255,255,0.78);
+  min-height: 1.4em;
+}
+
+body.mobile-app .mobile-onboarding-note.success {
+  color: #c8ffd8;
+}
+
+body.mobile-app .welcome-continue,
+body.mobile-app .btn {
+  border-radius: 18px;
+  min-height: 54px;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+body.mobile-app .btn,
+body.mobile-app .mobile-welcome-card .btn.primary {
+  background: linear-gradient(135deg, #d8bf7c 0%, #f7f1de 52%, #b89146 100%);
+  color: #0b0b0b;
+  box-shadow: 0 16px 30px rgba(0,0,0,0.24);
+}
+
+body.mobile-app .btn.secondary {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.16);
+  box-shadow: none;
+}
+
+body.mobile-app .btn.ghost {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.14);
+}
+
+body.mobile-app .game-card,
+body.mobile-app .reward-banner,
+body.mobile-app .leaderboard-card,
+body.mobile-app .roster-team,
+body.mobile-app .opponent-card,
+body.mobile-app .current-match-card {
+  background: rgba(10,10,10,0.48);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #fff;
+}
+
+body.mobile-app #next-game h3,
+body.mobile-app .mobile-play-panel h2,
+body.mobile-app .mobile-play-panel .matchup-subtitle,
+body.mobile-app .opponent-country,
+body.mobile-app .opponent-members {
+  color: #fff !important;
+}
+
+body.mobile-app .flag {
+  border-color: rgba(255,255,255,0.18);
+}
+
+body.mobile-app .stat-pill {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.12);
+  color: #fff;
+}
+
+body.mobile-app .section-title {
+  margin-bottom: 4px;
+}
+
+body.mobile-app .section-title h2 {
+  font-size: 1.55rem;
+  color: #fff;
+}
+
+body.mobile-app .score-actions {
+  gap: 12px;
+}
+
+body.mobile-app .powerups {
+  color: rgba(255,255,255,0.86);
+}
+
+body.mobile-app .reward-banner {
+  color: #fff;
+}
+
+body.mobile-app #manual-refresh {
+  margin-top: 4px;
+}
