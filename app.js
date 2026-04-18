@@ -183,10 +183,34 @@
         mobileOnboardingTeamCard.classList.toggle("is-visible", !showCode);
       };
 
+      const syncMobilePanelActivity = (state) => {
+        if (!isMobileLayout()) return;
+        const onboardingStates = new Set(["onboarding-code", "onboarding-team"]);
+        const isOnboarding = onboardingStates.has(state);
+
+        if (mobileWelcome) {
+          mobileWelcome.inert = !isOnboarding;
+          mobileWelcome.setAttribute("aria-hidden", String(!isOnboarding));
+        }
+
+        if (mobileRegisterPanel) {
+          mobileRegisterPanel.inert = state === "playing";
+        }
+
+        if (mobileAccessPanel) {
+          mobileAccessPanel.inert = state === "playing";
+        }
+
+        if (mobilePlayPanel) {
+          mobilePlayPanel.inert = state !== "playing";
+        }
+      };
+
       const setMobileState = (state) => {
         // IMPORTANT: never remove panels from the DOM.
         // Removing causes the Step 1 form to disappear until a full refresh.
         document.body.dataset.mobileState = state;
+        syncMobilePanelActivity(state);
       };
 
       const computeMobileState = () => {
@@ -1783,6 +1807,8 @@
           setGameCodes(submittedCode);
           subscribeToGame(submittedCode);
           await registerTeam({ playerName, country, partnerName });
+          pendingMobileGameCode = "";
+          setMobileOnboardingStep("code");
         } catch (error) {
           console.error("Join failed.", error);
           const message = error?.message || String(error);
