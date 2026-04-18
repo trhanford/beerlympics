@@ -225,8 +225,9 @@
         const hasTeam = Boolean(getActiveTeamId());
         const hasGame = Boolean(getActiveGameCode());
         if (hasTeam && hasGame) return "playing";
+        if (!hasTeam) return "onboarding-code";
         if (hasTeam) return "access";
-        return "register";
+        return "onboarding-code";
       };
 
       const scheduleManualRefreshPrompt = (state) => {
@@ -236,8 +237,13 @@
           clearTimeout(manualRefreshTimeout);
         }
         if (state !== "playing") return;
+        if (getActiveTeam()?.currentMatchId) return;
         manualRefreshTimeout = setTimeout(() => {
-          manualRefreshButton.classList.remove("hidden");
+          const isStillPlaying = computeMobileState() === "playing";
+          const hasCurrentMatch = Boolean(getActiveTeam()?.currentMatchId);
+          if (isStillPlaying && !hasCurrentMatch) {
+            manualRefreshButton.classList.remove("hidden");
+          }
         }, MANUAL_REFRESH_DELAY_MS);
       };
 
@@ -349,20 +355,22 @@
         const hasTeam = hasCoreInfo ?? Boolean(
           playerNameInput.value.trim() && partnerNameInput.value.trim() && countryInput.value.trim()
         );
-        const hasGame = hasCode ?? Boolean(getActiveGameCode());
+        const hasGame = hasCode ?? Boolean(
+          normalizeGameCode(gameCodeInput.value || "") || getActiveGameCode()
+        );
         const hasTeamLocked = Boolean(getActiveTeamId());
 
         steps.forEach((step) => {
           step.classList.remove("active", "complete");
         });
 
-        if (!hasTeam) {
+        if (!hasGame) {
           steps[0]?.classList.add("active");
           return;
         }
         steps[0]?.classList.add("complete");
 
-        if (!hasGame) {
+        if (!hasTeam) {
           steps[1]?.classList.add("active");
           return;
         }
@@ -391,6 +399,11 @@
       const getTeams = () => state.teams;
       const getMatches = () => state.matches;
       const getGame = () => state.game;
+      const getActiveTeam = () => {
+        const activeTeamId = getActiveTeamId();
+        if (!activeTeamId) return null;
+        return getTeams().find((team) => team.id === activeTeamId) || null;
+      };
 
       let unsubscribeGame = null;
       let unsubscribeTeams = null;

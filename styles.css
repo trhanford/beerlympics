@@ -30,15 +30,21 @@ body {
 
 html {
   background: linear-gradient(160deg, #000000 0%, #221c12 48%, #ceb88f 76%, #ffffff 100%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
 }
 
 body {
+  min-height: 100vh;
+  min-height: 100dvh;
   font-family: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text);
   background:
     radial-gradient(circle at 8% -8%, rgba(47, 89, 255, 0.15), transparent 35%),
     radial-gradient(circle at 90% -10%, rgba(255, 79, 149, 0.12), transparent 36%),
     linear-gradient(165deg, #f8faff 0%, #eef2fa 60%, #f6f8fd 100%);
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 body.mobile-app {
@@ -46,6 +52,8 @@ body.mobile-app {
   min-height: 100svh;
   background: linear-gradient(160deg, #000000 0%, #221c12 48%, #ceb88f 76%, #ffffff 100%);
   background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 
@@ -730,11 +738,12 @@ input.small {
   position: absolute;
   top: 50%;
   left: 50%;
-  background: rgba(255, 255, 255, 0.93);
-  border: 1px solid rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.985);
+  border: 1px solid rgba(17, 26, 44, 0.16);
   border-radius: 18px;
   padding: 22px;
   text-align: left;
+  color: #101a2e;
   box-shadow: var(--shadow-md);
   display: grid;
   gap: 10px;
@@ -742,6 +751,12 @@ input.small {
   transform: translate(-50%, calc(-50% + 12px));
   pointer-events: none;
   transition: opacity 260ms ease, transform 260ms ease;
+}
+
+.mobile-welcome-card h1,
+.mobile-welcome-card h2,
+.mobile-welcome-card label {
+  color: #101a2e;
 }
 
 .mobile-welcome-card.is-visible {
