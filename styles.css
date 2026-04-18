@@ -715,6 +715,7 @@ input.small {
   z-index: 300;
   pointer-events: none;
   opacity: 0;
+  visibility: hidden;
   transition: opacity 260ms ease;
 }
 
@@ -748,6 +749,11 @@ body[data-mobile-state="onboarding-team"] .mobile-welcome-screen {
   pointer-events: auto;
   opacity: 1;
   background: #0f1831;
+}
+
+
+body:not([data-mobile-state="onboarding-code"]):not([data-mobile-state="onboarding-team"]) .mobile-welcome-screen {
+  display: none;
 }
 
 .welcome-continue {
