@@ -174,8 +174,18 @@
 
       let pendingMobileGameCode = "";
 
+      const isProbablyPhone = () => {
+        const ua = navigator.userAgent || "";
+        const mobileUaPattern = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i;
+        if (mobileUaPattern.test(ua)) return true;
+        const smallestViewportSide = Math.min(window.innerWidth || 0, window.innerHeight || 0);
+        const hasTouch = navigator.maxTouchPoints > 0;
+        return hasTouch && smallestViewportSide > 0 && smallestViewportSide <= 900;
+      };
+
       const isMobileLayout = () =>
-        window.matchMedia ? window.matchMedia("(max-width: 767px)").matches : false;
+        (window.matchMedia ? window.matchMedia("(max-width: 767px)").matches : false) ||
+        isProbablyPhone();
 
       const setMobileOnboardingStep = (step) => {
         if (!mobileOnboardingCodeCard || !mobileOnboardingTeamCard) return;
