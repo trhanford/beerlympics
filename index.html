@@ -103,17 +103,17 @@
           <div class="step active" data-step="1">
             <div class="step-circle">1</div>
             <div>
-              Team info
+              Join or host
               <br />
-              <small>Name + partner + country</small>
+              <small>Enter a game code or create one</small>
             </div>
           </div>
           <div class="step" data-step="2">
             <div class="step-circle">2</div>
             <div>
-              Join or host
+              Team info
               <br />
-              <small>Enter a game code or create one</small>
+              <small>Name + partner + country</small>
             </div>
           </div>
           <div class="step" data-step="3">
@@ -135,34 +135,9 @@
               Tell us who you are so we can find or create your team.
             </p>
             <form id="team-form">
-              <div class="mobile-panel mobile-register-panel" id="mobile-register-panel">
-                <div class="mobile-panel-header mobile-only">
-                  <span class="mobile-panel-kicker">Step 1</span>
-                  <h3>Register your team</h3>
-                  <p>Drop in the player details to unlock the game lobby.</p>
-                </div>
-                <div class="field" style="--field-index: 0">
-                <label for="playerName">Your name</label>
-                <input id="playerName" name="playerName" placeholder="e.g. Jordan" required />
-                <p class="hint" id="playerName-hint">First name is perfect.</p>
-              </div>
-                <div class="field" style="--field-index: 1">
-                <label for="country">Country represented</label>
-                <input id="country" name="country" placeholder="e.g. Brazil" required />
-                <p class="hint" id="country-hint">We’ll match the flag automatically.</p>
-              </div>
-                <div class="field" style="--field-index: 2">
-                <label for="partnerName">Partner name</label>
-                <input id="partnerName" name="partnerName" placeholder="e.g. Sam" required />
-                <p class="hint" id="partnerName-hint">We’ll pair you up on the bracket.</p>
-              </div>
-                <button class="btn secondary mobile-only" type="button" id="mobile-continue">
-                  Continue to game access
-                </button>
-              </div>
               <div class="mobile-panel mobile-access-panel" id="mobile-access-panel">
                 <div class="mobile-panel-header mobile-only">
-                  <span class="mobile-panel-kicker">Step 2</span>
+                  <span class="mobile-panel-kicker">Step 1</span>
                   <h3>Game access</h3>
                   <p>Join an existing lobby or spin up a new one.</p>
                 </div>
@@ -200,6 +175,31 @@
                   </button>
                 </div>
                 <p class="status" id="save-status">Nothing saved yet.</p>
+              </div>
+              <div class="mobile-panel mobile-register-panel" id="mobile-register-panel">
+                <div class="mobile-panel-header mobile-only">
+                  <span class="mobile-panel-kicker">Step 2</span>
+                  <h3>Register your team</h3>
+                  <p>Drop in the player details to unlock the game lobby.</p>
+                </div>
+                <div class="field" style="--field-index: 0">
+                <label for="playerName">Your name</label>
+                <input id="playerName" name="playerName" placeholder="e.g. Jordan" required />
+                <p class="hint" id="playerName-hint">First name is perfect.</p>
+              </div>
+                <div class="field" style="--field-index: 1">
+                <label for="country">Country represented</label>
+                <input id="country" name="country" placeholder="e.g. Brazil" required />
+                <p class="hint" id="country-hint">We’ll match the flag automatically.</p>
+              </div>
+                <div class="field" style="--field-index: 2">
+                <label for="partnerName">Partner name</label>
+                <input id="partnerName" name="partnerName" placeholder="e.g. Sam" required />
+                <p class="hint" id="partnerName-hint">We’ll pair you up on the bracket.</p>
+              </div>
+                <button class="btn secondary mobile-only" type="button" id="mobile-continue">
+                  Continue to game access
+                </button>
               </div>
             </form>
           </div>
