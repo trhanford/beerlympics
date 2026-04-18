@@ -1,2318 +1,2272 @@
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-      import {
-        getFirestore,
-        doc,
-        getDoc,
-        getDocs,
-        setDoc,
-        updateDoc,
-        onSnapshot,
-        deleteDoc,
-        collection,
-        serverTimestamp,
-        runTransaction,
-        writeBatch,
-      } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  onSnapshot,
+  deleteDoc,
+  collection,
+  serverTimestamp,
+  runTransaction,
+  writeBatch,
+} from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 
-      const firebaseConfig = {
-        apiKey: "AIzaSyAUcp4N3YQjpDBf9vUNZni12PiY4_cIgds",
-        authDomain: "beerlympics-2026-live.firebaseapp.com",
-        projectId: "beerlympics-2026-live",
-        storageBucket: "beerlympics-2026-live.firebasestorage.app",
-        messagingSenderId: "514383788804",
-        appId: "1:514383788804:web:2c2c00a39a1a925f79ae51"
-      };
+const firebaseConfig = {
+  apiKey: "AIzaSyAUcp4N3YQjpDBf9vUNZni12PiY4_cIgds",
+  authDomain: "beerlympics-2026-live.firebaseapp.com",
+  projectId: "beerlympics-2026-live",
+  storageBucket: "beerlympics-2026-live.firebasestorage.app",
+  messagingSenderId: "514383788804",
+  appId: "1:514383788804:web:2c2c00a39a1a925f79ae51",
+};
 
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-      const GAME_TYPES = [
-        { id: "beer_pong", name: "Beer Pong", teams: 2 },
-        { id: "flip_cup", name: "Flip Cup", teams: 4 },
-        { id: "beerio_kart", name: "Beerio Kart", teams: 2 },
-        { id: "die", name: "Die", teams: 2 },
-        { id: "drinkball", name: "Drinkball", teams: 2 },
-      ];
+const GAME_TYPES = [
+  { id: "beer_pong", name: "Beer Pong", teams: 2 },
+  { id: "flip_cup", name: "Flip Cup", teams: 4 },
+  { id: "beerio_kart", name: "Beerio Kart", teams: 2 },
+  { id: "die", name: "Die", teams: 2 },
+  { id: "drinkball", name: "Drinkball", teams: 2 },
+];
 
-      const STORAGE_KEYS = {
-        activeTeamId: "beerlympics_active_team",
-        adminMode: "beerlympics_admin_mode",
-        activeGameCode: "beerlympics_active_game_code",
-        currentGameCode: "beerlympics_current_game_code",
-        hostId: "beerlympics_host_id",
-      };
+const STORAGE_KEYS = {
+  activeTeamId: "beerlympics_active_team",
+  adminMode: "beerlympics_admin_mode",
+  activeGameCode: "beerlympics_active_game_code",
+  currentGameCode: "beerlympics_current_game_code",
+  hostId: "beerlympics_host_id",
+};
 
-      const form = document.getElementById("team-form");
-      const saveStatus = document.getElementById("save-status");
-      const nextGameCard = document.getElementById("next-game");
-      const scoreActions = document.getElementById("score-actions");
-      const leaderboardSection = document.getElementById("leaderboard-section");
-      const playerSection = document.getElementById("player-section");
-      const rosterSection = document.getElementById("roster-section");
-      const controlSection = document.getElementById("control-section");
-      const leaderboardEl = document.getElementById("leaderboard");
-      const rosterEl = document.getElementById("roster");
-      const rosterForm = document.getElementById("roster-form");
-      const rosterStatus = document.getElementById("roster-status");
-      const rosterEdit = document.getElementById("roster-edit");
-      const rosterEditTitle = document.getElementById("roster-edit-title");
-      const rosterEditDescription = document.getElementById("roster-edit-description");
-      const rosterPlayerName = document.getElementById("rosterPlayerName");
-      const rosterPartnerName = document.getElementById("rosterPartnerName");
-      const rosterCountry = document.getElementById("rosterCountry");
-      const removeTeamButton = document.getElementById("remove-team");
-      const mergePanel = document.getElementById("merge-panel");
-      const mergeSourceSelect = document.getElementById("merge-source");
-      const mergeTargetSelect = document.getElementById("merge-target");
-      const mergeButton = document.getElementById("merge-button");
-      const mergeStatus = document.getElementById("merge-status");
-      const adminToggle = document.getElementById("admin-toggle");
-      const adminStatus = document.getElementById("admin-status");
-      const adminPanel = document.getElementById("admin-panel");
-      const adminActionStatus = document.getElementById("admin-action-status");
-      const gameCodeEl = document.getElementById("game-code");
-      const joinQrEl = document.getElementById("join-qr");
-      const joinLinkEl = document.getElementById("join-link");
-      const joinDomainEl = document.getElementById("join-domain");
-      const copyJoinLinkButton = document.getElementById("copy-join-link");
-      const currentMatchesEl = document.getElementById("current-matches");
-      const newGameButton = document.getElementById("new-game");
-      const resetGameButton = document.getElementById("reset-game");
-      const clearResultsButton = document.getElementById("clear-results");
-      const startGameButton = document.getElementById("start-game");
-      const joinGameButton = document.getElementById("join-game");
-      const tabs = document.querySelectorAll(".tab");
-      const leaderboardTab = document.querySelector('.tab[data-view="leaderboard"]');
-      const controlTab = document.getElementById("control-tab");
-      const toastContainer = document.getElementById("toast-container");
-      const modePill = document.getElementById("mode-pill");
-      const hostPill = document.getElementById("host-pill");
-      const stepper = document.getElementById("stepper");
-      const playerNameInput = document.getElementById("playerName");
-      const partnerNameInput = document.getElementById("partnerName");
-      const countryInput = document.getElementById("country");
-      const gameCodeInput = document.getElementById("gameCode");
-      const playerNameHint = document.getElementById("playerName-hint");
-      const partnerNameHint = document.getElementById("partnerName-hint");
-      const countryHint = document.getElementById("country-hint");
-      const gameCodeHint = document.getElementById("gameCode-hint");
-      const mobileWelcome = document.getElementById("mobile-welcome");
-      const mobileDock = document.getElementById("mobile-dock");
-      const mobileContinueButton = document.getElementById("mobile-continue");
-      const mobileCodeContinueButton = document.getElementById("mobileCodeContinueBtn");
-      const mobileLetsPlayButton = document.getElementById("mobileLetsPlayBtn");
-      const mobileOnboardingCodeCard = document.getElementById("mobile-onboarding-code");
-      const mobileOnboardingTeamCard = document.getElementById("mobile-onboarding-team");
-      const mobileGameCodeInput = document.getElementById("mobileGameCodeInput");
-      const mobileOnboardingNote = document.getElementById("mobile-onboarding-note");
-      const mobilePlayerNameInput = document.getElementById("mobilePlayerNameInput");
-      const mobilePartnerNameInput = document.getElementById("mobilePartnerNameInput");
-      const mobileCountryInput = document.getElementById("mobileCountryInput");
-      const mobileRegisterPanel = document.getElementById("mobile-register-panel");
-      const mobileAccessPanel = document.getElementById("mobile-access-panel");
-      const mobilePlayPanel = document.getElementById("mobile-play-panel");
-      const manualRefreshButton = document.getElementById("manual-refresh");
+const form = document.getElementById("team-form");
+const saveStatus = document.getElementById("save-status");
+const nextGameCard = document.getElementById("next-game");
+const scoreActions = document.getElementById("score-actions");
+const leaderboardSection = document.getElementById("leaderboard-section");
+const playerSection = document.getElementById("player-section");
+const rosterSection = document.getElementById("roster-section");
+const controlSection = document.getElementById("control-section");
+const leaderboardEl = document.getElementById("leaderboard");
+const rosterEl = document.getElementById("roster");
+const rosterForm = document.getElementById("roster-form");
+const rosterStatus = document.getElementById("roster-status");
+const rosterEdit = document.getElementById("roster-edit");
+const rosterEditTitle = document.getElementById("roster-edit-title");
+const rosterEditDescription = document.getElementById("roster-edit-description");
+const rosterPlayerName = document.getElementById("rosterPlayerName");
+const rosterPartnerName = document.getElementById("rosterPartnerName");
+const rosterCountry = document.getElementById("rosterCountry");
+const removeTeamButton = document.getElementById("remove-team");
+const mergePanel = document.getElementById("merge-panel");
+const mergeSourceSelect = document.getElementById("merge-source");
+const mergeTargetSelect = document.getElementById("merge-target");
+const mergeButton = document.getElementById("merge-button");
+const mergeStatus = document.getElementById("merge-status");
+const adminToggle = document.getElementById("admin-toggle");
+const adminStatus = document.getElementById("admin-status");
+const adminPanel = document.getElementById("admin-panel");
+const adminActionStatus = document.getElementById("admin-action-status");
+const gameCodeEl = document.getElementById("game-code");
+const joinQrEl = document.getElementById("join-qr");
+const joinLinkEl = document.getElementById("join-link");
+const joinDomainEl = document.getElementById("join-domain");
+const copyJoinLinkButton = document.getElementById("copy-join-link");
+const currentMatchesEl = document.getElementById("current-matches");
+const newGameButton = document.getElementById("new-game");
+const resetGameButton = document.getElementById("reset-game");
+const clearResultsButton = document.getElementById("clear-results");
+const startGameButton = document.getElementById("start-game");
+const joinGameButton = document.getElementById("join-game");
+const tabs = document.querySelectorAll(".tab");
+const leaderboardTab = document.querySelector('.tab[data-view="leaderboard"]');
+const controlTab = document.getElementById("control-tab");
+const toastContainer = document.getElementById("toast-container");
+const modePill = document.getElementById("mode-pill");
+const hostPill = document.getElementById("host-pill");
+const stepper = document.getElementById("stepper");
+const playerNameInput = document.getElementById("playerName");
+const partnerNameInput = document.getElementById("partnerName");
+const countryInput = document.getElementById("country");
+const gameCodeInput = document.getElementById("gameCode");
+const playerNameHint = document.getElementById("playerName-hint");
+const partnerNameHint = document.getElementById("partnerName-hint");
+const countryHint = document.getElementById("country-hint");
+const gameCodeHint = document.getElementById("gameCode-hint");
+const mobileWelcome = document.getElementById("mobile-welcome");
+const mobileDock = document.getElementById("mobile-dock");
+const mobileContinueButton = document.getElementById("mobile-continue");
+const mobileCodeContinueButton = document.getElementById("mobileCodeContinueBtn");
+const mobileLetsPlayButton = document.getElementById("mobileLetsPlayBtn");
+const mobileOnboardingCodeCard = document.getElementById("mobile-onboarding-code");
+const mobileOnboardingTeamCard = document.getElementById("mobile-onboarding-team");
+const mobileGameCodeInput = document.getElementById("mobileGameCodeInput");
+const mobileOnboardingNote = document.getElementById("mobile-onboarding-note");
+const mobilePlayerNameInput = document.getElementById("mobilePlayerNameInput");
+const mobilePartnerNameInput = document.getElementById("mobilePartnerNameInput");
+const mobileCountryInput = document.getElementById("mobileCountryInput");
+const mobileRegisterPanel = document.getElementById("mobile-register-panel");
+const mobileAccessPanel = document.getElementById("mobile-access-panel");
+const mobilePlayPanel = document.getElementById("mobile-play-panel");
+const manualRefreshButton = document.getElementById("manual-refresh");
 
-      const ADMIN_PASSCODE = "3241";
+const ADMIN_PASSCODE = "3241";
 
-      const MANUAL_REFRESH_DELAY_MS = 2 * 60 * 1000;
-      let manualRefreshTimeout;
+const MANUAL_REFRESH_DELAY_MS = 2 * 60 * 1000;
+let manualRefreshTimeout;
 
-      const normalizeGameCode = (value) => value.trim().replace(/\s+/g, "");
-      const generateGameCode = () =>
-        String(Math.floor(1000 + Math.random() * 9000));
+const normalizeGameCode = (value) => value.trim().replace(/\s+/g, "");
+const generateGameCode = () => String(Math.floor(1000 + Math.random() * 9000));
 
-      const getCurrentGameCode = () => localStorage.getItem(STORAGE_KEYS.currentGameCode);
-      const getActiveGameCode = () => localStorage.getItem(STORAGE_KEYS.activeGameCode);
-      const setActiveGameCode = (code) =>
-        localStorage.setItem(STORAGE_KEYS.activeGameCode, code);
+const getCurrentGameCode = () => localStorage.getItem(STORAGE_KEYS.currentGameCode);
+const getActiveGameCode = () => localStorage.getItem(STORAGE_KEYS.activeGameCode);
+const setActiveGameCode = (code) => localStorage.setItem(STORAGE_KEYS.activeGameCode, code);
 
-      const setCurrentGameCode = (code) =>
-        localStorage.setItem(STORAGE_KEYS.currentGameCode, code);
+const setCurrentGameCode = (code) =>
+  localStorage.setItem(STORAGE_KEYS.currentGameCode, code);
 
-      const setGameCodes = (code) => {
-        setCurrentGameCode(code);
-        setActiveGameCode(code);
-      };
+const setGameCodes = (code) => {
+  setCurrentGameCode(code);
+  setActiveGameCode(code);
+};
 
-      const withTimeout = (promise, timeoutMs, message) =>
-        new Promise((resolve, reject) => {
-          const timer = setTimeout(() => {
-            reject(new Error(message));
-          }, timeoutMs);
-          promise
-            .then((value) => {
-              clearTimeout(timer);
-              resolve(value);
-            })
-            .catch((error) => {
-              clearTimeout(timer);
-              reject(error);
-            });
+const withTimeout = (promise, timeoutMs, message) =>
+  new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(message));
+    }, timeoutMs);
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
+
+const showToast = (message, type = "info") => {
+  if (!toastContainer) return;
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  toastContainer.appendChild(toast);
+  setTimeout(() => {
+    toast.remove();
+  }, 3200);
+};
+
+const setButtonLoading = (button, isLoading, label) => {
+  if (!button) return;
+  button.disabled = isLoading;
+  button.classList.toggle("loading", isLoading);
+  if (label) {
+    button.dataset.defaultLabel = button.dataset.defaultLabel || button.textContent;
+    button.textContent = isLoading ? label : button.dataset.defaultLabel;
+  }
+};
+
+let pendingMobileGameCode = "";
+
+const isProbablyPhone = () => {
+  const ua = navigator.userAgent || "";
+  const mobileUaPattern = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i;
+  if (mobileUaPattern.test(ua)) return true;
+  const smallestViewportSide = Math.min(window.innerWidth || 0, window.innerHeight || 0);
+  const hasTouch = navigator.maxTouchPoints > 0;
+  return hasTouch && smallestViewportSide > 0 && smallestViewportSide <= 900;
+};
+
+const isMobileLayout = () =>
+  (window.matchMedia ? window.matchMedia("(max-width: 767px)").matches : false) ||
+  isProbablyPhone();
+
+const setMobileOnboardingStep = (step) => {
+  if (!mobileOnboardingCodeCard || !mobileOnboardingTeamCard) return;
+  const showCode = step === "code";
+  mobileOnboardingCodeCard.classList.toggle("is-visible", showCode);
+  mobileOnboardingTeamCard.classList.toggle("is-visible", !showCode);
+};
+
+const resetMobileOnboardingMessage = () => {
+  if (!mobileOnboardingNote) return;
+  mobileOnboardingNote.textContent = "Enter your 4-digit game code to continue.";
+  mobileOnboardingNote.classList.remove("success");
+};
+
+const syncMobilePanelActivity = (state) => {
+  if (!isMobileLayout()) return;
+  const onboardingStates = new Set(["onboarding-code", "onboarding-team"]);
+  const isOnboarding = onboardingStates.has(state);
+
+  if (mobileWelcome) {
+    mobileWelcome.inert = !isOnboarding;
+    mobileWelcome.setAttribute("aria-hidden", String(!isOnboarding));
+  }
+
+  if (mobileRegisterPanel) {
+    mobileRegisterPanel.inert = state === "playing";
+  }
+
+  if (mobileAccessPanel) {
+    mobileAccessPanel.inert = state === "playing";
+  }
+
+  if (mobilePlayPanel) {
+    mobilePlayPanel.inert = state !== "playing";
+  }
+};
+
+const setMobileState = (state) => {
+  document.body.dataset.mobileState = state;
+  syncMobilePanelActivity(state);
+};
+
+const computeMobileState = () => {
+  if (!isMobileLayout()) return "desktop";
+  const hasTeam = Boolean(getActiveTeamId());
+  const hasGame = Boolean(getActiveGameCode());
+  if (hasTeam && hasGame) return "playing";
+  if (!hasTeam) return "onboarding-code";
+  if (hasTeam) return "access";
+  return "onboarding-code";
+};
+
+const scheduleManualRefreshPrompt = (state) => {
+  if (!manualRefreshButton) return;
+  manualRefreshButton.classList.add("hidden");
+  if (manualRefreshTimeout) {
+    clearTimeout(manualRefreshTimeout);
+  }
+  if (state !== "playing") return;
+  if (getActiveTeam()?.currentMatchId) return;
+  manualRefreshTimeout = setTimeout(() => {
+    const isStillPlaying = computeMobileState() === "playing";
+    const hasCurrentMatch = Boolean(getActiveTeam()?.currentMatchId);
+    if (isStillPlaying && !hasCurrentMatch) {
+      manualRefreshButton.classList.remove("hidden");
+    }
+  }, MANUAL_REFRESH_DELAY_MS);
+};
+
+const updateMobileState = (forcedState) => {
+  const isMobile = isMobileLayout();
+  document.body.classList.toggle("mobile-app", isMobile);
+  if (!isMobile) {
+    document.body.dataset.mobileState = "desktop";
+    return;
+  }
+  const nextState = forcedState || computeMobileState();
+  setMobileState(nextState);
+  scheduleManualRefreshPrompt(nextState);
+};
+
+const runMobileWelcome = () => {
+  if (!isMobileLayout()) return;
+  document.body.classList.add("mobile-app");
+  const state = computeMobileState();
+  setMobileState(state);
+};
+
+const dismissMobileKeyboard = () => {
+  const active = document.activeElement;
+  if (!active) return;
+  if (
+    active.tagName === "INPUT" ||
+    active.tagName === "TEXTAREA" ||
+    active.tagName === "SELECT" ||
+    active.isContentEditable
+  ) {
+    active.blur();
+  }
+};
+
+const triggerConfetti = () => {
+  const colors = ["#5b6cff", "#ff7ab2", "#49d9c2", "#ffc94a"];
+  const count = 18;
+  for (let i = 0; i < count; i += 1) {
+    const piece = document.createElement("div");
+    piece.className = "confetti";
+    piece.style.left = `${Math.random() * 100}%`;
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = `${Math.random() * 0.2}s`;
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), 1600);
+  }
+};
+
+const showReward = ({ points, isWin }) => {
+  const banner = document.createElement("div");
+  banner.className = `reward-banner${isWin ? "" : " loss"}`;
+  banner.innerHTML = `
+    <div>${isWin ? "Winner energy! 🎉" : "Nice hustle! 💪"}</div>
+    <div class="points-burst">
+      <span>+${points} pts</span>
+    </div>
+  `;
+  scoreActions.prepend(banner);
+  setTimeout(() => banner.remove(), 1800);
+  if (isWin) {
+    triggerConfetti();
+  }
+};
+
+const validateTeamInputs = () => {
+  const playerName = playerNameInput.value.trim();
+  const partnerName = partnerNameInput.value.trim();
+  const country = countryInput.value.trim();
+  const gameCode = normalizeGameCode(gameCodeInput.value || "");
+
+  playerNameHint.classList.toggle("error", !playerName);
+  playerNameHint.textContent = playerName
+    ? "First name is perfect."
+    : "Add your name so teammates know who to cheer for.";
+
+  partnerNameHint.classList.toggle("error", !partnerName);
+  partnerNameHint.textContent = partnerName
+    ? "We’ll pair you up on the bracket."
+    : "Add your partner so we can schedule matches.";
+
+  countryHint.classList.toggle("error", !country);
+  if (!country) {
+    countryHint.textContent = "Pick a country so we can grab the flag.";
+  } else if (getCountryIso2(country)) {
+    countryHint.textContent = "Flag found! ✅";
+  } else {
+    countryHint.textContent = "We’ll try our best—flag will show when recognized.";
+  }
+
+  gameCodeHint.classList.toggle("error", !gameCode);
+  gameCodeHint.textContent = gameCode
+    ? "Code ready. Tap to lock in!"
+    : "Ask the host for the 4-digit code.";
+
+  const hasCoreInfo = Boolean(playerName && partnerName && country);
+  joinGameButton.disabled = !hasCoreInfo || !gameCode;
+  startGameButton.disabled = !hasCoreInfo;
+  if (mobileContinueButton) {
+    mobileContinueButton.disabled = !hasCoreInfo;
+  }
+
+  updateStepIndicator({ hasCoreInfo, hasCode: Boolean(gameCode) });
+};
+
+const updateStepIndicator = ({ hasCoreInfo, hasCode } = {}) => {
+  if (!stepper) return;
+  const steps = stepper.querySelectorAll(".step");
+  const hasTeam = hasCoreInfo ?? Boolean(
+    playerNameInput.value.trim() && partnerNameInput.value.trim() && countryInput.value.trim()
+  );
+  const hasGame = hasCode ?? Boolean(
+    normalizeGameCode(gameCodeInput.value || "") || getActiveGameCode()
+  );
+  const hasTeamLocked = Boolean(getActiveTeamId());
+
+  steps.forEach((step) => {
+    step.classList.remove("active", "complete");
+  });
+
+  if (!hasGame) {
+    steps[0]?.classList.add("active");
+    return;
+  }
+  steps[0]?.classList.add("complete");
+
+  if (!hasTeam) {
+    steps[1]?.classList.add("active");
+    return;
+  }
+  steps[1]?.classList.add("complete");
+
+  steps[2]?.classList.add(hasTeamLocked ? "active" : "complete");
+};
+
+const isAdmin = () => localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
+
+const ensureHostId = () => {
+  let hostId = localStorage.getItem(STORAGE_KEYS.hostId);
+  if (!hostId) {
+    hostId = crypto.randomUUID();
+    localStorage.setItem(STORAGE_KEYS.hostId, hostId);
+  }
+  return hostId;
+};
+
+const state = {
+  game: null,
+  teams: [],
+  matches: [],
+};
+
+const getTeams = () => state.teams;
+const getMatches = () => state.matches;
+const getGame = () => state.game;
+const getActiveTeam = () => {
+  const activeTeamId = getActiveTeamId();
+  if (!activeTeamId) return null;
+  return getTeams().find((team) => team.id === activeTeamId) || null;
+};
+
+let unsubscribeGame = null;
+let unsubscribeTeams = null;
+let unsubscribeMatches = null;
+let adminEditingTeamId = null;
+
+const activeTeamStorageKey = (code = getActiveGameCode()) =>
+  code ? `${STORAGE_KEYS.activeTeamId}:${code}` : STORAGE_KEYS.activeTeamId;
+
+const getActiveTeamId = () => localStorage.getItem(activeTeamStorageKey()) || null;
+
+const setActiveTeamId = (id) => localStorage.setItem(activeTeamStorageKey(), id);
+
+const clearActiveTeamId = (code = getActiveGameCode()) =>
+  localStorage.removeItem(activeTeamStorageKey(code));
+
+const initials = (value) =>
+  (value || "?")
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
+
+const renderFlagAvatar = (country) => {
+  const iso2 = getCountryIso2(country);
+  if (!iso2) {
+    return `<span class="flag">${initials(country || "?")}</span>`;
+  }
+  const url = getFlagUrl(iso2);
+  return `<span class="flag"><img src="${url}" alt="${country} flag" loading="lazy" /></span>`;
+};
+
+const normalizeText = (value) => value.trim().toLowerCase();
+const normalizeName = (value) => normalizeText(value).replace(/[^a-z0-9]/g, "");
+const normalizeCountry = (value) => normalizeText(value).replace(/[^a-z]/g, "");
+
+const COUNTRY_ALIASES = {
+  usa: "united states",
+  "u.s.a": "united states",
+  us: "united states",
+  "u.s.": "united states",
+  uk: "united kingdom",
+  uae: "united arab emirates",
+  "south korea": "korea, republic of",
+  "north korea": "korea, democratic people's republic of",
+  russia: "russian federation",
+  czechia: "czechia",
+  iran: "iran, islamic republic of",
+  syria: "syrian arab republic",
+  vietnam: "viet nam",
+  laos: "lao people's democratic republic",
+  bolivia: "bolivia (plurinational state of)",
+  tanzania: "tanzania, united republic of",
+  moldova: "moldova, republic of",
+  venezuela: "venezuela (bolivarian republic of)",
+  "cape verde": "cabo verde",
+  "cote divoire": "côte d'ivoire",
+  "ivory coast": "côte d'ivoire",
+  myanmar: "myanmar",
+  burma: "myanmar",
+  "north macedonia": "north macedonia",
+  palestine: "palestine, state of",
+  "saint kitts": "saint kitts and nevis",
+  "saint lucia": "saint lucia",
+  "saint vincent": "saint vincent and the grenadines",
+  eswatini: "eswatini",
+};
+
+let countryLookup = null;
+let countryLookupPromise = null;
+
+const buildCountryLookup = (data) => {
+  const lookup = {};
+  Object.entries(data).forEach(([code, name]) => {
+    const normalized = normalizeCountry(name);
+    lookup[normalized] = code.toLowerCase();
+  });
+  Object.entries(COUNTRY_ALIASES).forEach(([alias, canonical]) => {
+    const normalizedAlias = normalizeCountry(alias);
+    const normalizedCanonical = normalizeCountry(canonical);
+    if (lookup[normalizedCanonical]) {
+      lookup[normalizedAlias] = lookup[normalizedCanonical];
+    }
+  });
+  return lookup;
+};
+
+const ensureCountryLookup = async () => {
+  if (countryLookup) return countryLookup;
+  if (!countryLookupPromise) {
+    countryLookupPromise = fetch("https://flagcdn.com/en/codes.json")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Unable to fetch country list.");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        countryLookup = buildCountryLookup(data);
+        return countryLookup;
+      })
+      .catch((error) => {
+        console.warn("Country map unavailable, using initials fallback.", error);
+        countryLookup = {};
+        return countryLookup;
+      });
+  }
+  return countryLookupPromise;
+};
+
+const getCountryIso2 = (country) => {
+  if (!country) return null;
+  const normalized = normalizeCountry(country);
+  if (!normalized) return null;
+  const alias = COUNTRY_ALIASES[normalizeText(country)];
+  const finalKey = alias ? normalizeCountry(alias) : normalized;
+  return countryLookup?.[finalKey] || null;
+};
+
+const getFlagUrl = (iso2) => (iso2 ? `https://flagcdn.com/w40/${iso2.toLowerCase()}.png` : null);
+
+const gameRef = (code) => doc(db, "games", code);
+const teamsCollection = (code) => collection(db, "games", code, "teams");
+const matchesCollection = (code) => collection(db, "games", code, "matches");
+
+async function createGame(code) {
+  const hostId = ensureHostId();
+  await setDoc(gameRef(code), {
+    started: true,
+    createdAt: serverTimestamp(),
+    settings: {
+      doubleDownFlipCupMode: "all_rounds",
+    },
+    hostId,
+  });
+}
+
+async function fetchGame(code) {
+  const snap = await getDoc(gameRef(code));
+  return snap.exists() ? snap.data() : null;
+}
+
+async function fetchTeamsOnce(code) {
+  const snap = await getDocs(teamsCollection(code));
+  return snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+}
+
+function isHost() {
+  const game = getGame();
+  if (!game) return false;
+  return game.hostId === ensureHostId();
+}
+
+let fillMatchesTimer = null;
+let fillMatchesInFlight = false;
+
+function scheduleFillMatches(code) {
+  if (!code) return;
+  if (!isHost()) return;
+  if (fillMatchesTimer) return;
+
+  fillMatchesTimer = setTimeout(async () => {
+    fillMatchesTimer = null;
+    if (fillMatchesInFlight) return;
+
+    fillMatchesInFlight = true;
+    try {
+      await fillMatches(code);
+    } catch (error) {
+      console.error("Unable to auto-create matches.", error);
+    } finally {
+      fillMatchesInFlight = false;
+    }
+  }, 250);
+}
+
+function subscribeToGame(code) {
+  if (unsubscribeGame) unsubscribeGame();
+  if (unsubscribeTeams) unsubscribeTeams();
+  if (unsubscribeMatches) unsubscribeMatches();
+
+  unsubscribeGame = onSnapshot(gameRef(code), (snap) => {
+    state.game = snap.exists() ? { id: snap.id, ...snap.data() } : null;
+    renderLeaderboard();
+    renderRoster();
+    renderMatch();
+    updateGameCodeDisplay();
+    updateTabsVisibility();
+    scheduleFillMatches(code);
+  });
+
+  unsubscribeTeams = onSnapshot(teamsCollection(code), (snap) => {
+    state.teams = snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+    renderLeaderboard();
+    renderRoster();
+    renderMatch();
+    scheduleFillMatches(code);
+  });
+
+  unsubscribeMatches = onSnapshot(matchesCollection(code), (snap) => {
+    state.matches = snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+    renderLeaderboard();
+    renderMatch();
+  });
+}
+
+async function clearTeamsInCloud(code) {
+  const batch = writeBatch(db);
+  getTeams().forEach((team) => {
+    batch.delete(doc(teamsCollection(code), team.id));
+  });
+  getMatches().forEach((match) => {
+    batch.delete(doc(matchesCollection(code), match.id));
+  });
+  await batch.commit();
+}
+
+async function clearMatchResults() {
+  const activeGameCode = getActiveGameCode();
+  if (!activeGameCode) return;
+  const batch = writeBatch(db);
+  getMatches().forEach((match) => {
+    batch.update(doc(matchesCollection(activeGameCode), match.id), {
+      status: "pending",
+      result: null,
+      doubleDown: {},
+      doubleDownCharged: {},
+    });
+  });
+  getTeams().forEach((team) => {
+    batch.update(doc(teamsCollection(activeGameCode), team.id), { currentMatchId: null });
+  });
+  await batch.commit();
+  if (isHost()) {
+    await fillMatches(activeGameCode);
+  }
+}
+
+async function closeMatchForRemoval(code, match, removedTeamId = null) {
+  await runTransaction(db, async (transaction) => {
+    const matchRef = doc(matchesCollection(code), match.id);
+    const matchSnap = await transaction.get(matchRef);
+    if (!matchSnap.exists()) return;
+    const matchData = matchSnap.data();
+    const teamIds = matchData.teamIds || [];
+    teamIds
+      .filter((teamId) => teamId && teamId !== removedTeamId)
+      .forEach((teamId) => {
+        transaction.update(doc(teamsCollection(code), teamId), {
+          currentMatchId: null,
         });
+      });
+    transaction.update(matchRef, {
+      status: "complete",
+      result: { abandoned: true, removedTeamId },
+      completedAt: serverTimestamp(),
+    });
+  });
+}
 
-      const showToast = (message, type = "info") => {
-        if (!toastContainer) return;
-        const toast = document.createElement("div");
-        toast.className = `toast ${type}`;
-        toast.textContent = message;
-        toastContainer.appendChild(toast);
-        setTimeout(() => {
-          toast.remove();
-        }, 3200);
-      };
+const levenshtein = (a, b) => {
+  if (a === b) return 0;
+  const matrix = Array.from({ length: a.length + 1 }, () =>
+    Array.from({ length: b.length + 1 }, () => 0)
+  );
+  for (let i = 0; i <= a.length; i += 1) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j += 1) matrix[0][j] = j;
+  for (let i = 1; i <= a.length; i += 1) {
+    for (let j = 1; j <= b.length; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return matrix[a.length][b.length];
+};
 
-      const setButtonLoading = (button, isLoading, label) => {
-        if (!button) return;
-        button.disabled = isLoading;
-        button.classList.toggle("loading", isLoading);
-        if (label) {
-          button.dataset.defaultLabel = button.dataset.defaultLabel || button.textContent;
-          button.textContent = isLoading ? label : button.dataset.defaultLabel;
-        }
-      };
+async function deleteTeamFromCloud(code, teamId) {
+  await deleteDoc(doc(teamsCollection(code), teamId));
+}
 
-      let pendingMobileGameCode = "";
+const formatTeamLabel = (team) =>
+  `${team.playerName} + ${team.partnerName} (${team.country || "Unknown"})`;
 
-      const isProbablyPhone = () => {
-        const ua = navigator.userAgent || "";
-        const mobileUaPattern = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i;
-        if (mobileUaPattern.test(ua)) return true;
-        const smallestViewportSide = Math.min(window.innerWidth || 0, window.innerHeight || 0);
-        const hasTouch = navigator.maxTouchPoints > 0;
-        return hasTouch && smallestViewportSide > 0 && smallestViewportSide <= 900;
-      };
+const renderMergeOptions = (teams) => {
+  if (!mergePanel) return;
+  const adminMode = isAdmin();
+  mergePanel.classList.toggle("hidden", !adminMode);
+  if (!adminMode) return;
 
-      const isMobileLayout = () =>
-        (window.matchMedia ? window.matchMedia("(max-width: 767px)").matches : false) ||
-        isProbablyPhone();
+  const currentSource = mergeSourceSelect.value;
+  const currentTarget = mergeTargetSelect.value;
 
-      const setMobileOnboardingStep = (step) => {
-        if (!mobileOnboardingCodeCard || !mobileOnboardingTeamCard) return;
-        const showCode = step === "code";
-        mobileOnboardingCodeCard.classList.toggle("is-visible", showCode);
-        mobileOnboardingTeamCard.classList.toggle("is-visible", !showCode);
-      };
-
-      const resetMobileOnboardingMessage = () => {
-        if (!mobileOnboardingNote) return;
-        mobileOnboardingNote.textContent = "Enter your 4-digit game code to continue.";
-        mobileOnboardingNote.classList.remove("success");
-      };
-
-      const syncMobilePanelActivity = (state) => {
-        if (!isMobileLayout()) return;
-        const onboardingStates = new Set(["onboarding-code", "onboarding-team"]);
-        const isOnboarding = onboardingStates.has(state);
-
-        if (mobileWelcome) {
-          mobileWelcome.inert = !isOnboarding;
-          mobileWelcome.setAttribute("aria-hidden", String(!isOnboarding));
-        }
-
-        if (mobileRegisterPanel) {
-          mobileRegisterPanel.inert = state === "playing";
-        }
-
-        if (mobileAccessPanel) {
-          mobileAccessPanel.inert = state === "playing";
-        }
-
-        if (mobilePlayPanel) {
-          mobilePlayPanel.inert = state !== "playing";
-        }
-      };
-
-      const setMobileState = (state) => {
-        // IMPORTANT: never remove panels from the DOM.
-        // Removing causes the Step 1 form to disappear until a full refresh.
-        document.body.dataset.mobileState = state;
-        syncMobilePanelActivity(state);
-      };
-
-      const computeMobileState = () => {
-        if (!isMobileLayout()) return "desktop";
-        const hasTeam = Boolean(getActiveTeamId());
-        const hasGame = Boolean(getActiveGameCode());
-        if (hasTeam && hasGame) return "playing";
-        if (!hasTeam) return "onboarding-code";
-        if (hasTeam) return "access";
-        return "onboarding-code";
-      };
-
-      const scheduleManualRefreshPrompt = (state) => {
-        if (!manualRefreshButton) return;
-        manualRefreshButton.classList.add("hidden");
-        if (manualRefreshTimeout) {
-          clearTimeout(manualRefreshTimeout);
-        }
-        if (state !== "playing") return;
-        if (getActiveTeam()?.currentMatchId) return;
-        manualRefreshTimeout = setTimeout(() => {
-          const isStillPlaying = computeMobileState() === "playing";
-          const hasCurrentMatch = Boolean(getActiveTeam()?.currentMatchId);
-          if (isStillPlaying && !hasCurrentMatch) {
-            manualRefreshButton.classList.remove("hidden");
-          }
-        }, MANUAL_REFRESH_DELAY_MS);
-      };
-
-      const updateMobileState = (forcedState) => {
-        const isMobile = isMobileLayout();
-        document.body.classList.toggle("mobile-app", isMobile);
-        if (!isMobile) {
-          document.body.dataset.mobileState = "desktop";
-          return;
-        }
-        const nextState = forcedState || computeMobileState();
-        setMobileState(nextState);
-        scheduleManualRefreshPrompt(nextState);
-      };
-
-      const runMobileWelcome = () => {
-        if (!isMobileLayout()) return;
-        document.body.classList.add("mobile-app");
-        const state = computeMobileState();
-        setMobileState(state);
-      };
-
-      const dismissMobileKeyboard = () => {
-        const active = document.activeElement;
-        if (!active) return;
-        if (
-          active.tagName === "INPUT" ||
-          active.tagName === "TEXTAREA" ||
-          active.tagName === "SELECT" ||
-          active.isContentEditable
-        ) {
-          active.blur();
-        }
-      };
-
-      const triggerConfetti = () => {
-        const colors = ["#5b6cff", "#ff7ab2", "#49d9c2", "#ffc94a"];
-        const count = 18;
-        for (let i = 0; i < count; i += 1) {
-          const piece = document.createElement("div");
-          piece.className = "confetti";
-          piece.style.left = `${Math.random() * 100}%`;
-          piece.style.background = colors[Math.floor(Math.random() * colors.length)];
-          piece.style.animationDelay = `${Math.random() * 0.2}s`;
-          document.body.appendChild(piece);
-          setTimeout(() => piece.remove(), 1600);
-        }
-      };
-
-      const showReward = ({ points, isWin }) => {
-        const banner = document.createElement("div");
-        banner.className = `reward-banner${isWin ? "" : " loss"}`;
-        banner.innerHTML = `
-          <div>${isWin ? "Winner energy! 🎉" : "Nice hustle! 💪"}</div>
-          <div class="points-burst">
-            <span>+${points} pts</span>
-          </div>
-        `;
-        scoreActions.prepend(banner);
-        setTimeout(() => banner.remove(), 1800);
-        if (isWin) {
-          triggerConfetti();
-        }
-      };
-
-      const validateTeamInputs = () => {
-        const playerName = playerNameInput.value.trim();
-        const partnerName = partnerNameInput.value.trim();
-        const country = countryInput.value.trim();
-        const gameCode = normalizeGameCode(gameCodeInput.value || "");
-
-        playerNameHint.classList.toggle("error", !playerName);
-        playerNameHint.textContent = playerName
-          ? "First name is perfect."
-          : "Add your name so teammates know who to cheer for.";
-
-        partnerNameHint.classList.toggle("error", !partnerName);
-        partnerNameHint.textContent = partnerName
-          ? "We’ll pair you up on the bracket."
-          : "Add your partner so we can schedule matches.";
-
-        countryHint.classList.toggle("error", !country);
-        if (!country) {
-          countryHint.textContent = "Pick a country so we can grab the flag.";
-        } else if (getCountryIso2(country)) {
-          countryHint.textContent = "Flag found! ✅";
-        } else {
-          countryHint.textContent = "We’ll try our best—flag will show when recognized.";
-        }
-
-        gameCodeHint.classList.toggle("error", !gameCode);
-        gameCodeHint.textContent = gameCode
-          ? "Code ready. Tap to lock in!"
-          : "Ask the host for the 4-digit code.";
-
-        const hasCoreInfo = Boolean(playerName && partnerName && country);
-        joinGameButton.disabled = !hasCoreInfo || !gameCode;
-        startGameButton.disabled = !hasCoreInfo;
-        if (mobileContinueButton) {
-          mobileContinueButton.disabled = !hasCoreInfo;
-        }
-
-        updateStepIndicator({ hasCoreInfo, hasCode: Boolean(gameCode) });
-      };
-
-      const updateStepIndicator = ({ hasCoreInfo, hasCode } = {}) => {
-        if (!stepper) return;
-        const steps = stepper.querySelectorAll(".step");
-        const hasTeam = hasCoreInfo ?? Boolean(
-          playerNameInput.value.trim() && partnerNameInput.value.trim() && countryInput.value.trim()
-        );
-        const hasGame = hasCode ?? Boolean(
-          normalizeGameCode(gameCodeInput.value || "") || getActiveGameCode()
-        );
-        const hasTeamLocked = Boolean(getActiveTeamId());
-
-        steps.forEach((step) => {
-          step.classList.remove("active", "complete");
-        });
-
-        if (!hasGame) {
-          steps[0]?.classList.add("active");
-          return;
-        }
-        steps[0]?.classList.add("complete");
-
-        if (!hasTeam) {
-          steps[1]?.classList.add("active");
-          return;
-        }
-        steps[1]?.classList.add("complete");
-
-        steps[2]?.classList.add(hasTeamLocked ? "active" : "complete");
-      };
-
-      const isAdmin = () => localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
-
-      const ensureHostId = () => {
-        let hostId = localStorage.getItem(STORAGE_KEYS.hostId);
-        if (!hostId) {
-          hostId = crypto.randomUUID();
-          localStorage.setItem(STORAGE_KEYS.hostId, hostId);
-        }
-        return hostId;
-      };
-
-      const state = {
-        game: null,
-        teams: [],
-        matches: [],
-      };
-
-      const getTeams = () => state.teams;
-      const getMatches = () => state.matches;
-      const getGame = () => state.game;
-      const getActiveTeam = () => {
-        const activeTeamId = getActiveTeamId();
-        if (!activeTeamId) return null;
-        return getTeams().find((team) => team.id === activeTeamId) || null;
-      };
-
-      let unsubscribeGame = null;
-      let unsubscribeTeams = null;
-      let unsubscribeMatches = null;
-      let adminEditingTeamId = null;
-
-      const activeTeamStorageKey = (code = getActiveGameCode()) =>
-        code ? `${STORAGE_KEYS.activeTeamId}:${code}` : STORAGE_KEYS.activeTeamId;
-
-      const getActiveTeamId = () =>
-        localStorage.getItem(activeTeamStorageKey()) || null;
-      
-      const setActiveTeamId = (id) =>
-        localStorage.setItem(activeTeamStorageKey(), id);
-      
-      const clearActiveTeamId = (code = getActiveGameCode()) =>
-        localStorage.removeItem(activeTeamStorageKey(code));
-
-
-      const initials = (value) =>
-        (value || "?")
-          .split(/\s+/)
-          .map((part) => part[0])
-          .join("")
-          .slice(0, 3)
-          .toUpperCase();
-
-      const renderFlagAvatar = (country) => {
-        const iso2 = getCountryIso2(country);
-        if (!iso2) {
-          return `<span class="flag">${initials(country || "?")}</span>`;
-        }
-        const url = getFlagUrl(iso2);
-        return `<span class="flag"><img src="${url}" alt="${country} flag" loading="lazy" /></span>`;
-      };
-
-      const normalizeText = (value) => value.trim().toLowerCase();
-      const normalizeName = (value) => normalizeText(value).replace(/[^a-z0-9]/g, "");
-      const normalizeCountry = (value) => normalizeText(value).replace(/[^a-z]/g, "");
-
-      const COUNTRY_ALIASES = {
-        usa: "united states",
-        "u.s.a": "united states",
-        us: "united states",
-        "u.s.": "united states",
-        uk: "united kingdom",
-        uae: "united arab emirates",
-        "south korea": "korea, republic of",
-        "north korea": "korea, democratic people's republic of",
-        russia: "russian federation",
-        czechia: "czechia",
-        iran: "iran, islamic republic of",
-        syria: "syrian arab republic",
-        vietnam: "viet nam",
-        laos: "lao people's democratic republic",
-        bolivia: "bolivia (plurinational state of)",
-        tanzania: "tanzania, united republic of",
-        moldova: "moldova, republic of",
-        venezuela: "venezuela (bolivarian republic of)",
-        "cape verde": "cabo verde",
-        "cote divoire": "côte d'ivoire",
-        "ivory coast": "côte d'ivoire",
-        myanmar: "myanmar",
-        burma: "myanmar",
-        "north macedonia": "north macedonia",
-        palestine: "palestine, state of",
-        "saint kitts": "saint kitts and nevis",
-        "saint lucia": "saint lucia",
-        "saint vincent": "saint vincent and the grenadines",
-        "eswatini": "eswatini",
-      };
-
-      let countryLookup = null;
-      let countryLookupPromise = null;
-
-      const buildCountryLookup = (data) => {
-        const lookup = {};
-        Object.entries(data).forEach(([code, name]) => {
-          const normalized = normalizeCountry(name);
-          lookup[normalized] = code.toLowerCase();
-        });
-        Object.entries(COUNTRY_ALIASES).forEach(([alias, canonical]) => {
-          const normalizedAlias = normalizeCountry(alias);
-          const normalizedCanonical = normalizeCountry(canonical);
-          if (lookup[normalizedCanonical]) {
-            lookup[normalizedAlias] = lookup[normalizedCanonical];
-          }
-        });
-        return lookup;
-      };
-
-      const ensureCountryLookup = async () => {
-        if (countryLookup) return countryLookup;
-        if (!countryLookupPromise) {
-          countryLookupPromise = fetch("https://flagcdn.com/en/codes.json")
-            .then((response) => {
-              if (!response.ok) {
-                throw new Error("Unable to fetch country list.");
-              }
-              return response.json();
-            })
-            .then((data) => {
-              countryLookup = buildCountryLookup(data);
-              return countryLookup;
-            })
-            .catch((error) => {
-              console.warn("Country map unavailable, using initials fallback.", error);
-              countryLookup = {};
-              return countryLookup;
-            });
-        }
-        return countryLookupPromise;
-      };
-
-      const getCountryIso2 = (country) => {
-        if (!country) return null;
-        const normalized = normalizeCountry(country);
-        if (!normalized) return null;
-        const alias = COUNTRY_ALIASES[normalizeText(country)];
-        const finalKey = alias ? normalizeCountry(alias) : normalized;
-        return countryLookup?.[finalKey] || null;
-      };
-
-      const getFlagUrl = (iso2) =>
-        iso2 ? `https://flagcdn.com/w40/${iso2.toLowerCase()}.png` : null;
-
-      const gameRef = (code) => doc(db, "games", code);
-      const teamsCollection = (code) => collection(db, "games", code, "teams");
-      const matchesCollection = (code) => collection(db, "games", code, "matches");
-
-      async function createGame(code) {
-        const hostId = ensureHostId();
-        await setDoc(gameRef(code), {
-          started: true,
-          createdAt: serverTimestamp(),
-          settings: {
-            doubleDownFlipCupMode: "all_rounds",
-          },
-          hostId,
-        });
+  const buildOptions = (selectEl, selectedId) => {
+    selectEl.innerHTML = "";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select a team";
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    selectEl.appendChild(placeholder);
+    teams.forEach((team) => {
+      const option = document.createElement("option");
+      option.value = team.id;
+      option.textContent = formatTeamLabel(team);
+      if (team.id === selectedId) {
+        option.selected = true;
       }
+      selectEl.appendChild(option);
+    });
+  };
 
-      async function fetchGame(code) {
-        const snap = await getDoc(gameRef(code));
-        return snap.exists() ? snap.data() : null;
+  buildOptions(mergeSourceSelect, currentSource);
+  buildOptions(mergeTargetSelect, currentTarget);
+
+  if (teams.length < 2) {
+    mergeButton.disabled = true;
+    mergeStatus.textContent = "Need at least two teams to merge.";
+  } else {
+    mergeButton.disabled = false;
+    if (!mergeSourceSelect.value || !mergeTargetSelect.value) {
+      mergeStatus.textContent = "Select a source and destination team.";
+    }
+  }
+};
+
+const areNamesClose = (a, b) => {
+  const left = normalizeName(a);
+  const right = normalizeName(b);
+  if (!left || !right) return false;
+  if (left === right) return true;
+  const distance = levenshtein(left, right);
+  const limit = Math.max(1, Math.floor(Math.max(left.length, right.length) / 4));
+  return distance <= limit;
+};
+
+const areCountriesClose = (a, b) => {
+  const left = normalizeCountry(a);
+  const right = normalizeCountry(b);
+  if (!left || !right) return false;
+  if (left === right) return true;
+
+  const distance = levenshtein(left, right);
+  const limit = Math.max(1, Math.floor(Math.max(left.length, right.length) / 5));
+  return distance <= limit;
+};
+
+const findMatchingTeam = (teams, playerName, partnerName, country) => {
+  return teams.find((team) => {
+    const sameCountry = areCountriesClose(country, team.country);
+    if (!sameCountry) return false;
+    const sameOrder =
+      areNamesClose(playerName, team.playerName) &&
+      areNamesClose(partnerName, team.partnerName);
+    const swappedOrder =
+      areNamesClose(playerName, team.partnerName) &&
+      areNamesClose(partnerName, team.playerName);
+    return sameOrder || swappedOrder;
+  });
+};
+
+const hasRecentOpponent = (team, opponentId) => (team.lastOpponents || []).includes(opponentId);
+
+const sortTeamsForMatch = (teams) =>
+  [...teams].sort((a, b) => {
+    if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
+    if ((b.points || 0) !== (a.points || 0)) return (b.points || 0) - (a.points || 0);
+    return (a.losses || 0) - (b.losses || 0);
+  });
+
+const countFreshTeamsForType = (teams, gameType) => {
+  const fresh = teams.filter((team) => team.lastGameType !== gameType.id).length;
+  return fresh;
+};
+
+const pickPair = (teams, gameTypeId) => {
+  const immediateOpponentId = (team) => (team.lastOpponents || [])[0] || null;
+  const isImmediateOpponentPair = (a, b) =>
+    immediateOpponentId(a) === b.id || immediateOpponentId(b) === a.id;
+
+  const eligible = teams.filter((t) => t.lastGameType !== gameTypeId);
+  if (eligible.length < 2) return null;
+
+  const pool = sortTeamsForMatch(eligible);
+  for (const team of pool) {
+    const opponents = pool.filter((candidate) => candidate.id !== team.id);
+    if (!opponents.length) continue;
+
+    let opponent = opponents.find((candidate) => !isImmediateOpponentPair(team, candidate));
+    if (opponent) return [team, opponent];
+
+    return null;
+  }
+
+  return null;
+};
+
+const pickFlipCupGroup = (teams) => {
+  const hardAllowed = teams.filter((t) => (t.flipCupStreak || 0) < 2);
+  const working = hardAllowed.length >= 4 ? hardAllowed : teams;
+
+  const nonRepeat = working.filter((t) => t.lastGameType !== "flip_cup");
+  const repeatOk = working.filter(
+    (t) => t.lastGameType === "flip_cup" && (t.flipCupStreak || 0) < 2
+  );
+
+  const candidatePools = [
+    nonRepeat,
+    [...nonRepeat, ...repeatOk],
+  ];
+
+  for (const pool of candidatePools) {
+    if (pool.length < 4) continue;
+
+    const sorted = sortTeamsForMatch(pool);
+    const group = [];
+    let repeatCount = 0;
+
+    for (const team of sorted) {
+      const isRepeat = team.lastGameType === "flip_cup";
+      if (isRepeat && repeatCount >= 1) continue;
+
+      if (
+        group.every(
+          (existing) =>
+            !hasRecentOpponent(team, existing.id) &&
+            !hasRecentOpponent(existing, team.id)
+        )
+      ) {
+        group.push(team);
+        if (isRepeat) repeatCount += 1;
       }
+      if (group.length === 4) break;
+    }
 
-      async function fetchTeamsOnce(code) {
-        const snap = await getDocs(teamsCollection(code));
-        return snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+    if (group.length < 4) {
+      for (const team of sorted) {
+        if (group.some((g) => g.id === team.id)) continue;
+        const isRepeat = team.lastGameType === "flip_cup";
+        if (isRepeat && repeatCount >= 1) continue;
+        if ((team.flipCupStreak || 0) >= 2) continue;
+
+        group.push(team);
+        if (isRepeat) repeatCount += 1;
+        if (group.length === 4) break;
       }
+    }
 
-      function isHost() {
-        const game = getGame();
-        if (!game) return false;
-        return game.hostId === ensureHostId();
+    if (group.length === 4) return group;
+  }
+
+  return null;
+};
+
+async function createMatchForTeams(code, gameTypeId, teams) {
+  const matchRef = doc(matchesCollection(code));
+  const matchId = matchRef.id;
+  await runTransaction(db, async (transaction) => {
+    const teamRefs = teams.map((team) => doc(teamsCollection(code), team.id));
+    const teamSnaps = await Promise.all(teamRefs.map((ref) => transaction.get(ref)));
+    if (teamSnaps.some((snap) => !snap.exists())) return;
+    if (teamSnaps.some((snap) => snap.data().currentMatchId)) return;
+    transaction.set(matchRef, {
+      id: matchId,
+      gameType: gameTypeId,
+      status: "in_progress",
+      teamIds: teams.map((team) => team.id),
+      createdAt: serverTimestamp(),
+      doubleDown: {},
+      doubleDownCharged: {},
+      result: null,
+    });
+    teamRefs.forEach((teamRef) => {
+      transaction.update(teamRef, { currentMatchId: matchId });
+    });
+  });
+}
+
+async function fillMatches(gameCode) {
+  if (!isHost()) return;
+  const activeMatches = getMatches().filter((match) => match.status === "in_progress");
+  const activeByType = new Set(activeMatches.map((match) => match.gameType));
+  let availableTeams = sortTeamsForMatch(getTeams().filter((team) => !team.currentMatchId));
+
+  if (!activeByType.has("flip_cup") && availableTeams.length >= 4) {
+    const group = pickFlipCupGroup(availableTeams);
+    if (group) {
+      await createMatchForTeams(gameCode, "flip_cup", group);
+      availableTeams = availableTeams.filter(
+        (team) => !group.some((member) => member.id === team.id)
+      );
+    }
+  }
+
+  const twoTeamTypes = GAME_TYPES.filter(
+    (gameType) => gameType.teams === 2 && !activeByType.has(gameType.id)
+  );
+  if (!twoTeamTypes.length) return;
+
+  const rotation = getMatches().length % twoTeamTypes.length;
+  const rotatedTwoTeamTypes = [
+    ...twoTeamTypes.slice(rotation),
+    ...twoTeamTypes.slice(0, rotation),
+  ];
+
+  for (const gameType of rotatedTwoTeamTypes) {
+    if (availableTeams.length < 2) break;
+    const pair = pickPair(availableTeams, gameType.id);
+    if (!pair) continue;
+    await createMatchForTeams(gameCode, gameType.id, pair);
+    availableTeams = availableTeams.filter(
+      (team) => !pair.some((member) => member.id === team.id)
+    );
+  }
+}
+
+const computeStandings = (teams) =>
+  [...teams].sort((a, b) => {
+    if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
+    if ((b.points || 0) !== (a.points || 0)) return (b.points || 0) - (a.points || 0);
+    return (a.losses || 0) - (b.losses || 0);
+  });
+
+const flagColorCache = {};
+const DEFAULT_LEADERBOARD_COLORS = {
+  primary: [91, 108, 255],
+  secondary: [255, 122, 178],
+};
+
+const rgbToCss = (rgb) => rgb.join(", ");
+
+const getDistance = (a, b) =>
+  Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2) + Math.pow(a[2] - b[2], 2));
+
+const extractFlagColors = (iso2) =>
+  new Promise((resolve) => {
+    if (!iso2) {
+      resolve(DEFAULT_LEADERBOARD_COLORS);
+      return;
+    }
+    if (flagColorCache[iso2]) {
+      resolve(flagColorCache[iso2]);
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = `https://flagcdn.com/w80/${iso2}.png`;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(DEFAULT_LEADERBOARD_COLORS);
+        return;
       }
-
-      // Host-only: create matches whenever the roster changes.
-      // Debounced + locked so we don't spam Firestore writes.
-      let fillMatchesTimer = null;
-      let fillMatchesInFlight = false;
-
-      function scheduleFillMatches(code) {
-        if (!code) return;
-        if (!isHost()) return;
-        if (fillMatchesTimer) return;
-
-        fillMatchesTimer = setTimeout(async () => {
-          fillMatchesTimer = null;
-          if (fillMatchesInFlight) return;
-
-          fillMatchesInFlight = true;
-          try {
-            await fillMatches(code);
-          } catch (error) {
-            console.error("Unable to auto-create matches.", error);
-          } finally {
-            fillMatchesInFlight = false;
-          }
-        }, 250);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const buckets = new Map();
+      for (let i = 0; i < data.length; i += 4) {
+        const alpha = data[i + 3];
+        if (alpha < 200) continue;
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const key = `${Math.round(r / 32)}-${Math.round(g / 32)}-${Math.round(b / 32)}`;
+        buckets.set(key, (buckets.get(key) || 0) + 1);
       }
-
-      function subscribeToGame(code) {
-        if (unsubscribeGame) unsubscribeGame();
-        if (unsubscribeTeams) unsubscribeTeams();
-        if (unsubscribeMatches) unsubscribeMatches();
-
-        unsubscribeGame = onSnapshot(gameRef(code), (snap) => {
-          state.game = snap.exists() ? { id: snap.id, ...snap.data() } : null;
-          renderLeaderboard();
-          renderRoster();
-          renderMatch();
-          updateGameCodeDisplay();
-          updateTabsVisibility();
-          scheduleFillMatches(code);
-        });
-
-        unsubscribeTeams = onSnapshot(teamsCollection(code), (snap) => {
-          state.teams = snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
-          renderLeaderboard();
-          renderRoster();
-          renderMatch();
-          scheduleFillMatches(code);
-        });
-
-        unsubscribeMatches = onSnapshot(matchesCollection(code), (snap) => {
-          state.matches = snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
-          renderLeaderboard();
-          renderMatch();
-        });
-      }
-
-      async function clearTeamsInCloud(code) {
-        const batch = writeBatch(db);
-        getTeams().forEach((team) => {
-          batch.delete(doc(teamsCollection(code), team.id));
-        });
-        getMatches().forEach((match) => {
-          batch.delete(doc(matchesCollection(code), match.id));
-        });
-        await batch.commit();
-      }
-
-      async function clearMatchResults() {
-        const activeGameCode = getActiveGameCode();
-        if (!activeGameCode) return;
-        const batch = writeBatch(db);
-        getMatches().forEach((match) => {
-          batch.update(doc(matchesCollection(activeGameCode), match.id), {
-            status: "pending",
-            result: null,
-            doubleDown: {},
-            doubleDownCharged: {},
-          });
-        });
-        getTeams().forEach((team) => {
-          batch.update(doc(teamsCollection(activeGameCode), team.id), { currentMatchId: null });
-        });
-        await batch.commit();
-        if (isHost()) {
-          await fillMatches(activeGameCode);
+      const sorted = [...buckets.entries()].sort((a, b) => b[1] - a[1]);
+      const toRgb = (key) =>
+        key.split("-").map((value) => Math.min(255, Number(value) * 32 + 16));
+      const primary = sorted[0] ? toRgb(sorted[0][0]) : DEFAULT_LEADERBOARD_COLORS.primary;
+      let secondary = DEFAULT_LEADERBOARD_COLORS.secondary;
+      for (let i = 1; i < sorted.length; i += 1) {
+        const candidate = toRgb(sorted[i][0]);
+        if (getDistance(primary, candidate) > 80) {
+          secondary = candidate;
+          break;
         }
       }
+      const colors = { primary, secondary };
+      flagColorCache[iso2] = colors;
+      resolve(colors);
+    };
+    img.onerror = () => {
+      resolve(DEFAULT_LEADERBOARD_COLORS);
+    };
+  });
 
-      async function closeMatchForRemoval(code, match, removedTeamId = null) {
-        await runTransaction(db, async (transaction) => {
-          const matchRef = doc(matchesCollection(code), match.id);
-          const matchSnap = await transaction.get(matchRef);
-          if (!matchSnap.exists()) return;
-          const matchData = matchSnap.data();
-          const teamIds = matchData.teamIds || [];
-          teamIds
-            .filter((teamId) => teamId && teamId !== removedTeamId)
-            .forEach((teamId) => {
-              transaction.update(doc(teamsCollection(code), teamId), {
-                currentMatchId: null,
-              });
-            });
-          transaction.update(matchRef, {
-            status: "complete",
-            result: { abandoned: true, removedTeamId },
-            completedAt: serverTimestamp(),
-          });
-        });
-      }
+const applyLeaderboardTheme = async (team) => {
+  if (!leaderboardSection) return;
+  const iso2 = getCountryIso2(team?.country);
+  const colors = await extractFlagColors(iso2);
+  const root = document.documentElement;
+  root.style.setProperty("--leaderboard-accent-rgb", rgbToCss(colors.primary));
+  root.style.setProperty("--leaderboard-secondary-rgb", rgbToCss(colors.secondary));
+  root.style.setProperty(
+    "--leaderboard-flag-url",
+    iso2 ? `url("https://flagcdn.com/w320/${iso2}.png")` : "none"
+  );
+  leaderboardSection.style.setProperty("--leaderboard-accent-rgb", rgbToCss(colors.primary));
+  leaderboardSection.style.setProperty("--leaderboard-secondary-rgb", rgbToCss(colors.secondary));
+  leaderboardSection.style.setProperty(
+    "--leaderboard-flag-url",
+    iso2 ? `url("https://flagcdn.com/w320/${iso2}.png")` : "none"
+  );
+  leaderboardTab?.classList.add("leaderboard-accent");
+};
 
-      const levenshtein = (a, b) => {
-        if (a === b) return 0;
-        const matrix = Array.from({ length: a.length + 1 }, () =>
-          Array.from({ length: b.length + 1 }, () => 0)
-        );
-        for (let i = 0; i <= a.length; i += 1) matrix[i][0] = i;
-        for (let j = 0; j <= b.length; j += 1) matrix[0][j] = j;
-        for (let i = 1; i <= a.length; i += 1) {
-          for (let j = 1; j <= b.length; j += 1) {
-            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-            matrix[i][j] = Math.min(
-              matrix[i - 1][j] + 1,
-              matrix[i][j - 1] + 1,
-              matrix[i - 1][j - 1] + cost
-            );
-          }
-        }
-        return matrix[a.length][b.length];
-      };
+const renderCurrentMatches = () => {
+  if (!currentMatchesEl) return;
+  const matches = getMatches().filter((match) => match.status === "in_progress");
+  const teams = getTeams();
+  currentMatchesEl.innerHTML = "";
 
-      async function deleteTeamFromCloud(code, teamId) {
-        await deleteDoc(doc(teamsCollection(code), teamId));
-      }
+  if (!matches.length) {
+    currentMatchesEl.innerHTML = "<p class=\"status\">No matches are live at the moment.</p>";
+    return;
+  }
 
-      const formatTeamLabel = (team) =>
-        `${team.playerName} + ${team.partnerName} (${team.country || "Unknown"})`;
-
-      const renderMergeOptions = (teams) => {
-        if (!mergePanel) return;
-        const adminMode = isAdmin();
-        mergePanel.classList.toggle("hidden", !adminMode);
-        if (!adminMode) return;
-
-        const currentSource = mergeSourceSelect.value;
-        const currentTarget = mergeTargetSelect.value;
-
-        const buildOptions = (selectEl, selectedId) => {
-          selectEl.innerHTML = "";
-          const placeholder = document.createElement("option");
-          placeholder.value = "";
-          placeholder.textContent = "Select a team";
-          placeholder.disabled = true;
-          placeholder.selected = true;
-          selectEl.appendChild(placeholder);
-          teams.forEach((team) => {
-            const option = document.createElement("option");
-            option.value = team.id;
-            option.textContent = formatTeamLabel(team);
-            if (team.id === selectedId) {
-              option.selected = true;
-            }
-            selectEl.appendChild(option);
-          });
-        };
-
-        buildOptions(mergeSourceSelect, currentSource);
-        buildOptions(mergeTargetSelect, currentTarget);
-
-        if (teams.length < 2) {
-          mergeButton.disabled = true;
-          mergeStatus.textContent = "Need at least two teams to merge.";
-        } else {
-          mergeButton.disabled = false;
-          if (!mergeSourceSelect.value || !mergeTargetSelect.value) {
-            mergeStatus.textContent = "Select a source and destination team.";
-          }
-        }
-      };
-
-      const areNamesClose = (a, b) => {
-        const left = normalizeName(a);
-        const right = normalizeName(b);
-        if (!left || !right) return false;
-        if (left === right) return true;
-        const distance = levenshtein(left, right);
-        const limit = Math.max(1, Math.floor(Math.max(left.length, right.length) / 4));
-        return distance <= limit;
-      };
-
-      const areCountriesClose = (a, b) => {
-        const left = normalizeCountry(a);
-        const right = normalizeCountry(b);
-        if (!left || !right) return false;
-        if (left === right) return true;
-
-        const distance = levenshtein(left, right);
-        const limit = Math.max(1, Math.floor(Math.max(left.length, right.length) / 5));
-        return distance <= limit;
-      };
-
-      const findMatchingTeam = (teams, playerName, partnerName, country) => {
-        return teams.find((team) => {
-          const sameCountry = areCountriesClose(country, team.country);
-          if (!sameCountry) return false;
-          const sameOrder =
-            areNamesClose(playerName, team.playerName) &&
-            areNamesClose(partnerName, team.partnerName);
-          const swappedOrder =
-            areNamesClose(playerName, team.partnerName) &&
-            areNamesClose(partnerName, team.playerName);
-          return sameOrder || swappedOrder;
-        });
-      };
-
-      const hasRecentOpponent = (team, opponentId) =>
-        (team.lastOpponents || []).includes(opponentId);
-
-      const sortTeamsForMatch = (teams) =>
-        [...teams].sort((a, b) => {
-          if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
-          if ((b.points || 0) !== (a.points || 0)) return (b.points || 0) - (a.points || 0);
-          return (a.losses || 0) - (b.losses || 0);
-        });
-
-      const countFreshTeamsForType = (teams, gameType) => {
-        const fresh = teams.filter((team) => team.lastGameType !== gameType.id).length;
-        return fresh;
-      };
-
-      const pickPair = (teams, gameTypeId) => {
-        // Strict rules (requested):
-        // - No team can play the same GAME twice in a row.
-        // - No team can play the same OPPONENT twice in a row.
-        // If no legal pairing exists for this game type, return null so
-        // fillMatches() can try another game type (or wait for more teams).
-
-        const immediateOpponentId = (team) => (team.lastOpponents || [])[0] || null;
-        const isImmediateOpponentPair = (a, b) =>
-          immediateOpponentId(a) === b.id || immediateOpponentId(b) === a.id;
-
-        // Hard filter: no one repeating this game type.
-        const eligible = teams.filter((t) => t.lastGameType !== gameTypeId);
-        if (eligible.length < 2) return null;
-
-        const pool = sortTeamsForMatch(eligible);
-        for (const team of pool) {
-          const opponents = pool.filter((candidate) => candidate.id !== team.id);
-          if (!opponents.length) continue;
-
-          // Prefer: not an immediate rematch.
-          let opponent = opponents.find((candidate) => !isImmediateOpponentPair(team, candidate));
-          if (opponent) return [team, opponent];
-
-          // If every possible opponent is an immediate rematch, we must WAIT.
-          // (This prevents two teams from instantly re-playing each other when
-          // only they become available.)
-          return null;
-        }
-
-        return null;
-      };
-
-      const pickFlipCupGroup = (teams) => {
-        // Hard block: nobody can exceed a streak of 2
-        const hardAllowed = teams.filter((t) => (t.flipCupStreak || 0) < 2);
-        const working = hardAllowed.length >= 4 ? hardAllowed : teams;
-
-        const nonRepeat = working.filter((t) => t.lastGameType !== "flip_cup");
-        const repeatOk = working.filter(
-          (t) => t.lastGameType === "flip_cup" && (t.flipCupStreak || 0) < 2
-        );
-
-        // Prefer 0 repeat teams; if not possible, allow at most 1 repeat team.
-        const candidatePools = [
-          nonRepeat,
-          [...nonRepeat, ...repeatOk],
-        ];
-
-        for (const pool of candidatePools) {
-          if (pool.length < 4) continue;
-
-          const sorted = sortTeamsForMatch(pool);
-          const group = [];
-          let repeatCount = 0;
-
-          for (const team of sorted) {
-            const isRepeat = team.lastGameType === "flip_cup";
-            if (isRepeat && repeatCount >= 1) continue;
-
-            if (
-              group.every(
-                (existing) =>
-                  !hasRecentOpponent(team, existing.id) &&
-                  !hasRecentOpponent(existing, team.id)
-              )
-            ) {
-              group.push(team);
-              if (isRepeat) repeatCount += 1;
-            }
-            if (group.length === 4) break;
-          }
-
-          // Fallback fill (still respecting repeat cap + streak cap)
-          if (group.length < 4) {
-            for (const team of sorted) {
-              if (group.some((g) => g.id === team.id)) continue;
-              const isRepeat = team.lastGameType === "flip_cup";
-              if (isRepeat && repeatCount >= 1) continue;
-              if ((team.flipCupStreak || 0) >= 2) continue;
-
-              group.push(team);
-              if (isRepeat) repeatCount += 1;
-              if (group.length === 4) break;
-            }
-          }
-
-          if (group.length === 4) return group;
-        }
-
-        return null;
-      };
-
-      async function createMatchForTeams(code, gameTypeId, teams) {
-        const matchRef = doc(matchesCollection(code));
-        const matchId = matchRef.id;
-        await runTransaction(db, async (transaction) => {
-          const teamRefs = teams.map((team) => doc(teamsCollection(code), team.id));
-          const teamSnaps = await Promise.all(teamRefs.map((ref) => transaction.get(ref)));
-          if (teamSnaps.some((snap) => !snap.exists())) return;
-          if (teamSnaps.some((snap) => snap.data().currentMatchId)) return;
-          transaction.set(matchRef, {
-            id: matchId,
-            gameType: gameTypeId,
-            status: "in_progress",
-            teamIds: teams.map((team) => team.id),
-            createdAt: serverTimestamp(),
-            doubleDown: {},
-            doubleDownCharged: {},
-            result: null,
-          });
-          teamRefs.forEach((teamRef) => {
-            transaction.update(teamRef, { currentMatchId: matchId });
-          });
-        });
-      }
-
-      async function fillMatches(gameCode) {
-        if (!isHost()) return;
-        // 1) Build sets
-        const activeMatches = getMatches().filter(
-          (match) => match.status === "in_progress"
-        );
-        const activeByType = new Set(activeMatches.map((match) => match.gameType));
-        let availableTeams = sortTeamsForMatch(
-          getTeams().filter((team) => !team.currentMatchId)
-        );
-
-        // 2) Flip Cup first (optional, but keeps everyone playing)
-        if (!activeByType.has("flip_cup") && availableTeams.length >= 4) {
-          const group = pickFlipCupGroup(availableTeams);
-          if (group) {
-            await createMatchForTeams(gameCode, "flip_cup", group);
-            availableTeams = availableTeams.filter(
-              (team) => !group.some((member) => member.id === team.id)
-            );
-          }
-        }
-
-        // 3) Rotate 2-team games so Beer Pong isn't always first
-        const twoTeamTypes = GAME_TYPES.filter(
-          (gameType) => gameType.teams === 2 && !activeByType.has(gameType.id)
-        );
-        if (!twoTeamTypes.length) return;
-
-        const rotation = getMatches().length % twoTeamTypes.length;
-        const rotatedTwoTeamTypes = [
-          ...twoTeamTypes.slice(rotation),
-          ...twoTeamTypes.slice(0, rotation),
-        ];
-
-        // 4) Create as many 2-team matches as possible, using different game types first
-        for (const gameType of rotatedTwoTeamTypes) {
-          if (availableTeams.length < 2) break;
-          const pair = pickPair(availableTeams, gameType.id);
-          if (!pair) continue;
-          await createMatchForTeams(gameCode, gameType.id, pair);
-          availableTeams = availableTeams.filter(
-            (team) => !pair.some((member) => member.id === team.id)
-          );
-        }
-      }
-
-      const computeStandings = (teams) =>
-        [...teams].sort((a, b) => {
-          if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
-          if ((b.points || 0) !== (a.points || 0)) return (b.points || 0) - (a.points || 0);
-          return (a.losses || 0) - (b.losses || 0);
-        });
-
-      const flagColorCache = {};
-      const DEFAULT_LEADERBOARD_COLORS = {
-        primary: [91, 108, 255],
-        secondary: [255, 122, 178],
-      };
-
-      const rgbToCss = (rgb) => rgb.join(", ");
-
-      const getDistance = (a, b) =>
-        Math.sqrt(
-          Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2) + Math.pow(a[2] - b[2], 2)
-        );
-
-      const extractFlagColors = (iso2) =>
-        new Promise((resolve) => {
-          if (!iso2) {
-            resolve(DEFAULT_LEADERBOARD_COLORS);
-            return;
-          }
-          if (flagColorCache[iso2]) {
-            resolve(flagColorCache[iso2]);
-            return;
-          }
-          const img = new Image();
-          img.crossOrigin = "anonymous";
-          img.src = `https://flagcdn.com/w80/${iso2}.png`;
-          img.onload = () => {
-            const canvas = document.createElement("canvas");
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext("2d");
-            if (!ctx) {
-              resolve(DEFAULT_LEADERBOARD_COLORS);
-              return;
-            }
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const buckets = new Map();
-            for (let i = 0; i < data.length; i += 4) {
-              const alpha = data[i + 3];
-              if (alpha < 200) continue;
-              const r = data[i];
-              const g = data[i + 1];
-              const b = data[i + 2];
-              const key = `${Math.round(r / 32)}-${Math.round(g / 32)}-${Math.round(
-                b / 32
-              )}`;
-              buckets.set(key, (buckets.get(key) || 0) + 1);
-            }
-            const sorted = [...buckets.entries()].sort((a, b) => b[1] - a[1]);
-            const toRgb = (key) =>
-              key
-                .split("-")
-                .map((value) => Math.min(255, Number(value) * 32 + 16));
-            const primary = sorted[0] ? toRgb(sorted[0][0]) : DEFAULT_LEADERBOARD_COLORS.primary;
-            let secondary = DEFAULT_LEADERBOARD_COLORS.secondary;
-            for (let i = 1; i < sorted.length; i += 1) {
-              const candidate = toRgb(sorted[i][0]);
-              if (getDistance(primary, candidate) > 80) {
-                secondary = candidate;
-                break;
-              }
-            }
-            const colors = { primary, secondary };
-            flagColorCache[iso2] = colors;
-            resolve(colors);
-          };
-          img.onerror = () => {
-            resolve(DEFAULT_LEADERBOARD_COLORS);
-          };
-        });
-
-      const applyLeaderboardTheme = async (team) => {
-        if (!leaderboardSection) return;
-        const iso2 = getCountryIso2(team?.country);
-        const colors = await extractFlagColors(iso2);
-        const root = document.documentElement;
-        root.style.setProperty("--leaderboard-accent-rgb", rgbToCss(colors.primary));
-        root.style.setProperty("--leaderboard-secondary-rgb", rgbToCss(colors.secondary));
-        root.style.setProperty(
-          "--leaderboard-flag-url",
-          iso2 ? `url("https://flagcdn.com/w320/${iso2}.png")` : "none"
-        );
-        leaderboardSection.style.setProperty("--leaderboard-accent-rgb", rgbToCss(colors.primary));
-        leaderboardSection.style.setProperty(
-          "--leaderboard-secondary-rgb",
-          rgbToCss(colors.secondary)
-        );
-        leaderboardSection.style.setProperty(
-          "--leaderboard-flag-url",
-          iso2 ? `url("https://flagcdn.com/w320/${iso2}.png")` : "none"
-        );
-        leaderboardTab?.classList.add("leaderboard-accent");
-      };
-
-      const renderCurrentMatches = () => {
-        if (!currentMatchesEl) return;
-        const matches = getMatches().filter((match) => match.status === "in_progress");
-        const teams = getTeams();
-        currentMatchesEl.innerHTML = "";
-
-        if (!matches.length) {
-          currentMatchesEl.innerHTML =
-            "<p class=\"status\">No matches are live at the moment.</p>";
-          return;
-        }
-
-        matches.forEach((match) => {
-          const card = document.createElement("div");
-          card.className = "current-match-card";
-          const gameType = GAME_TYPES.find((entry) => entry.id === match.gameType);
-          const matchTeams = match.teamIds
-            .map((id) => teams.find((team) => team.id === id))
-            .filter(Boolean);
-          const teamRows =
-            matchTeams.length > 0
-                  ? matchTeams
-                  .map(
-                    (team) => `
-                      <div class="current-match-team">
-                        <span>${team.playerName} + ${team.partnerName}</span>
-                        ${renderFlagAvatar(team.country)}
-                      </div>
-                    `
-                  )
-                  .join("")
-              : "<p class=\"status\">Teams syncing...</p>";
-
-          card.innerHTML = `
-            <div class="current-match-header">
-              <strong>${gameType?.name || match.gameType}</strong>
-              <span class="status">Match ${match.id.slice(0, 6)}</span>
-            </div>
-            <div class="current-match-teams">
-              ${teamRows}
-            </div>
-          `;
-          currentMatchesEl.appendChild(card);
-        });
-      };
-
-      const renderLeaderboard = () => {
-        renderCurrentMatches();
-        const teams = getTeams();
-        const standings = computeStandings(teams);
-        const isAdminMode = isAdmin();
-
-        leaderboardEl.innerHTML = "";
-
-        if (!standings.length) {
-          leaderboardEl.innerHTML =
-            "<p class=\"status\">Waiting for squads to register.</p>";
-          const root = document.documentElement;
-          root.style.setProperty(
-            "--leaderboard-accent-rgb",
-            rgbToCss(DEFAULT_LEADERBOARD_COLORS.primary)
-          );
-          root.style.setProperty(
-            "--leaderboard-secondary-rgb",
-            rgbToCss(DEFAULT_LEADERBOARD_COLORS.secondary)
-          );
-          leaderboardSection.style.setProperty(
-            "--leaderboard-accent-rgb",
-            rgbToCss(DEFAULT_LEADERBOARD_COLORS.primary)
-          );
-          leaderboardSection.style.setProperty(
-            "--leaderboard-secondary-rgb",
-            rgbToCss(DEFAULT_LEADERBOARD_COLORS.secondary)
-          );
-          leaderboardSection.style.setProperty("--leaderboard-flag-url", "none");
-          root.style.setProperty("--leaderboard-flag-url", "none");
-          leaderboardTab?.classList.add("leaderboard-accent");
-          return;
-        }
-
-        void applyLeaderboardTheme(standings[0]);
-
-        standings.forEach((team, index) => {
-          const card = document.createElement("div");
-          card.className = `leaderboard-card${isAdminMode ? " admin" : ""}`;
-          card.innerHTML = `
-            <div class="team-row">
-              <span class="rank">#${index + 1}</span>
-              <div class="team-info">
-                <div class="team-row">
-                  ${renderFlagAvatar(team.country)}
+  matches.forEach((match) => {
+    const card = document.createElement("div");
+    card.className = "current-match-card";
+    const gameType = GAME_TYPES.find((entry) => entry.id === match.gameType);
+    const matchTeams = match.teamIds
+      .map((id) => teams.find((team) => team.id === id))
+      .filter(Boolean);
+    const teamRows =
+      matchTeams.length > 0
+        ? matchTeams
+            .map(
+              (team) => `
+                <div class="current-match-team">
                   <span>${team.playerName} + ${team.partnerName}</span>
+                  ${renderFlagAvatar(team.country)}
                 </div>
-                <small class="status">${team.country}</small>
-              </div>
-            </div>
-            <div class="team-row">
-              <span class="stat-pill">${team.points || 0} pts</span>
-              <span class="stat-pill">${team.wins || 0} W</span>
-              <span class="stat-pill">${team.losses || 0} L</span>
-            </div>
-          `;
-          if (isAdminMode) {
-            const editWrap = document.createElement("div");
-            editWrap.className = "leaderboard-edit";
-            const input = document.createElement("input");
-            input.type = "number";
-            input.className = "small";
-            input.value = team.points || 0;
-            input.addEventListener("change", async () => {
-              const nextValue = Number(input.value);
-              const activeGameCode = getActiveGameCode();
-              if (activeGameCode) {
-                try {
-                  await updateDoc(doc(teamsCollection(activeGameCode), team.id), {
-                    points: Number.isFinite(nextValue) ? nextValue : team.points || 0,
-                  });
-                } catch (error) {
-                  console.error("Unable to sync score override.", error);
-                }
-              }
-            });
-            const clearButton = document.createElement("button");
-            clearButton.type = "button";
-            clearButton.className = "btn small ghost";
-            clearButton.textContent = "Reset";
-            clearButton.addEventListener("click", async () => {
-              const activeGameCode = getActiveGameCode();
-              if (activeGameCode) {
-                try {
-                  await updateDoc(doc(teamsCollection(activeGameCode), team.id), {
-                    points: 0,
-                    wins: 0,
-                    losses: 0,
-                  });
-                } catch (error) {
-                  console.error("Unable to reset team points.", error);
-                }
-              }
-            });
-            editWrap.appendChild(input);
-            editWrap.appendChild(clearButton);
-            card.appendChild(editWrap);
-          }
-          leaderboardEl.appendChild(card);
-        });
-      };
+              `
+            )
+            .join("")
+        : "<p class=\"status\">Teams syncing...</p>";
 
-      const renderRoster = () => {
-        const teams = getTeams();
-        const activeTeamId = getActiveTeamId();
-        const isEditingRoster = rosterForm.contains(document.activeElement);
-        const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
-        rosterEl.innerHTML = "";
+    card.innerHTML = `
+      <div class="current-match-header">
+        <strong>${gameType?.name || match.gameType}</strong>
+        <span class="status">Match ${match.id.slice(0, 6)}</span>
+      </div>
+      <div class="current-match-teams">
+        ${teamRows}
+      </div>
+    `;
+    currentMatchesEl.appendChild(card);
+  });
+};
 
-        if (!teams.length) {
-          rosterEl.innerHTML =
-            "<p class=\"status\">No teams yet. Register to kick off the roster.</p>";
-          rosterEdit.classList.add("hidden");
-          return;
-        }
+const renderLeaderboard = () => {
+  renderCurrentMatches();
+  const teams = getTeams();
+  const standings = computeStandings(teams);
+  const isAdminMode = isAdmin();
 
-        rosterEdit.classList.remove("hidden");
-        rosterEditTitle.textContent = isAdmin ? "Edit roster entry" : "Your roster entry";
-        rosterEditDescription.textContent = isAdmin
-          ? "Admins can update any team entry from this device."
-          : "Edit or remove only your own team details.";
-        const grouped = teams.reduce((acc, team) => {
-          const key = team.country || "Unknown";
-          if (!acc[key]) acc[key] = [];
-          acc[key].push(team);
-          return acc;
-        }, {});
+  leaderboardEl.innerHTML = "";
 
-        Object.keys(grouped)
-          .sort((a, b) => a.localeCompare(b))
-          .forEach((country) => {
-            const group = document.createElement("div");
-            group.className = "roster-group";
-            group.innerHTML = `<h3>${country}</h3>`;
-            grouped[country].forEach((team) => {
-              const row = document.createElement("div");
-              row.className = `roster-team${isAdmin ? " admin" : ""}`;
-              row.innerHTML = `
-                <div>
-                  <strong>
-                    ${renderFlagAvatar(team.country)}
-                    ${team.playerName} + ${team.partnerName}
-                  </strong>
-                  <div class="status">Team ID: ${team.id.slice(0, 8)}</div>
-                </div>
-                <span class="status">${team.country}</span>
-              `;
-              if (team.id === activeTeamId) {
-                row.style.borderColor = "rgba(91, 108, 255, 0.4)";
-              }
-              if (isAdmin) {
-                const editButton = document.createElement("button");
-                editButton.type = "button";
-                editButton.className = "btn small ghost";
-                editButton.textContent = "Edit";
-                editButton.addEventListener("click", () => {
-                  adminEditingTeamId = team.id;
-                  rosterPlayerName.value = team.playerName;
-                  rosterPartnerName.value = team.partnerName;
-                  rosterCountry.value = team.country;
-                  rosterStatus.textContent = `Editing ${team.playerName} + ${team.partnerName}.`;
-                });
-                row.appendChild(editButton);
-              }
-              group.appendChild(row);
-            });
-            rosterEl.appendChild(group);
-          });
+  if (!standings.length) {
+    leaderboardEl.innerHTML = "<p class=\"status\">Waiting for squads to register.</p>";
+    const root = document.documentElement;
+    root.style.setProperty(
+      "--leaderboard-accent-rgb",
+      rgbToCss(DEFAULT_LEADERBOARD_COLORS.primary)
+    );
+    root.style.setProperty(
+      "--leaderboard-secondary-rgb",
+      rgbToCss(DEFAULT_LEADERBOARD_COLORS.secondary)
+    );
+    leaderboardSection.style.setProperty(
+      "--leaderboard-accent-rgb",
+      rgbToCss(DEFAULT_LEADERBOARD_COLORS.primary)
+    );
+    leaderboardSection.style.setProperty(
+      "--leaderboard-secondary-rgb",
+      rgbToCss(DEFAULT_LEADERBOARD_COLORS.secondary)
+    );
+    leaderboardSection.style.setProperty("--leaderboard-flag-url", "none");
+    root.style.setProperty("--leaderboard-flag-url", "none");
+    leaderboardTab?.classList.add("leaderboard-accent");
+    return;
+  }
 
-        const activeTeam = teams.find((team) => team.id === activeTeamId);
-        const adminTeam = adminEditingTeamId
-          ? teams.find((team) => team.id === adminEditingTeamId)
-          : null;
-        const selectedTeam = isAdmin && adminTeam ? adminTeam : activeTeam;
+  void applyLeaderboardTheme(standings[0]);
 
-        if (selectedTeam) {
-          if (!isEditingRoster) {
-            rosterPlayerName.value = selectedTeam.playerName;
-            rosterPartnerName.value = selectedTeam.partnerName;
-            rosterCountry.value = selectedTeam.country;
-          }
-          if (isAdmin && adminTeam) {
-            rosterStatus.textContent = `Editing ${selectedTeam.playerName} + ${selectedTeam.partnerName}.`;
-          } else {
-            rosterStatus.textContent = isEditingRoster
-              ? "Editing in progress. We'll pause auto-refresh while you update."
-              : "Only your team can be updated from this device.";
-          }
-        } else {
-          if (!isEditingRoster) {
-            rosterPlayerName.value = "";
-            rosterPartnerName.value = "";
-            rosterCountry.value = "";
-          }
-          rosterStatus.textContent = "Register or rejoin to claim your team.";
-        }
-
-        renderMergeOptions(teams);
-      };
-
-      const getFlipCupPairings = (teamIds) => {
-        const [t1, t2, t3, t4] = teamIds;
-        return [
-          { pairA: [t1, t2], pairB: [t3, t4] },
-          { pairA: [t4, t1], pairB: [t2, t3] },
-          { pairA: [t3, t1], pairB: [t2, t4] },
-        ];
-      };
-
-      const renderMatch = () => {
-        const teams = getTeams();
-        const activeTeamId = getActiveTeamId();
-        const activeTeam = teams.find((team) => team.id === activeTeamId);
-
-        if (!activeTeam) {
-          nextGameCard.innerHTML = "<p class=\"status\">Register to unlock your matchup.</p>";
-          scoreActions.innerHTML = "";
-          updateStepIndicator();
-          return;
-        }
-
-        const match = activeTeam.currentMatchId
-          ? getMatches().find((entry) => entry.id === activeTeam.currentMatchId)
-          : null;
-
-        if (!match) {
-          const hasPending = getMatches().some((entry) =>
-            entry.teamIds?.includes(activeTeamId)
-          );
-          nextGameCard.innerHTML = hasPending
-            ? `
-              <h3>Waiting on game stations ⏳</h3>
-              <p class="status">All your remaining games are currently in play. Check back soon.</p>
-            `
-            : `
-              <h3>Hang tight 🎉</h3>
-              <p class="status">We're waiting for a team so you can beat them.</p>
-            `;
-          scoreActions.innerHTML = "";
-          updateStepIndicator({ hasCoreInfo: true, hasCode: true });
-          return;
-        }
-
-        const opponents = (match.teamIds || [])
-          .filter((id) => id !== activeTeamId)
-          .map((id) => teams.find((team) => team.id === id))
-          .filter(Boolean);
-
-        const gameType = GAME_TYPES.find((entry) => entry.id === match.gameType);
-        const opponentSummary = opponents.length
-          ? opponents
-              .map((team) => {
-                const members = [team.playerName, team.partnerName].filter(Boolean).join(" + ");
-                const country = team.country || "Unknown country";
-                return `
-                  <article class="opponent-card">
-                    <div class="opponent-head">
-                      ${renderFlagAvatar(country)}
-                      <div class="opponent-meta">
-                        <span class="opponent-country">${country}</span>
-                        <span class="opponent-members">${members || "Team TBD"}</span>
-                      </div>
-                    </div>
-                  </article>
-                `;
-              })
-              .join("")
-          : `<p class="status">Opponent team was removed. Waiting for a new matchup…</p>`;
-
-        nextGameCard.innerHTML = `
-          <h3>Game: ${gameType?.name || match.gameType}</h3>
-          <p class="matchup-subtitle">against:</p>
-          <div class="opponents aesthetic">
-            ${opponentSummary}
+  standings.forEach((team, index) => {
+    const card = document.createElement("div");
+    card.className = `leaderboard-card${isAdminMode ? " admin" : ""}`;
+    card.innerHTML = `
+      <div class="team-row">
+        <span class="rank">#${index + 1}</span>
+        <div class="team-info">
+          <div class="team-row">
+            ${renderFlagAvatar(team.country)}
+            <span>${team.playerName} + ${team.partnerName}</span>
           </div>
-        `;
+          <small class="status">${team.country}</small>
+        </div>
+      </div>
+      <div class="team-row">
+        <span class="stat-pill">${team.points || 0} pts</span>
+        <span class="stat-pill">${team.wins || 0} W</span>
+        <span class="stat-pill">${team.losses || 0} L</span>
+      </div>
+    `;
+    if (isAdminMode) {
+      const editWrap = document.createElement("div");
+      editWrap.className = "leaderboard-edit";
+      const input = document.createElement("input");
+      input.type = "number";
+      input.className = "small";
+      input.value = team.points || 0;
+      input.addEventListener("change", async () => {
+        const nextValue = Number(input.value);
+        const activeGameCode = getActiveGameCode();
+        if (activeGameCode) {
+          try {
+            await updateDoc(doc(teamsCollection(activeGameCode), team.id), {
+              points: Number.isFinite(nextValue) ? nextValue : team.points || 0,
+            });
+          } catch (error) {
+            console.error("Unable to sync score override.", error);
+          }
+        }
+      });
+      const clearButton = document.createElement("button");
+      clearButton.type = "button";
+      clearButton.className = "btn small ghost";
+      clearButton.textContent = "Reset";
+      clearButton.addEventListener("click", async () => {
+        const activeGameCode = getActiveGameCode();
+        if (activeGameCode) {
+          try {
+            await updateDoc(doc(teamsCollection(activeGameCode), team.id), {
+              points: 0,
+              wins: 0,
+              losses: 0,
+            });
+          } catch (error) {
+            console.error("Unable to reset team points.", error);
+          }
+        }
+      });
+      editWrap.appendChild(input);
+      editWrap.appendChild(clearButton);
+      card.appendChild(editWrap);
+    }
+    leaderboardEl.appendChild(card);
+  });
+};
 
-        scoreActions.innerHTML = "";
-        if (match.status !== "complete") {
-          const powerupStatus = document.createElement("div");
-          const powerupsRemaining = activeTeam.powerupsRemaining ?? 0;
-          powerupStatus.className = `powerups${match.doubleDown?.[activeTeamId] ? " active" : ""}`;
-          powerupStatus.innerHTML = `
-            <span>Powerups remaining:</span>
-            <span class="charges">${"⚡".repeat(Math.max(powerupsRemaining, 0)) || "—"}</span>
+const renderRoster = () => {
+  const teams = getTeams();
+  const activeTeamId = getActiveTeamId();
+  const isEditingRoster = rosterForm.contains(document.activeElement);
+  const isAdminMode = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
+  rosterEl.innerHTML = "";
+
+  if (!teams.length) {
+    rosterEl.innerHTML = "<p class=\"status\">No teams yet. Register to kick off the roster.</p>";
+    rosterEdit.classList.add("hidden");
+    return;
+  }
+
+  rosterEdit.classList.remove("hidden");
+  rosterEditTitle.textContent = isAdminMode ? "Edit roster entry" : "Your roster entry";
+  rosterEditDescription.textContent = isAdminMode
+    ? "Admins can update any team entry from this device."
+    : "Edit or remove only your own team details.";
+  const grouped = teams.reduce((acc, team) => {
+    const key = team.country || "Unknown";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(team);
+    return acc;
+  }, {});
+
+  Object.keys(grouped)
+    .sort((a, b) => a.localeCompare(b))
+    .forEach((country) => {
+      const group = document.createElement("div");
+      group.className = "roster-group";
+      group.innerHTML = `<h3>${country}</h3>`;
+      grouped[country].forEach((team) => {
+        const row = document.createElement("div");
+        row.className = `roster-team${isAdminMode ? " admin" : ""}`;
+        row.innerHTML = `
+          <div>
+            <strong>
+              ${renderFlagAvatar(team.country)}
+              ${team.playerName} + ${team.partnerName}
+            </strong>
+            <div class="status">Team ID: ${team.id.slice(0, 8)}</div>
+          </div>
+          <span class="status">${team.country}</span>
+        `;
+        if (team.id === activeTeamId) {
+          row.style.borderColor = "rgba(91, 108, 255, 0.4)";
+        }
+        if (isAdminMode) {
+          const editButton = document.createElement("button");
+          editButton.type = "button";
+          editButton.className = "btn small ghost";
+          editButton.textContent = "Edit";
+          editButton.addEventListener("click", () => {
+            adminEditingTeamId = team.id;
+            rosterPlayerName.value = team.playerName;
+            rosterPartnerName.value = team.partnerName;
+            rosterCountry.value = team.country;
+            rosterStatus.textContent = `Editing ${team.playerName} + ${team.partnerName}.`;
+          });
+          row.appendChild(editButton);
+        }
+        group.appendChild(row);
+      });
+      rosterEl.appendChild(group);
+    });
+
+  const activeTeam = teams.find((team) => team.id === activeTeamId);
+  const adminTeam = adminEditingTeamId ? teams.find((team) => team.id === adminEditingTeamId) : null;
+  const selectedTeam = isAdminMode && adminTeam ? adminTeam : activeTeam;
+
+  if (selectedTeam) {
+    if (!isEditingRoster) {
+      rosterPlayerName.value = selectedTeam.playerName;
+      rosterPartnerName.value = selectedTeam.partnerName;
+      rosterCountry.value = selectedTeam.country;
+    }
+    if (isAdminMode && adminTeam) {
+      rosterStatus.textContent = `Editing ${selectedTeam.playerName} + ${selectedTeam.partnerName}.`;
+    } else {
+      rosterStatus.textContent = isEditingRoster
+        ? "Editing in progress. We'll pause auto-refresh while you update."
+        : "Only your team can be updated from this device.";
+    }
+  } else {
+    if (!isEditingRoster) {
+      rosterPlayerName.value = "";
+      rosterPartnerName.value = "";
+      rosterCountry.value = "";
+    }
+    rosterStatus.textContent = "Register or rejoin to claim your team.";
+  }
+
+  renderMergeOptions(teams);
+};
+
+const getFlipCupPairings = (teamIds) => {
+  const [t1, t2, t3, t4] = teamIds;
+  return [
+    { pairA: [t1, t2], pairB: [t3, t4] },
+    { pairA: [t4, t1], pairB: [t2, t3] },
+    { pairA: [t3, t1], pairB: [t2, t4] },
+  ];
+};
+
+const renderMatch = () => {
+  const teams = getTeams();
+  const activeTeamId = getActiveTeamId();
+  const activeTeam = teams.find((team) => team.id === activeTeamId);
+
+  if (!activeTeam) {
+    nextGameCard.innerHTML = "<p class=\"status\">Register to unlock your matchup.</p>";
+    scoreActions.innerHTML = "";
+    updateStepIndicator();
+    return;
+  }
+
+  const match = activeTeam.currentMatchId
+    ? getMatches().find((entry) => entry.id === activeTeam.currentMatchId)
+    : null;
+
+  if (!match) {
+    const hasPending = getMatches().some((entry) => entry.teamIds?.includes(activeTeamId));
+    nextGameCard.innerHTML = hasPending
+      ? `
+        <h3>Waiting on game stations ⏳</h3>
+        <p class="status">All your remaining games are currently in play. Check back soon.</p>
+      `
+      : `
+        <h3>Hang tight 🎉</h3>
+        <p class="status">We're waiting for a team so you can beat them.</p>
+      `;
+    scoreActions.innerHTML = "";
+    updateStepIndicator({ hasCoreInfo: true, hasCode: true });
+    return;
+  }
+
+  const opponents = (match.teamIds || [])
+    .filter((id) => id !== activeTeamId)
+    .map((id) => teams.find((team) => team.id === id))
+    .filter(Boolean);
+
+  const gameType = GAME_TYPES.find((entry) => entry.id === match.gameType);
+  const opponentSummary = opponents.length
+    ? opponents
+        .map((team) => {
+          const members = [team.playerName, team.partnerName].filter(Boolean).join(" + ");
+          const country = team.country || "Unknown country";
+          return `
+            <article class="opponent-card">
+              <div class="opponent-head">
+                ${renderFlagAvatar(country)}
+                <div class="opponent-meta">
+                  <span class="opponent-country">${country}</span>
+                  <span class="opponent-members">${members || "Team TBD"}</span>
+                </div>
+              </div>
+            </article>
           `;
-          scoreActions.appendChild(powerupStatus);
+        })
+        .join("")
+    : `<p class="status">Opponent team was removed. Waiting for a new matchup…</p>`;
 
-          const doubleDownButton = document.createElement("button");
-          doubleDownButton.type = "button";
-          doubleDownButton.className = "btn ghost";
-          const isDoubleDown = Boolean(match.doubleDown?.[activeTeamId]);
-          doubleDownButton.textContent = isDoubleDown
-            ? "Double Down active 💥"
-            : "Use Double Points Powerup 💥";
-          doubleDownButton.disabled = activeTeam.powerupsRemaining <= 0 && !isDoubleDown;
-          doubleDownButton.addEventListener("click", () => {
-            dismissMobileKeyboard();
-            void toggleDoubleDown(activeTeamId, match.id);
-          });
-          scoreActions.appendChild(doubleDownButton);
-        }
+  nextGameCard.innerHTML = `
+    <h3>Game: ${gameType?.name || match.gameType}</h3>
+    <p class="matchup-subtitle">against:</p>
+    <div class="opponents aesthetic">
+      ${opponentSummary}
+    </div>
+  `;
 
-        if (match.gameType !== "flip_cup") {
-          const winButton = document.createElement("button");
-          winButton.type = "button";
-          winButton.className = "btn";
-          winButton.textContent = "We won! 🏆";
-          winButton.addEventListener("click", () => {
-            dismissMobileKeyboard();
-            void recordResult(match.id, { winnerTeamId: activeTeamId });
-          });
+  scoreActions.innerHTML = "";
+  if (match.status !== "complete") {
+    const powerupStatus = document.createElement("div");
+    const powerupsRemaining = activeTeam.powerupsRemaining ?? 0;
+    powerupStatus.className = `powerups${match.doubleDown?.[activeTeamId] ? " active" : ""}`;
+    powerupStatus.innerHTML = `
+      <span>Powerups remaining:</span>
+      <span class="charges">${"⚡".repeat(Math.max(powerupsRemaining, 0)) || "—"}</span>
+    `;
+    scoreActions.appendChild(powerupStatus);
 
-          const loseButton = document.createElement("button");
-          loseButton.type = "button";
-          loseButton.className = "btn secondary";
-          loseButton.textContent = "We lost 😅";
-          loseButton.addEventListener("click", () => {
-            dismissMobileKeyboard();
-            const opponentId = match.teamIds.find((id) => id !== activeTeamId);
-            if (!opponentId) return;
-            void recordResult(match.id, { winnerTeamId: opponentId });
-          });
+    const doubleDownButton = document.createElement("button");
+    doubleDownButton.type = "button";
+    doubleDownButton.className = "btn ghost";
+    const isDoubleDown = Boolean(match.doubleDown?.[activeTeamId]);
+    doubleDownButton.textContent = isDoubleDown
+      ? "Double Down active 💥"
+      : "Use Double Points Powerup 💥";
+    doubleDownButton.disabled = activeTeam.powerupsRemaining <= 0 && !isDoubleDown;
+    doubleDownButton.addEventListener("click", () => {
+      dismissMobileKeyboard();
+      void toggleDoubleDown(activeTeamId, match.id);
+    });
+    scoreActions.appendChild(doubleDownButton);
+  }
 
-          scoreActions.appendChild(winButton);
-          scoreActions.appendChild(loseButton);
-          return;
-        }
+  if (match.gameType !== "flip_cup") {
+    const winButton = document.createElement("button");
+    winButton.type = "button";
+    winButton.className = "btn";
+    winButton.textContent = "We won! 🏆";
+    winButton.addEventListener("click", () => {
+      dismissMobileKeyboard();
+      void recordResult(match.id, { winnerTeamId: activeTeamId });
+    });
 
-        const rounds = match.result?.rounds || [];
-        const currentRound = rounds.length + 1;
-        const pairing = getFlipCupPairings(match.teamIds)[currentRound - 1];
-        const roundCard = document.createElement("div");
-        roundCard.className = "game-card";
-        roundCard.innerHTML = `
-          <h3>Flip Cup Round ${Math.min(currentRound, 3)}</h3>
-          <p class="status">Round history: ${rounds.length}/3 completed</p>
-        `;
-        scoreActions.appendChild(roundCard);
+    const loseButton = document.createElement("button");
+    loseButton.type = "button";
+    loseButton.className = "btn secondary";
+    loseButton.textContent = "We lost 😅";
+    loseButton.addEventListener("click", () => {
+      dismissMobileKeyboard();
+      const opponentId = match.teamIds.find((id) => id !== activeTeamId);
+      if (!opponentId) return;
+      void recordResult(match.id, { winnerTeamId: opponentId });
+    });
 
-        if (currentRound <= 3 && pairing && match.status !== "complete") {
-          const buttonWrap = document.createElement("div");
-          buttonWrap.className = "score-actions";
-          const sideAButton = document.createElement("button");
-          sideAButton.type = "button";
-          sideAButton.className = "btn";
-          sideAButton.textContent = `${pairing.pairA
-            .map((id) => teams.find((team) => team.id === id))
-            .map((team) => `${team.playerName} + ${team.partnerName}`)
-            .join(" & ")} won`;
-          sideAButton.addEventListener("click", () => {
-            dismissMobileKeyboard();
-            void recordResult(match.id, { winnerSide: "A" });
-          });
-          const sideBButton = document.createElement("button");
-          sideBButton.type = "button";
-          sideBButton.className = "btn secondary";
-          sideBButton.textContent = `${pairing.pairB
-            .map((id) => teams.find((team) => team.id === id))
-            .map((team) => `${team.playerName} + ${team.partnerName}`)
-            .join(" & ")} won`;
-          sideBButton.addEventListener("click", () => {
-            dismissMobileKeyboard();
-            void recordResult(match.id, { winnerSide: "B" });
-          });
-          buttonWrap.appendChild(sideAButton);
-          buttonWrap.appendChild(sideBButton);
-          scoreActions.appendChild(buttonWrap);
-        } else if (match.status === "complete") {
-          const done = document.createElement("div");
-          done.className = "status";
-          done.textContent = "Flip cup complete! 🎉";
-          scoreActions.appendChild(done);
-        }
+    scoreActions.appendChild(winButton);
+    scoreActions.appendChild(loseButton);
+    return;
+  }
 
-        updateStepIndicator({ hasCoreInfo: true, hasCode: true });
-      };
+  const rounds = match.result?.rounds || [];
+  const currentRound = rounds.length + 1;
+  const pairing = getFlipCupPairings(match.teamIds)[currentRound - 1];
+  const roundCard = document.createElement("div");
+  roundCard.className = "game-card";
+  roundCard.innerHTML = `
+    <h3>Flip Cup Round ${Math.min(currentRound, 3)}</h3>
+    <p class="status">Round history: ${rounds.length}/3 completed</p>
+  `;
+  scoreActions.appendChild(roundCard);
 
-      async function toggleDoubleDown(teamId, matchId) {
-        const activeGameCode = getActiveGameCode();
-        if (!activeGameCode) return;
-        let toastMessage = null;
-        await runTransaction(db, async (transaction) => {
-          const matchRef = doc(matchesCollection(activeGameCode), matchId);
-          const teamRef = doc(teamsCollection(activeGameCode), teamId);
-          const [matchSnap, teamSnap] = await Promise.all([
-            transaction.get(matchRef),
-            transaction.get(teamRef),
-          ]);
-          if (!matchSnap.exists() || !teamSnap.exists()) return;
-          const match = matchSnap.data();
-          const team = teamSnap.data();
-          if (match.status === "complete") return;
-          const charged = match.doubleDownCharged || {};
-          if (charged[teamId]) return;
-          const doubleDown = { ...(match.doubleDown || {}) };
-          const currentlyOn = Boolean(doubleDown[teamId]);
-          if (!currentlyOn && (team.powerupsRemaining ?? 0) <= 0) return;
-          if (currentlyOn) {
-            delete doubleDown[teamId];
-            toastMessage = "Double Down removed.";
-          } else {
-            doubleDown[teamId] = true;
-            toastMessage = "Double Down locked in! 💥";
-          }
-          transaction.update(matchRef, { doubleDown });
-        });
-        if (toastMessage) {
-          showToast(toastMessage, "info");
-        }
+  if (currentRound <= 3 && pairing && match.status !== "complete") {
+    const buttonWrap = document.createElement("div");
+    buttonWrap.className = "score-actions";
+    const sideAButton = document.createElement("button");
+    sideAButton.type = "button";
+    sideAButton.className = "btn";
+    sideAButton.textContent = `${pairing.pairA
+      .map((id) => teams.find((team) => team.id === id))
+      .map((team) => `${team.playerName} + ${team.partnerName}`)
+      .join(" & ")} won`;
+    sideAButton.addEventListener("click", () => {
+      dismissMobileKeyboard();
+      void recordResult(match.id, { winnerSide: "A" });
+    });
+    const sideBButton = document.createElement("button");
+    sideBButton.type = "button";
+    sideBButton.className = "btn secondary";
+    sideBButton.textContent = `${pairing.pairB
+      .map((id) => teams.find((team) => team.id === id))
+      .map((team) => `${team.playerName} + ${team.partnerName}`)
+      .join(" & ")} won`;
+    sideBButton.addEventListener("click", () => {
+      dismissMobileKeyboard();
+      void recordResult(match.id, { winnerSide: "B" });
+    });
+    buttonWrap.appendChild(sideAButton);
+    buttonWrap.appendChild(sideBButton);
+    scoreActions.appendChild(buttonWrap);
+  } else if (match.status === "complete") {
+    const done = document.createElement("div");
+    done.className = "status";
+    done.textContent = "Flip cup complete! 🎉";
+    scoreActions.appendChild(done);
+  }
+
+  updateStepIndicator({ hasCoreInfo: true, hasCode: true });
+};
+
+async function toggleDoubleDown(teamId, matchId) {
+  const activeGameCode = getActiveGameCode();
+  if (!activeGameCode) return;
+  let toastMessage = null;
+  await runTransaction(db, async (transaction) => {
+    const matchRef = doc(matchesCollection(activeGameCode), matchId);
+    const teamRef = doc(teamsCollection(activeGameCode), teamId);
+    const [matchSnap, teamSnap] = await Promise.all([
+      transaction.get(matchRef),
+      transaction.get(teamRef),
+    ]);
+    if (!matchSnap.exists() || !teamSnap.exists()) return;
+    const match = matchSnap.data();
+    const team = teamSnap.data();
+    if (match.status === "complete") return;
+    const charged = match.doubleDownCharged || {};
+    if (charged[teamId]) return;
+    const doubleDown = { ...(match.doubleDown || {}) };
+    const currentlyOn = Boolean(doubleDown[teamId]);
+    if (!currentlyOn && (team.powerupsRemaining ?? 0) <= 0) return;
+    if (currentlyOn) {
+      delete doubleDown[teamId];
+      toastMessage = "Double Down removed.";
+    } else {
+      doubleDown[teamId] = true;
+      toastMessage = "Double Down locked in! 💥";
+    }
+    transaction.update(matchRef, { doubleDown });
+  });
+  if (toastMessage) {
+    showToast(toastMessage, "info");
+  }
+}
+
+const calculatePoints = (teamId, isWinner, match) => {
+  const base = isWinner ? 4 : 1;
+  return match.doubleDown?.[teamId] ? base * 2 : base;
+};
+
+const computeFlipCupFinalWinners = (rounds, teamIds) => {
+  const winCounts = Object.fromEntries(teamIds.map((id) => [id, 0]));
+  rounds.forEach((round) => {
+    const winners = round.winnerSide === "A" ? round.pairA : round.pairB;
+    winners.forEach((id) => {
+      winCounts[id] = (winCounts[id] || 0) + 1;
+    });
+  });
+  return [...teamIds].sort((a, b) => winCounts[b] - winCounts[a]).slice(0, 2);
+};
+
+async function recordResult(matchId, payload) {
+  const activeGameCode = getActiveGameCode();
+  if (!activeGameCode) return;
+  const activeTeamId = getActiveTeamId();
+  const localMatch = getMatches().find((entry) => entry.id === matchId);
+  let rewardPayload = null;
+  if (activeTeamId && localMatch?.teamIds?.includes(activeTeamId)) {
+    if (localMatch.gameType !== "flip_cup") {
+      const isWin = payload.winnerTeamId === activeTeamId;
+      const points = calculatePoints(activeTeamId, isWin, localMatch);
+      rewardPayload = { points, isWin };
+    } else {
+      const rounds = localMatch.result?.rounds || [];
+      const pairing = getFlipCupPairings(localMatch.teamIds)[rounds.length];
+      if (pairing) {
+        const winners = payload.winnerSide === "A" ? pairing.pairA : pairing.pairB;
+        const isWin = winners.includes(activeTeamId);
+        const points = calculatePoints(activeTeamId, isWin, localMatch);
+        rewardPayload = { points, isWin };
       }
+    }
+  }
+  await runTransaction(db, async (transaction) => {
+    const matchRef = doc(matchesCollection(activeGameCode), matchId);
+    const matchSnap = await transaction.get(matchRef);
+    if (!matchSnap.exists()) return;
+    const match = matchSnap.data();
+    if (match.status === "complete") return;
+    const teamRefs = match.teamIds.map((id) => doc(teamsCollection(activeGameCode), id));
+    const teamSnaps = await Promise.all(teamRefs.map((ref) => transaction.get(ref)));
+    if (teamSnaps.some((snap) => !snap.exists())) return;
+    const teams = teamSnaps.map((snap) => ({ id: snap.id, ...snap.data() }));
+    const doubleDownCharged = { ...(match.doubleDownCharged || {}) };
 
-      const calculatePoints = (teamId, isWinner, match) => {
-        const base = isWinner ? 4 : 1;
-        return match.doubleDown?.[teamId] ? base * 2 : base;
-      };
-
-      const computeFlipCupFinalWinners = (rounds, teamIds) => {
-        const winCounts = Object.fromEntries(teamIds.map((id) => [id, 0]));
-        rounds.forEach((round) => {
-          const winners = round.winnerSide === "A" ? round.pairA : round.pairB;
-          winners.forEach((id) => {
-            winCounts[id] = (winCounts[id] || 0) + 1;
-          });
+    if (match.gameType !== "flip_cup") {
+      const winnerTeamId = payload.winnerTeamId;
+      if (!match.teamIds.includes(winnerTeamId)) return;
+      const loserTeamId = match.teamIds.find((id) => id !== winnerTeamId);
+      teams.forEach((team) => {
+        const isWinner = team.id === winnerTeamId;
+        const points = calculatePoints(team.id, isWinner, match);
+        const shouldCharge = match.doubleDown?.[team.id] && !doubleDownCharged[team.id];
+        const powerupsRemaining = shouldCharge
+          ? Math.max((team.powerupsRemaining ?? 3) - 1, 0)
+          : team.powerupsRemaining ?? 3;
+        if (shouldCharge) {
+          doubleDownCharged[team.id] = true;
+        }
+        const opponents = team.id === winnerTeamId ? [loserTeamId] : [winnerTeamId];
+        transaction.update(doc(teamsCollection(activeGameCode), team.id), {
+          wins: (team.wins || 0) + (isWinner ? 1 : 0),
+          losses: (team.losses || 0) + (isWinner ? 0 : 1),
+          points: (team.points || 0) + points,
+          currentMatchId: null,
+          lastOpponents: [...opponents, ...(team.lastOpponents || [])].slice(0, 3),
+          lastGameType: match.gameType,
+          flipCupStreak: 0,
+          powerupsRemaining,
         });
-        return [...teamIds]
-          .sort((a, b) => winCounts[b] - winCounts[a])
-          .slice(0, 2);
-      };
+      });
+      transaction.update(matchRef, {
+        status: "complete",
+        result: { winnerTeamId, loserTeamId },
+        completedAt: serverTimestamp(),
+        doubleDownCharged,
+      });
+      return;
+    }
 
-      async function recordResult(matchId, payload) {
-        const activeGameCode = getActiveGameCode();
-        if (!activeGameCode) return;
-        const activeTeamId = getActiveTeamId();
-        const localMatch = getMatches().find((entry) => entry.id === matchId);
-        let rewardPayload = null;
-        if (activeTeamId && localMatch?.teamIds?.includes(activeTeamId)) {
-          if (localMatch.gameType !== "flip_cup") {
-            const isWin = payload.winnerTeamId === activeTeamId;
-            const points = calculatePoints(activeTeamId, isWin, localMatch);
-            rewardPayload = { points, isWin };
-          } else {
-            const rounds = localMatch.result?.rounds || [];
-            const pairing = getFlipCupPairings(localMatch.teamIds)[rounds.length];
-            if (pairing) {
-              const winners = payload.winnerSide === "A" ? pairing.pairA : pairing.pairB;
-              const isWin = winners.includes(activeTeamId);
-              const points = calculatePoints(activeTeamId, isWin, localMatch);
-              rewardPayload = { points, isWin };
-            }
-          }
-        }
-        await runTransaction(db, async (transaction) => {
-          const matchRef = doc(matchesCollection(activeGameCode), matchId);
-          const matchSnap = await transaction.get(matchRef);
-          if (!matchSnap.exists()) return;
-          const match = matchSnap.data();
-          if (match.status === "complete") return;
-          const teamRefs = match.teamIds.map((id) => doc(teamsCollection(activeGameCode), id));
-          const teamSnaps = await Promise.all(teamRefs.map((ref) => transaction.get(ref)));
-          if (teamSnaps.some((snap) => !snap.exists())) return;
-          const teams = teamSnaps.map((snap) => ({ id: snap.id, ...snap.data() }));
-          const doubleDownCharged = { ...(match.doubleDownCharged || {}) };
-
-          if (match.gameType !== "flip_cup") {
-            const winnerTeamId = payload.winnerTeamId;
-            if (!match.teamIds.includes(winnerTeamId)) return;
-            const loserTeamId = match.teamIds.find((id) => id !== winnerTeamId);
-            teams.forEach((team) => {
-              const isWinner = team.id === winnerTeamId;
-              const points = calculatePoints(team.id, isWinner, match);
-              const shouldCharge = match.doubleDown?.[team.id] && !doubleDownCharged[team.id];
-              const powerupsRemaining = shouldCharge
-                ? Math.max((team.powerupsRemaining ?? 3) - 1, 0)
-                : team.powerupsRemaining ?? 3;
-              if (shouldCharge) {
-                doubleDownCharged[team.id] = true;
-              }
-              const opponents = team.id === winnerTeamId ? [loserTeamId] : [winnerTeamId];
-              transaction.update(doc(teamsCollection(activeGameCode), team.id), {
-                wins: (team.wins || 0) + (isWinner ? 1 : 0),
-                losses: (team.losses || 0) + (isWinner ? 0 : 1),
-                points: (team.points || 0) + points,
-                currentMatchId: null,
-                lastOpponents: [...opponents, ...(team.lastOpponents || [])].slice(0, 3),
-                lastGameType: match.gameType,
-                flipCupStreak: 0,
-                powerupsRemaining,
-              });
-            });
-            transaction.update(matchRef, {
-              status: "complete",
-              result: { winnerTeamId, loserTeamId },
-              completedAt: serverTimestamp(),
-              doubleDownCharged,
-            });
-            return;
-          }
-
-          const rounds = match.result?.rounds || [];
-          if (rounds.length >= 3) return;
-          const pairing = getFlipCupPairings(match.teamIds)[rounds.length];
-          if (!pairing) return;
-          const winnerSide = payload.winnerSide;
-          if (!["A", "B"].includes(winnerSide)) return;
-          const winners = winnerSide === "A" ? pairing.pairA : pairing.pairB;
-          const roundIndex = rounds.length + 1;
-          const updatedRounds = [
-            ...rounds,
-            {
-              roundIndex,
-              pairA: pairing.pairA,
-              pairB: pairing.pairB,
-              winnerSide,
-            },
-          ];
-          const otherTeams = match.teamIds;
-          teams.forEach((team) => {
-            const isWinner = winners.includes(team.id);
-            const points = calculatePoints(team.id, isWinner, match);
-            const shouldCharge = match.doubleDown?.[team.id] && !doubleDownCharged[team.id];
-            const powerupsRemaining = shouldCharge
-              ? Math.max((team.powerupsRemaining ?? 3) - 1, 0)
-              : team.powerupsRemaining ?? 3;
-            if (shouldCharge) {
-              doubleDownCharged[team.id] = true;
-            }
-            transaction.update(doc(teamsCollection(activeGameCode), team.id), {
-              wins: (team.wins || 0) + (isWinner ? 1 : 0),
-              losses: (team.losses || 0) + (isWinner ? 0 : 1),
-              points: (team.points || 0) + points,
-              currentMatchId: roundIndex === 3 ? null : team.currentMatchId,
-              lastOpponents: otherTeams.filter((id) => id !== team.id).slice(0, 3),
-              lastGameType: roundIndex === 3 ? match.gameType : team.lastGameType || null,
-              flipCupStreak:
-                roundIndex === 3
-                  ? team.lastGameType === "flip_cup"
-                    ? Math.min((team.flipCupStreak || 0) + 1, 2)
-                    : 1
-                  : team.flipCupStreak || 0,
-              powerupsRemaining,
-            });
-          });
-
-          const matchUpdate = {
-            result: {
-              rounds: updatedRounds,
-              finalWinners:
-                roundIndex === 3
-                  ? computeFlipCupFinalWinners(updatedRounds, match.teamIds)
-                  : null,
-            },
-            doubleDownCharged,
-          };
-          if (roundIndex === 3) {
-            matchUpdate.status = "complete";
-            matchUpdate.completedAt = serverTimestamp();
-          }
-          transaction.update(matchRef, matchUpdate);
-        });
-
-        if (isHost()) {
-          await fillMatches(activeGameCode);
-        }
-
-        if (rewardPayload) {
-          showReward(rewardPayload);
-          showToast(
-            rewardPayload.isWin
-              ? `+${rewardPayload.points} points! Victory vibes.`
-              : `+${rewardPayload.points} point earned. Comeback time!`,
-            rewardPayload.isWin ? "success" : "info"
-          );
-        }
+    const rounds = match.result?.rounds || [];
+    if (rounds.length >= 3) return;
+    const pairing = getFlipCupPairings(match.teamIds)[rounds.length];
+    if (!pairing) return;
+    const winnerSide = payload.winnerSide;
+    if (!["A", "B"].includes(winnerSide)) return;
+    const winners = winnerSide === "A" ? pairing.pairA : pairing.pairB;
+    const roundIndex = rounds.length + 1;
+    const updatedRounds = [
+      ...rounds,
+      {
+        roundIndex,
+        pairA: pairing.pairA,
+        pairB: pairing.pairB,
+        winnerSide,
+      },
+    ];
+    const otherTeams = match.teamIds;
+    teams.forEach((team) => {
+      const isWinner = winners.includes(team.id);
+      const points = calculatePoints(team.id, isWinner, match);
+      const shouldCharge = match.doubleDown?.[team.id] && !doubleDownCharged[team.id];
+      const powerupsRemaining = shouldCharge
+        ? Math.max((team.powerupsRemaining ?? 3) - 1, 0)
+        : team.powerupsRemaining ?? 3;
+      if (shouldCharge) {
+        doubleDownCharged[team.id] = true;
       }
-
-      const setView = (view) => {
-        const sections = {
-          player: playerSection,
-          leaderboard: leaderboardSection,
-          roster: rosterSection,
-          control: controlSection,
-        };
-        document.body.dataset.view = view;
-        Object.entries(sections).forEach(([key, section]) => {
-          section.classList.toggle("hidden", key !== view);
-        });
-        tabs.forEach((tab) => {
-          tab.classList.toggle("active", tab.dataset.view === view);
-        });
-        renderLeaderboard();
-        renderRoster();
-        renderMatch();
-      };
-
-      const updateTabsVisibility = () => {
-        const hasGame = Boolean(getActiveGameCode());
-        const showControl = isAdmin();
-        tabs.forEach((tab) => {
-          if (tab.dataset.view === "player") {
-            tab.classList.remove("hidden");
-            return;
-          }
-          if (tab.dataset.view === "control") {
-            tab.classList.toggle("hidden", !hasGame || !showControl);
-            return;
-          }
-          tab.classList.toggle("hidden", !hasGame);
-        });
-        if (!hasGame) {
-          setView("player");
-        }
-      };
-
-      const startNewGame = async () => {
-        const newCode = generateGameCode();
-        setGameCodes(newCode);
-        clearActiveTeamId();
-        await withTimeout(
-          createGame(newCode),
-          7000,
-          "Timed out while creating the game."
-        );
-        subscribeToGame(newCode);
-        updateGameCodeDisplay();
-        updateTabsVisibility();
-        renderLeaderboard();
-        renderRoster();
-        renderMatch();
-        refreshState();
-        return newCode;
-      };
-
-      const registerTeam = async ({ playerName, country, partnerName }) => {
-        const activeGameCode = getActiveGameCode();
-        if (!activeGameCode) return;
-
-        // Pull the latest teams from Firestore so matching works even before onSnapshot finishes.
-        // On some mobile networks/browsers, getDocs can fail intermittently; don't let that kill join.
-        let teams = [];
-        try {
-          teams = await withTimeout(fetchTeamsOnce(activeGameCode), 7000, "Timed out loading teams.");
-        } catch (error) {
-          console.warn("Unable to fetch teams list; falling back to local snapshot.", error);
-          teams = getTeams ? getTeams() : [];
-        }
-
-        const existing = findMatchingTeam(teams, playerName, partnerName, country);
-
-        const teamId = existing?.id || getActiveTeamId() || crypto.randomUUID();
-        const team = {
-          id: teamId,
-          playerName,
-          partnerName,
-          country,
-          wins: existing?.wins || 0,
-          losses: existing?.losses || 0,
-          points: existing?.points || 0,
-          powerupsRemaining: existing?.powerupsRemaining ?? 3,
-          currentMatchId: existing?.currentMatchId || null,
-          lastOpponents: existing?.lastOpponents || [],
-          lastGameType: existing?.lastGameType || null,
-          createdAt: existing?.createdAt || new Date().toISOString(),
-        };
-
-        try {
-          await setDoc(doc(teamsCollection(activeGameCode), teamId), team, { merge: true });
-        } catch (error) {
-          console.error("Unable to sync team to cloud.", error);
-          saveStatus.textContent =
-            "Saved locally, but we couldn't sync to the shared game yet.";
-          showToast("Saved locally, but sync to the shared game failed.", "warning");
-          return;
-        }
-
-        saveStatus.textContent = existing
-          ? "Welcome back! We found your team and refreshed your details."
-          : "All Set! You're live on the leaderboard.";
-        showToast(
-          existing ? "Welcome back! Your team is ready." : "All set! You're on the board.",
-          "success"
-        );
-
-        setActiveTeamId(teamId);
-        renderMatch();
-        renderLeaderboard();
-        renderRoster();
-        updateTabsVisibility();
-        updateMobileState("playing");
-        scheduleFillMatches(activeGameCode);
-        updateStepIndicator({ hasCoreInfo: true, hasCode: true });
-      };
-
-      form.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        if (joinGameButton.disabled) {
-          showToast("Fill in team info and the game code first.", "warning");
-          return;
-        }
-
-        const formData = new FormData(form);
-        const playerName = formData.get("playerName").trim();
-        const country = formData.get("country").trim();
-        const partnerName = formData.get("partnerName").trim();
-        const submittedCode = normalizeGameCode(formData.get("gameCode") || "");
-
-        if (!submittedCode) {
-          saveStatus.textContent =
-            "Enter a game code to join, or tap “I'm starting the games” to host.";
-          showToast("Missing game code. Ask your host for the 4-digit code.", "warning");
-          return;
-        }
-
-        setButtonLoading(joinGameButton, true, "Joining...");
-        try {
-          const game = await withTimeout(fetchGame(submittedCode), 7000, "Timed out joining the game.");
-          if (!game) {
-            saveStatus.textContent =
-              "No game found for that code. Ask the host to start one.";
-            showToast("No game found for that code.", "warning");
-            return;
-          }
-
-          setGameCodes(submittedCode);
-          subscribeToGame(submittedCode);
-          await registerTeam({ playerName, country, partnerName });
-          pendingMobileGameCode = "";
-          if (mobileGameCodeInput) mobileGameCodeInput.value = "";
-          setMobileOnboardingStep("code");
-          resetMobileOnboardingMessage();
-        } catch (error) {
-          console.error("Join failed.", error);
-          const message = error?.message || String(error);
-          // Surface permission issues explicitly (these look like "network hiccup" otherwise).
-          if (/permission|insufficient permissions/i.test(message)) {
-            showToast("Join blocked by Firestore rules (permissions).", "warning");
-            saveStatus.textContent = `Join blocked: ${message}`;
-          } else {
-            showToast("Could not join right now. Try again.", "warning");
-            saveStatus.textContent = `Join failed: ${message}`;
-          }
-        } finally {
-          setButtonLoading(joinGameButton, false);
-        }
+      transaction.update(doc(teamsCollection(activeGameCode), team.id), {
+        wins: (team.wins || 0) + (isWinner ? 1 : 0),
+        losses: (team.losses || 0) + (isWinner ? 0 : 1),
+        points: (team.points || 0) + points,
+        currentMatchId: roundIndex === 3 ? null : team.currentMatchId,
+        lastOpponents: otherTeams.filter((id) => id !== team.id).slice(0, 3),
+        lastGameType: roundIndex === 3 ? match.gameType : team.lastGameType || null,
+        flipCupStreak:
+          roundIndex === 3
+            ? team.lastGameType === "flip_cup"
+              ? Math.min((team.flipCupStreak || 0) + 1, 2)
+              : 1
+            : team.flipCupStreak || 0,
+        powerupsRemaining,
       });
+    });
 
-      if (mobileContinueButton) {
-        mobileContinueButton.addEventListener("click", () => {
-          if (mobileContinueButton.disabled) return;
-          if (mobileRegisterPanel) {
-            mobileRegisterPanel.classList.add("is-exiting");
-            // Allow the exit animation, then just change state (do NOT remove the panel).
-            setTimeout(() => updateMobileState("access"), 280);
-          } else {
-            updateMobileState("access");
-          }
-        });
-      }
+    const matchUpdate = {
+      result: {
+        rounds: updatedRounds,
+        finalWinners:
+          roundIndex === 3 ? computeFlipCupFinalWinners(updatedRounds, match.teamIds) : null,
+      },
+      doubleDownCharged,
+    };
+    if (roundIndex === 3) {
+      matchUpdate.status = "complete";
+      matchUpdate.completedAt = serverTimestamp();
+    }
+    transaction.update(matchRef, matchUpdate);
+  });
 
-      if (mobileCodeContinueButton) {
-        mobileCodeContinueButton.addEventListener("click", async () => {
-          const submittedCode = normalizeGameCode(mobileGameCodeInput?.value || "");
-          if (!submittedCode) {
-            showToast("Please enter a game code first.", "warning");
-            return;
-          }
-          setButtonLoading(mobileCodeContinueButton, true, "Checking code...");
-          try {
-            const game = await withTimeout(fetchGame(submittedCode), 7000, "Timed out joining the game.");
-            if (!game) {
-              resetMobileOnboardingMessage();
-              showToast("We couldn't find that game code.", "warning");
-              return;
-            }
-            pendingMobileGameCode = submittedCode;
-            if (mobileOnboardingNote) {
-              mobileOnboardingNote.textContent = "We found your game!";
-              mobileOnboardingNote.classList.add("success");
-            }
-            setTimeout(() => {
-              setMobileState("onboarding-team");
-              setMobileOnboardingStep("team");
-              resetMobileOnboardingMessage();
-            }, 550);
-          } catch (error) {
-            console.error("Unable to verify game code.", error);
-            showToast("Could not check that game code right now.", "warning");
-          } finally {
-            setButtonLoading(mobileCodeContinueButton, false);
-          }
-        });
-      }
+  if (isHost()) {
+    await fillMatches(activeGameCode);
+  }
 
-      if (mobileLetsPlayButton) {
-        mobileLetsPlayButton.addEventListener("click", async () => {
-          const playerName = mobilePlayerNameInput?.value.trim() || "";
-          const partnerName = mobilePartnerNameInput?.value.trim() || "";
-          const country = mobileCountryInput?.value.trim() || "";
-          if (!pendingMobileGameCode || !playerName || !partnerName || !country) {
-            showToast("Please fill out each field to continue.", "warning");
-            return;
-          }
+  if (rewardPayload) {
+    showReward(rewardPayload);
+    showToast(
+      rewardPayload.isWin
+        ? `+${rewardPayload.points} points! Victory vibes.`
+        : `+${rewardPayload.points} point earned. Comeback time!`,
+      rewardPayload.isWin ? "success" : "info"
+    );
+  }
+}
 
-          playerNameInput.value = playerName;
-          partnerNameInput.value = partnerName;
-          countryInput.value = country;
-          gameCodeInput.value = pendingMobileGameCode;
-          validateTeamInputs();
-          form.requestSubmit();
-        });
-      }
+const setView = (view) => {
+  const sections = {
+    player: playerSection,
+    leaderboard: leaderboardSection,
+    roster: rosterSection,
+    control: controlSection,
+  };
+  document.body.dataset.view = view;
+  Object.entries(sections).forEach(([key, section]) => {
+    section.classList.toggle("hidden", key !== view);
+  });
+  tabs.forEach((tab) => {
+    tab.classList.toggle("active", tab.dataset.view === view);
+  });
+  renderLeaderboard();
+  renderRoster();
+  renderMatch();
+};
 
-      if (manualRefreshButton) {
-        manualRefreshButton.addEventListener("click", () => {
-          window.location.reload();
-        });
-      }
+const updateTabsVisibility = () => {
+  const hasGame = Boolean(getActiveGameCode());
+  const showControl = isAdmin();
+  tabs.forEach((tab) => {
+    if (tab.dataset.view === "player") {
+      tab.classList.remove("hidden");
+      return;
+    }
+    if (tab.dataset.view === "control") {
+      tab.classList.toggle("hidden", !hasGame || !showControl);
+      return;
+    }
+    tab.classList.toggle("hidden", !hasGame);
+  });
+  if (!hasGame) {
+    setView("player");
+  }
+};
 
-      [playerNameInput, partnerNameInput, countryInput, gameCodeInput].forEach((input) => {
-        input.addEventListener("input", validateTeamInputs);
-        input.addEventListener("blur", validateTeamInputs);
-      });
+const startNewGame = async () => {
+  const newCode = generateGameCode();
+  setGameCodes(newCode);
+  clearActiveTeamId();
+  await withTimeout(createGame(newCode), 7000, "Timed out while creating the game.");
+  subscribeToGame(newCode);
+  updateGameCodeDisplay();
+  updateTabsVisibility();
+  renderLeaderboard();
+  renderRoster();
+  renderMatch();
+  refreshState();
+  return newCode;
+};
 
-      rosterForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
-        const activeTeamId = getActiveTeamId();
-        const targetTeamId = isAdmin && adminEditingTeamId ? adminEditingTeamId : activeTeamId;
-        if (!targetTeamId) return;
-        const teams = getTeams();
-        const updatedTeams = teams.map((team) =>
-          team.id === targetTeamId
-            ? {
-                ...team,
-                playerName: rosterPlayerName.value.trim(),
-                partnerName: rosterPartnerName.value.trim(),
-                country: rosterCountry.value.trim(),
-              }
-            : team
-        );
-        const updatedTeam = updatedTeams.find((team) => team.id === targetTeamId);
-        const activeGameCode = getActiveGameCode();
-        if (activeGameCode && updatedTeam) {
-          try {
-            await setDoc(doc(teamsCollection(activeGameCode), updatedTeam.id), updatedTeam, {
-              merge: true,
-            });
-          } catch (error) {
-            console.error("Unable to sync roster updates.", error);
-          }
-        }
-        rosterStatus.textContent = isAdmin
-          ? "Roster entry updated."
-          : "Roster entry updated for your team.";
-        if (isAdmin) {
-          adminEditingTeamId = null;
-        }
-        renderLeaderboard();
-        renderMatch();
-        renderRoster();
-      });
+const registerTeam = async ({ playerName, country, partnerName }) => {
+  const activeGameCode = getActiveGameCode();
+  if (!activeGameCode) return;
 
-      removeTeamButton.addEventListener("click", async () => {
-        const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
-        const activeTeamId = getActiveTeamId();
-        const targetTeamId = isAdmin && adminEditingTeamId ? adminEditingTeamId : activeTeamId;
-        if (!targetTeamId) return;
-        if (!confirm("Remove your team from the roster and schedule?")) return;
-        const activeGameCode = getActiveGameCode();
-        const impactedMatches = getMatches().filter((match) =>
-          match.teamIds?.includes(targetTeamId)
-        );
-        if (activeGameCode) {
-          for (const match of impactedMatches) {
-            await closeMatchForRemoval(activeGameCode, match, targetTeamId);
-          }
-          try {
-            await deleteTeamFromCloud(activeGameCode, targetTeamId);
-          } catch (error) {
-            console.error("Unable to remove team from cloud.", error);
-          }
-        }
-        if (!isAdmin || targetTeamId === activeTeamId) {
-          clearActiveTeamId();
-        }
-        rosterStatus.textContent = isAdmin
-          ? "Team entry removed."
-          : "Your team was removed. Rejoin anytime.";
-        showToast("Team removed from the roster.", "info");
-        if (isAdmin) {
-          adminEditingTeamId = null;
-        }
-        renderLeaderboard();
-        renderMatch();
-        renderRoster();
-      });
+  let teams = [];
+  try {
+    teams = await withTimeout(fetchTeamsOnce(activeGameCode), 7000, "Timed out loading teams.");
+  } catch (error) {
+    console.warn("Unable to fetch teams list; falling back to local snapshot.", error);
+    teams = getTeams ? getTeams() : [];
+  }
 
-      mergeButton.addEventListener("click", async () => {
-        if (!isAdmin()) return;
-        const sourceTeamId = mergeSourceSelect.value;
-        const targetTeamId = mergeTargetSelect.value;
-        if (!sourceTeamId || !targetTeamId) {
-          mergeStatus.textContent = "Select a source and destination team.";
-          return;
-        }
-        if (sourceTeamId === targetTeamId) {
-          mergeStatus.textContent = "Choose two different teams to merge.";
-          return;
-        }
-        const teams = getTeams();
-        const sourceTeam = teams.find((team) => team.id === sourceTeamId);
-        const targetTeam = teams.find((team) => team.id === targetTeamId);
-        if (!sourceTeam || !targetTeam) {
-          mergeStatus.textContent = "Those teams are no longer available.";
-          return;
-        }
-        const confirmed = confirm(
-          `Merge ${formatTeamLabel(sourceTeam)} into ${formatTeamLabel(
-            targetTeam
-          )}? This will delete the source team.`
-        );
-        if (!confirmed) return;
+  const existing = findMatchingTeam(teams, playerName, partnerName, country);
 
-        const activeGameCode = getActiveGameCode();
-        if (!activeGameCode) return;
+  const teamId = existing?.id || getActiveTeamId() || crypto.randomUUID();
+  const team = {
+    id: teamId,
+    playerName,
+    partnerName,
+    country,
+    wins: existing?.wins || 0,
+    losses: existing?.losses || 0,
+    points: existing?.points || 0,
+    powerupsRemaining: existing?.powerupsRemaining ?? 3,
+    currentMatchId: existing?.currentMatchId || null,
+    lastOpponents: existing?.lastOpponents || [],
+    lastGameType: existing?.lastGameType || null,
+    createdAt: existing?.createdAt || new Date().toISOString(),
+  };
 
-        mergeStatus.textContent = "Merging teams...";
-        const impactedMatches = getMatches().filter((match) =>
-          match.teamIds?.includes(sourceTeamId)
-        );
-        for (const match of impactedMatches) {
-          await closeMatchForRemoval(activeGameCode, match, sourceTeamId);
-        }
+  try {
+    await setDoc(doc(teamsCollection(activeGameCode), teamId), team, { merge: true });
+  } catch (error) {
+    console.error("Unable to sync team to cloud.", error);
+    saveStatus.textContent = "Saved locally, but we couldn't sync to the shared game yet.";
+    showToast("Saved locally, but sync to the shared game failed.", "warning");
+    return;
+  }
 
-        try {
-          await runTransaction(db, async (transaction) => {
-            const sourceRef = doc(teamsCollection(activeGameCode), sourceTeamId);
-            const targetRef = doc(teamsCollection(activeGameCode), targetTeamId);
-            const [sourceSnap, targetSnap] = await Promise.all([
-              transaction.get(sourceRef),
-              transaction.get(targetRef),
-            ]);
-            if (!sourceSnap.exists() || !targetSnap.exists()) return;
-            const source = sourceSnap.data();
-            const target = targetSnap.data();
-            const mergedLastOpponents = [
-              ...new Set([...(target.lastOpponents || []), ...(source.lastOpponents || [])]),
-            ].slice(0, 3);
-            transaction.update(targetRef, {
-              wins: (target.wins || 0) + (source.wins || 0),
-              losses: (target.losses || 0) + (source.losses || 0),
-              points: (target.points || 0) + (source.points || 0),
-              powerupsRemaining: Math.max(
-                target.powerupsRemaining ?? 3,
-                source.powerupsRemaining ?? 3
-              ),
-              lastOpponents: mergedLastOpponents,
-              lastGameType: target.lastGameType || source.lastGameType || null,
-              flipCupStreak: Math.max(target.flipCupStreak || 0, source.flipCupStreak || 0),
-            });
-            transaction.delete(sourceRef);
-          });
-        } catch (error) {
-          console.error("Unable to merge teams.", error);
-          mergeStatus.textContent = "Merge failed. Please try again.";
-          return;
-        }
+  saveStatus.textContent = existing
+    ? "Welcome back! We found your team and refreshed your details."
+    : "All Set! You're live on the leaderboard.";
+  showToast(
+    existing ? "Welcome back! Your team is ready." : "All set! You're on the board.",
+    "success"
+  );
 
-        if (getActiveTeamId() === sourceTeamId) {
-          setActiveTeamId(targetTeamId);
-        }
-        if (adminEditingTeamId === sourceTeamId) {
-          adminEditingTeamId = targetTeamId;
-        }
-        mergeStatus.textContent = `Merged ${formatTeamLabel(sourceTeam)} into ${formatTeamLabel(
-          targetTeam
-        )}.`;
-        showToast("Teams merged successfully.", "success");
-        renderLeaderboard();
-        renderMatch();
-        renderRoster();
-        scheduleFillMatches(activeGameCode);
-      });
+  setActiveTeamId(teamId);
+  renderMatch();
+  renderLeaderboard();
+  renderRoster();
+  updateTabsVisibility();
+  updateMobileState("playing");
+  scheduleFillMatches(activeGameCode);
+  updateStepIndicator({ hasCoreInfo: true, hasCode: true });
+};
 
-      adminToggle.addEventListener("change", () => {
-        if (adminToggle.checked) {
-          const entered = prompt("Enter admin passcode:");
-          if (entered === ADMIN_PASSCODE) {
-            localStorage.setItem(STORAGE_KEYS.adminMode, "true");
-            showToast("Admin tools unlocked.", "success");
-          } else {
-            adminToggle.checked = false;
-            localStorage.setItem(STORAGE_KEYS.adminMode, "false");
-            showToast("Passcode incorrect. Admin tools stay locked.", "warning");
-          }
-        } else {
-          localStorage.setItem(STORAGE_KEYS.adminMode, "false");
-          showToast("Admin mode disabled.", "info");
-        }
-        adminEditingTeamId = null;
-        refreshState();
-      });
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (joinGameButton.disabled) {
+    showToast("Fill in team info and the game code first.", "warning");
+    return;
+  }
 
-      newGameButton.addEventListener("click", () => {
-        void (async () => {
-          try {
-            const newCode = await startNewGame();
-            adminActionStatus.textContent = `New game started. Code: ${newCode}`;
-            showToast(`New game started. Code ${newCode}.`, "success");
-          } catch (error) {
-            console.error("Unable to start new game.", error);
-            adminActionStatus.textContent = "Could not start a new game. Try again.";
-            showToast("Could not start a new game.", "warning");
-          }
-        })();
-      });
+  const formData = new FormData(form);
+  const playerName = formData.get("playerName").trim();
+  const country = formData.get("country").trim();
+  const partnerName = formData.get("partnerName").trim();
+  const submittedCode = normalizeGameCode(formData.get("gameCode") || "");
 
-      resetGameButton.addEventListener("click", () => {
-        if (!confirm("Clear all teams and matches for this game?")) return;
-        clearActiveTeamId();
-        const activeGameCode = getActiveGameCode();
-        if (activeGameCode) {
-          void clearTeamsInCloud(activeGameCode);
-        }
-        adminActionStatus.textContent = "Current game cleared.";
-        showToast("Game reset in progress.", "warning");
-        renderMatch();
-        renderLeaderboard();
-        renderRoster();
-      });
+  if (!submittedCode) {
+    saveStatus.textContent =
+      "Enter a game code to join, or tap “I'm starting the games” to host.";
+    showToast("Missing game code. Ask your host for the 4-digit code.", "warning");
+    return;
+  }
 
-      clearResultsButton.addEventListener("click", () => {
-        void clearMatchResults();
-        adminActionStatus.textContent = "Match results cleared.";
-        showToast("Match results cleared.", "info");
-        renderMatch();
-        renderLeaderboard();
-      });
+  setButtonLoading(joinGameButton, true, "Joining...");
+  try {
+    const game = await withTimeout(fetchGame(submittedCode), 7000, "Timed out joining the game.");
+    if (!game) {
+      saveStatus.textContent = "No game found for that code. Ask the host to start one.";
+      showToast("No game found for that code.", "warning");
+      return;
+    }
 
-      if (copyJoinLinkButton) {
-        copyJoinLinkButton.addEventListener("click", async () => {
-          const code = getActiveGameCode();
-          if (!code) {
-            showToast("Start or join a game first.", "warning");
-            return;
-          }
-          const joinUrl = getJoinUrl(code);
-          try {
-            await navigator.clipboard.writeText(joinUrl);
-            showToast("Join link copied.", "success");
-          } catch (error) {
-            console.error("Unable to copy join link.", error);
-            showToast("Could not copy the link on this device.", "warning");
-          }
-        });
-      }
+    setGameCodes(submittedCode);
+    subscribeToGame(submittedCode);
+    await registerTeam({ playerName, country, partnerName });
+    pendingMobileGameCode = "";
+    if (mobileGameCodeInput) mobileGameCodeInput.value = "";
+    setMobileOnboardingStep("code");
+    resetMobileOnboardingMessage();
+  } catch (error) {
+    console.error("Join failed.", error);
+    const message = error?.message || String(error);
+    if (/permission|insufficient permissions/i.test(message)) {
+      showToast("Join blocked by Firestore rules (permissions).", "warning");
+      saveStatus.textContent = `Join blocked: ${message}`;
+    } else {
+      showToast("Could not join right now. Try again.", "warning");
+      saveStatus.textContent = `Join failed: ${message}`;
+    }
+  } finally {
+    setButtonLoading(joinGameButton, false);
+  }
+});
 
-      tabs.forEach((tab) => {
-        tab.addEventListener("click", () => {
-          setView(tab.dataset.view);
-        });
-      });
+if (mobileContinueButton) {
+  mobileContinueButton.addEventListener("click", () => {
+    if (mobileContinueButton.disabled) return;
+    if (mobileRegisterPanel) {
+      mobileRegisterPanel.classList.add("is-exiting");
+      setTimeout(() => updateMobileState("access"), 280);
+    } else {
+      updateMobileState("access");
+    }
+  });
+}
 
-      const getJoinUrl = (code) => {
-        if (!code) return "";
-        const base = `${window.location.origin}${window.location.pathname}`;
-        return `${base}?join=${encodeURIComponent(code)}`;
-      };
-
-      const updateGameCodeDisplay = () => {
-        const currentCode = getActiveGameCode();
-        gameCodeEl.textContent = currentCode || "----";
-        const joinUrl = getJoinUrl(currentCode);
-        if (joinLinkEl) {
-          joinLinkEl.textContent = joinUrl || "Start a game to generate a join link.";
-        }
-        if (joinDomainEl) {
-          joinDomainEl.textContent = `${window.location.host}${window.location.pathname}`;
-        }
-        if (joinQrEl) {
-          if (joinUrl) {
-            joinQrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(joinUrl)}`;
-            joinQrEl.classList.remove("hidden");
-          } else {
-            joinQrEl.removeAttribute("src");
-            joinQrEl.classList.add("hidden");
-          }
-        }
-      };
-
-      const refreshState = () => {
-        renderMatch();
-        renderLeaderboard();
-        renderRoster();
-        updateGameCodeDisplay();
-        updateTabsVisibility();
-
-        const isAdminMode = isAdmin();
-        const hostMode = isHost();
-        adminToggle.checked = isAdminMode;
-        adminStatus.textContent = isAdminMode ? "Admin tools unlocked." : "Admin tools are locked.";
-        adminPanel.classList.toggle("hidden", !isAdminMode);
-        hostPill.classList.toggle("hidden", !hostMode);
-        if (hostMode) {
-          modePill.textContent = "🎬 Host Mode";
-        } else if (isAdminMode) {
-          modePill.textContent = "🛠️ Admin Mode";
-        } else {
-          modePill.textContent = "🎈 Player Mode";
-        }
-        updateStepIndicator();
-        updateMobileState();
-      };
-
-      window.addEventListener("storage", refreshState);
-
-      const init = async () => {
-        runMobileWelcome();
+if (mobileCodeContinueButton) {
+  mobileCodeContinueButton.addEventListener("click", async () => {
+    const submittedCode = normalizeGameCode(mobileGameCodeInput?.value || "");
+    if (!submittedCode) {
+      showToast("Please enter a game code first.", "warning");
+      return;
+    }
+    setButtonLoading(mobileCodeContinueButton, true, "Checking code...");
+    try {
+      const game = await withTimeout(fetchGame(submittedCode), 7000, "Timed out joining the game.");
+      if (!game) {
         resetMobileOnboardingMessage();
-        if (mobileGameCodeInput) {
-          mobileGameCodeInput.value = "";
-        }
-        const params = new URLSearchParams(window.location.search);
-        const joinFromUrl = normalizeGameCode(params.get("join") || params.get("code") || "");
-        if (joinFromUrl) {
-          gameCodeInput.value = joinFromUrl;
-        } else {
-          gameCodeInput.value = "";
-        }
-        const code = joinFromUrl || getActiveGameCode();
-        if (code) {
-          setGameCodes(code);
-          const game = await fetchGame(code);
-          if (!game) {
-            localStorage.removeItem(STORAGE_KEYS.activeGameCode);
-            localStorage.removeItem(STORAGE_KEYS.currentGameCode);
-            state.teams = [];
-            state.matches = [];
-          } else {
-            subscribeToGame(code);
-          }
-        }
-        void ensureCountryLookup().then(() => {
-          renderLeaderboard();
-          renderRoster();
-          renderMatch();
-          validateTeamInputs();
-        });
-        refreshState();
-        validateTeamInputs();
-      };
+        showToast("We couldn't find that game code.", "warning");
+        return;
+      }
+      pendingMobileGameCode = submittedCode;
+      if (mobileOnboardingNote) {
+        mobileOnboardingNote.textContent = "We found your game!";
+        mobileOnboardingNote.classList.add("success");
+      }
+      setTimeout(() => {
+        setMobileState("onboarding-team");
+        setMobileOnboardingStep("team");
+        resetMobileOnboardingMessage();
+      }, 550);
+    } catch (error) {
+      console.error("Unable to verify game code.", error);
+      showToast("Could not check that game code right now.", "warning");
+    } finally {
+      setButtonLoading(mobileCodeContinueButton, false);
+    }
+  });
+}
 
-      startGameButton.addEventListener("click", async () => {
-        const formData = new FormData(form);
-        const playerName = (formData.get("playerName") || "").trim();
-        const country = (formData.get("country") || "").trim();
-        const partnerName = (formData.get("partnerName") || "").trim();
+if (mobileLetsPlayButton) {
+  mobileLetsPlayButton.addEventListener("click", async () => {
+    const playerName = mobilePlayerNameInput?.value.trim() || "";
+    const partnerName = mobilePartnerNameInput?.value.trim() || "";
+    const country = mobileCountryInput?.value.trim() || "";
+    if (!pendingMobileGameCode || !playerName || !partnerName || !country) {
+      showToast("Please fill out each field to continue.", "warning");
+      return;
+    }
 
-        if (!playerName || !country || !partnerName) {
-          saveStatus.textContent = "Fill in your name, country, and partner before starting.";
-          showToast("Add your name, partner, and country first.", "warning");
-          return;
-        }
+    playerNameInput.value = playerName;
+    partnerNameInput.value = partnerName;
+    countryInput.value = country;
+    gameCodeInput.value = pendingMobileGameCode;
+    validateTeamInputs();
+    form.requestSubmit();
+  });
+}
 
-        saveStatus.textContent = "Starting game...";
-        try {
-          setButtonLoading(startGameButton, true, "Creating...");
-          const newCode = await startNewGame();
-          saveStatus.textContent = `Game started! Share code ${newCode} with the crew.`;
-          showToast(`Game started! Code ${newCode}.`, "success");
-          await registerTeam({ playerName, country, partnerName });
-        } catch (error) {
-          console.error("Unable to create game in cloud.", error);
-          saveStatus.textContent = `Start failed: ${error?.message || error}`;
-          showToast("Could not create a new game. Try again.", "warning");
-        } finally {
-          setButtonLoading(startGameButton, false);
+if (manualRefreshButton) {
+  manualRefreshButton.addEventListener("click", () => {
+    window.location.reload();
+  });
+}
+
+[playerNameInput, partnerNameInput, countryInput, gameCodeInput].forEach((input) => {
+  input.addEventListener("input", validateTeamInputs);
+  input.addEventListener("blur", validateTeamInputs);
+});
+
+if (mobileCountryInput) {
+  mobileCountryInput.addEventListener("input", () => {
+    const val = mobileCountryInput.value.trim();
+    if (!mobileOnboardingNote) return;
+
+    if (!val) {
+      mobileOnboardingNote.textContent = "Enter your 4-digit game code to continue.";
+      mobileOnboardingNote.classList.remove("success");
+      return;
+    }
+
+    if (getCountryIso2(val)) {
+      mobileOnboardingNote.textContent = "We have your flag ✅";
+      mobileOnboardingNote.classList.add("success");
+    } else {
+      mobileOnboardingNote.textContent = "We don’t have that flag yet, but we’ll try.";
+      mobileOnboardingNote.classList.remove("success");
+    }
+  });
+}
+
+rosterForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const isAdminMode = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
+  const activeTeamId = getActiveTeamId();
+  const targetTeamId = isAdminMode && adminEditingTeamId ? adminEditingTeamId : activeTeamId;
+  if (!targetTeamId) return;
+  const teams = getTeams();
+  const updatedTeams = teams.map((team) =>
+    team.id === targetTeamId
+      ? {
+          ...team,
+          playerName: rosterPlayerName.value.trim(),
+          partnerName: rosterPartnerName.value.trim(),
+          country: rosterCountry.value.trim(),
         }
+      : team
+  );
+  const updatedTeam = updatedTeams.find((team) => team.id === targetTeamId);
+  const activeGameCode = getActiveGameCode();
+  if (activeGameCode && updatedTeam) {
+    try {
+      await setDoc(doc(teamsCollection(activeGameCode), updatedTeam.id), updatedTeam, {
+        merge: true,
       });
+    } catch (error) {
+      console.error("Unable to sync roster updates.", error);
+    }
+  }
+  rosterStatus.textContent = isAdminMode
+    ? "Roster entry updated."
+    : "Roster entry updated for your team.";
+  if (isAdminMode) {
+    adminEditingTeamId = null;
+  }
+  renderLeaderboard();
+  renderMatch();
+  renderRoster();
+});
 
-      window.addEventListener("error", (event) => {
-        saveStatus.textContent = `JS error: ${event.message}`;
-        showToast("Something went wrong. Try refreshing.", "warning");
+removeTeamButton.addEventListener("click", async () => {
+  const isAdminMode = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
+  const activeTeamId = getActiveTeamId();
+  const targetTeamId = isAdminMode && adminEditingTeamId ? adminEditingTeamId : activeTeamId;
+  if (!targetTeamId) return;
+  if (!confirm("Remove your team from the roster and schedule?")) return;
+  const activeGameCode = getActiveGameCode();
+  const impactedMatches = getMatches().filter((match) => match.teamIds?.includes(targetTeamId));
+  if (activeGameCode) {
+    for (const match of impactedMatches) {
+      await closeMatchForRemoval(activeGameCode, match, targetTeamId);
+    }
+    try {
+      await deleteTeamFromCloud(activeGameCode, targetTeamId);
+    } catch (error) {
+      console.error("Unable to remove team from cloud.", error);
+    }
+  }
+  if (!isAdminMode || targetTeamId === activeTeamId) {
+    clearActiveTeamId();
+  }
+  rosterStatus.textContent = isAdminMode
+    ? "Team entry removed."
+    : "Your team was removed. Rejoin anytime.";
+  showToast("Team removed from the roster.", "info");
+  if (isAdminMode) {
+    adminEditingTeamId = null;
+  }
+  renderLeaderboard();
+  renderMatch();
+  renderRoster();
+});
+
+mergeButton.addEventListener("click", async () => {
+  if (!isAdmin()) return;
+  const sourceTeamId = mergeSourceSelect.value;
+  const targetTeamId = mergeTargetSelect.value;
+  if (!sourceTeamId || !targetTeamId) {
+    mergeStatus.textContent = "Select a source and destination team.";
+    return;
+  }
+  if (sourceTeamId === targetTeamId) {
+    mergeStatus.textContent = "Choose two different teams to merge.";
+    return;
+  }
+  const teams = getTeams();
+  const sourceTeam = teams.find((team) => team.id === sourceTeamId);
+  const targetTeam = teams.find((team) => team.id === targetTeamId);
+  if (!sourceTeam || !targetTeam) {
+    mergeStatus.textContent = "Those teams are no longer available.";
+    return;
+  }
+  const confirmed = confirm(
+    `Merge ${formatTeamLabel(sourceTeam)} into ${formatTeamLabel(
+      targetTeam
+    )}? This will delete the source team.`
+  );
+  if (!confirmed) return;
+
+  const activeGameCode = getActiveGameCode();
+  if (!activeGameCode) return;
+
+  mergeStatus.textContent = "Merging teams...";
+  const impactedMatches = getMatches().filter((match) => match.teamIds?.includes(sourceTeamId));
+  for (const match of impactedMatches) {
+    await closeMatchForRemoval(activeGameCode, match, sourceTeamId);
+  }
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const sourceRef = doc(teamsCollection(activeGameCode), sourceTeamId);
+      const targetRef = doc(teamsCollection(activeGameCode), targetTeamId);
+      const [sourceSnap, targetSnap] = await Promise.all([
+        transaction.get(sourceRef),
+        transaction.get(targetRef),
+      ]);
+      if (!sourceSnap.exists() || !targetSnap.exists()) return;
+      const source = sourceSnap.data();
+      const target = targetSnap.data();
+      const mergedLastOpponents = [
+        ...new Set([...(target.lastOpponents || []), ...(source.lastOpponents || [])]),
+      ].slice(0, 3);
+      transaction.update(targetRef, {
+        wins: (target.wins || 0) + (source.wins || 0),
+        losses: (target.losses || 0) + (source.losses || 0),
+        points: (target.points || 0) + (source.points || 0),
+        powerupsRemaining: Math.max(
+          target.powerupsRemaining ?? 3,
+          source.powerupsRemaining ?? 3
+        ),
+        lastOpponents: mergedLastOpponents,
+        lastGameType: target.lastGameType || source.lastGameType || null,
+        flipCupStreak: Math.max(target.flipCupStreak || 0, source.flipCupStreak || 0),
       });
+      transaction.delete(sourceRef);
+    });
+  } catch (error) {
+    console.error("Unable to merge teams.", error);
+    mergeStatus.textContent = "Merge failed. Please try again.";
+    return;
+  }
 
-      window.addEventListener("unhandledrejection", (event) => {
-        saveStatus.textContent = `Promise error: ${event.reason?.message || event.reason}`;
-        showToast("Network hiccup. We’ll keep trying.", "warning");
-      });
+  if (getActiveTeamId() === sourceTeamId) {
+    setActiveTeamId(targetTeamId);
+  }
+  if (adminEditingTeamId === sourceTeamId) {
+    adminEditingTeamId = targetTeamId;
+  }
+  mergeStatus.textContent = `Merged ${formatTeamLabel(sourceTeam)} into ${formatTeamLabel(
+    targetTeam
+  )}.`;
+  showToast("Teams merged successfully.", "success");
+  renderLeaderboard();
+  renderMatch();
+  renderRoster();
+  scheduleFillMatches(activeGameCode);
+});
 
-      window.addEventListener("resize", () => updateMobileState());
+adminToggle.addEventListener("change", () => {
+  if (adminToggle.checked) {
+    const entered = prompt("Enter admin passcode:");
+    if (entered === ADMIN_PASSCODE) {
+      localStorage.setItem(STORAGE_KEYS.adminMode, "true");
+      showToast("Admin tools unlocked.", "success");
+    } else {
+      adminToggle.checked = false;
+      localStorage.setItem(STORAGE_KEYS.adminMode, "false");
+      showToast("Passcode incorrect. Admin tools stay locked.", "warning");
+    }
+  } else {
+    localStorage.setItem(STORAGE_KEYS.adminMode, "false");
+    showToast("Admin mode disabled.", "info");
+  }
+  adminEditingTeamId = null;
+  refreshState();
+});
 
+newGameButton.addEventListener("click", () => {
+  void (async () => {
+    try {
+      const newCode = await startNewGame();
+      adminActionStatus.textContent = `New game started. Code: ${newCode}`;
+      showToast(`New game started. Code ${newCode}.`, "success");
+    } catch (error) {
+      console.error("Unable to start new game.", error);
+      adminActionStatus.textContent = "Could not start a new game. Try again.";
+      showToast("Could not start a new game.", "warning");
+    }
+  })();
+});
 
-      const enableDesktopPointerGlow = () => {
-        if (window.matchMedia("(max-width: 1023px)").matches) return;
-        const updateGlow = (event) => {
-          document.body.style.setProperty("--cursor-x", `${event.clientX}px`);
-          document.body.style.setProperty("--cursor-y", `${event.clientY}px`);
-        };
-        window.addEventListener("pointermove", updateGlow, { passive: true });
-      };
+resetGameButton.addEventListener("click", () => {
+  if (!confirm("Clear all teams and matches for this game?")) return;
+  clearActiveTeamId();
+  const activeGameCode = getActiveGameCode();
+  if (activeGameCode) {
+    void clearTeamsInCloud(activeGameCode);
+  }
+  adminActionStatus.textContent = "Current game cleared.";
+  showToast("Game reset in progress.", "warning");
+  renderMatch();
+  renderLeaderboard();
+  renderRoster();
+});
 
-      enableDesktopPointerGlow();
-      init();
-    
+clearResultsButton.addEventListener("click", () => {
+  void clearMatchResults();
+  adminActionStatus.textContent = "Match results cleared.";
+  showToast("Match results cleared.", "info");
+  renderMatch();
+  renderLeaderboard();
+});
+
+if (copyJoinLinkButton) {
+  copyJoinLinkButton.addEventListener("click", async () => {
+    const code = getActiveGameCode();
+    if (!code) {
+      showToast("Start or join a game first.", "warning");
+      return;
+    }
+    const joinUrl = getJoinUrl(code);
+    try {
+      await navigator.clipboard.writeText(joinUrl);
+      showToast("Join link copied.", "success");
+    } catch (error) {
+      console.error("Unable to copy join link.", error);
+      showToast("Could not copy the link on this device.", "warning");
+    }
+  });
+}
+
+tabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    setView(tab.dataset.view);
+  });
+});
+
+const getJoinUrl = (code) => {
+  if (!code) return "";
+  const base = `${window.location.origin}${window.location.pathname}`;
+  return `${base}?join=${encodeURIComponent(code)}`;
+};
+
+const updateGameCodeDisplay = () => {
+  const currentCode = getActiveGameCode();
+  gameCodeEl.textContent = currentCode || "----";
+  const joinUrl = getJoinUrl(currentCode);
+  if (joinLinkEl) {
+    joinLinkEl.textContent = joinUrl || "Start a game to generate a join link.";
+  }
+  if (joinDomainEl) {
+    joinDomainEl.textContent = `${window.location.host}${window.location.pathname}`;
+  }
+  if (joinQrEl) {
+    if (joinUrl) {
+      joinQrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
+        joinUrl
+      )}`;
+      joinQrEl.classList.remove("hidden");
+    } else {
+      joinQrEl.removeAttribute("src");
+      joinQrEl.classList.add("hidden");
+    }
+  }
+};
+
+const refreshState = () => {
+  renderMatch();
+  renderLeaderboard();
+  renderRoster();
+  updateGameCodeDisplay();
+  updateTabsVisibility();
+
+  const isAdminMode = isAdmin();
+  const hostMode = isHost();
+  adminToggle.checked = isAdminMode;
+  adminStatus.textContent = isAdminMode ? "Admin tools unlocked." : "Admin tools are locked.";
+  adminPanel.classList.toggle("hidden", !isAdminMode);
+  hostPill.classList.toggle("hidden", !hostMode);
+  if (hostMode) {
+    modePill.textContent = "🎬 Host Mode";
+  } else if (isAdminMode) {
+    modePill.textContent = "🛠️ Admin Mode";
+  } else {
+    modePill.textContent = "🎈 Player Mode";
+  }
+  updateStepIndicator();
+  updateMobileState();
+};
+
+window.addEventListener("storage", refreshState);
+
+const init = async () => {
+  runMobileWelcome();
+  resetMobileOnboardingMessage();
+  if (mobileGameCodeInput) {
+    mobileGameCodeInput.value = "";
+  }
+  const params = new URLSearchParams(window.location.search);
+  const joinFromUrl = normalizeGameCode(params.get("join") || params.get("code") || "");
+  if (joinFromUrl) {
+    gameCodeInput.value = joinFromUrl;
+  } else {
+    gameCodeInput.value = "";
+  }
+  const code = joinFromUrl || getActiveGameCode();
+  if (code) {
+    setGameCodes(code);
+    const game = await fetchGame(code);
+    if (!game) {
+      localStorage.removeItem(STORAGE_KEYS.activeGameCode);
+      localStorage.removeItem(STORAGE_KEYS.currentGameCode);
+      state.teams = [];
+      state.matches = [];
+    } else {
+      subscribeToGame(code);
+    }
+  }
+  void ensureCountryLookup().then(() => {
+    renderLeaderboard();
+    renderRoster();
+    renderMatch();
+    validateTeamInputs();
+  });
+  refreshState();
+  validateTeamInputs();
+};
+
+startGameButton.addEventListener("click", async () => {
+  const formData = new FormData(form);
+  const playerName = (formData.get("playerName") || "").trim();
+  const country = (formData.get("country") || "").trim();
+  const partnerName = (formData.get("partnerName") || "").trim();
+
+  if (!playerName || !country || !partnerName) {
+    saveStatus.textContent = "Fill in your name, country, and partner before starting.";
+    showToast("Add your name, partner, and country first.", "warning");
+    return;
+  }
+
+  saveStatus.textContent = "Starting game...";
+  try {
+    setButtonLoading(startGameButton, true, "Creating...");
+    const newCode = await startNewGame();
+    saveStatus.textContent = `Game started! Share code ${newCode} with the crew.`;
+    showToast(`Game started! Code ${newCode}.`, "success");
+    await registerTeam({ playerName, country, partnerName });
+  } catch (error) {
+    console.error("Unable to create game in cloud.", error);
+    saveStatus.textContent = `Start failed: ${error?.message || error}`;
+    showToast("Could not create a new game. Try again.", "warning");
+  } finally {
+    setButtonLoading(startGameButton, false);
+  }
+});
+
+window.addEventListener("error", (event) => {
+  saveStatus.textContent = `JS error: ${event.message}`;
+  showToast("Something went wrong. Try refreshing.", "warning");
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  saveStatus.textContent = `Promise error: ${event.reason?.message || event.reason}`;
+  showToast("Network hiccup. We’ll keep trying.", "warning");
+});
+
+window.addEventListener("resize", () => updateMobileState());
+
+const enableDesktopPointerGlow = () => {
+  if (window.matchMedia("(max-width: 1023px)").matches) return;
+  const updateGlow = (event) => {
+    document.body.style.setProperty("--cursor-x", `${event.clientX}px`);
+    document.body.style.setProperty("--cursor-y", `${event.clientY}px`);
+  };
+  window.addEventListener("pointermove", updateGlow, { passive: true });
+};
+
+enableDesktopPointerGlow();
+init();
