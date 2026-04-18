@@ -37,6 +37,11 @@ body {
     linear-gradient(165deg, #f8faff 0%, #eef2fa 60%, #f6f8fd 100%);
 }
 
+body.mobile-app {
+  min-height: 100dvh;
+  background: linear-gradient(160deg, #050505 0%, #2e2618 45%, #d9c7a0 72%, #ffffff 100%);
+}
+
 
 .top-header {
   max-width: 1220px;
@@ -705,6 +710,7 @@ input.small {
   inset: 0;
   display: grid;
   place-items: center;
+  align-content: center;
   padding: 20px;
   z-index: 300;
   pointer-events: none;
@@ -714,6 +720,9 @@ input.small {
 
 .mobile-welcome-card {
   width: min(92vw, 380px);
+  position: absolute;
+  top: 50%;
+  left: 50%;
   background: rgba(255, 255, 255, 0.93);
   border: 1px solid rgba(255, 255, 255, 0.42);
   border-radius: 18px;
@@ -723,14 +732,14 @@ input.small {
   display: grid;
   gap: 10px;
   opacity: 0;
-  transform: translateY(12px);
+  transform: translate(-50%, calc(-50% + 12px));
   pointer-events: none;
   transition: opacity 260ms ease, transform 260ms ease;
 }
 
 .mobile-welcome-card.is-visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate(-50%, -50%);
   pointer-events: auto;
 }
 
@@ -836,6 +845,19 @@ body[data-view="leaderboard"] .hero { display: none; }
     gap: 20px;
   }
 
+  body.mobile-app .card,
+  body.mobile-app #player-section,
+  body.mobile-app .mobile-play-panel,
+  body.mobile-app .mobile-dock {
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.22);
+    color: #fff;
+  }
+
+  body.mobile-app .mobile-dock-subtitle {
+    color: rgba(255, 255, 255, 0.78);
+  }
+
   body.mobile-app #player-section {
     padding: 14px;
   }
@@ -846,10 +868,27 @@ body[data-view="leaderboard"] .hero { display: none; }
   body.mobile-app .mobile-register-panel,
   body.mobile-app .mobile-access-panel,
   body.mobile-app[data-mobile-state="playing"] .mobile-play-panel {
-    background: #fff;
-    border: 1px solid var(--border);
+    background: linear-gradient(145deg, rgba(0, 0, 0, 0.86), rgba(38, 30, 18, 0.84), rgba(255, 255, 255, 0.18));
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 14px;
     padding: 14px;
+    color: #fff;
+  }
+
+  body.mobile-app .mobile-play-panel .status,
+  body.mobile-app .mobile-register-panel .hint,
+  body.mobile-app .mobile-access-panel .hint,
+  body.mobile-app .mobile-register-panel .status,
+  body.mobile-app .mobile-access-panel .status,
+  body.mobile-app .mobile-panel-kicker {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  body.mobile-app .mobile-register-panel input,
+  body.mobile-app .mobile-access-panel input,
+  body.mobile-app .mobile-welcome-card input {
+    background: rgba(255, 255, 255, 0.96);
+    color: #111;
   }
 
   body.mobile-app[data-mobile-state="access"] .mobile-register-panel,
@@ -866,10 +905,52 @@ body[data-view="leaderboard"] .hero { display: none; }
 
 .leaderboard-stage {
   border-radius: 16px;
-  background: linear-gradient(160deg, #000000 0%, #121212 48%, #cfb991 100%);
+  background: linear-gradient(160deg, #000000 0%, #221c12 48%, #ceb88f 76%, #ffffff 100%);
   color: #fff;
   padding: 20px;
   margin-bottom: 10px;
+}
+
+.matchup-subtitle {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.opponents.aesthetic {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.opponent-card {
+  border-radius: 12px;
+  border: 1px solid rgba(47, 89, 255, 0.2);
+  background: rgba(47, 89, 255, 0.06);
+  padding: 10px 12px;
+}
+
+.opponent-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.opponent-meta {
+  display: grid;
+  gap: 2px;
+}
+
+.opponent-country {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05rem;
+  color: #3554b9;
+  font-weight: 700;
+}
+
+.opponent-members {
+  font-weight: 700;
 }
 
 .leaderboard-split {
