@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Beerlympics Command Center</title>
+    <title>Beerlympics</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -23,19 +23,26 @@
         </button>
       </div>
     </div>
-    <header>
-      <h1>Beerlympics Command Center <span class="title-emoji">🍻</span></h1>
-      <p>Live matches, polished scoring, and host controls in one premium game-day dashboard.</p>
-      <div class="mode-banner">
-        <div class="mode-pill" id="mode-pill">🎈 Player Mode</div>
-        <div class="mode-pill host hidden" id="host-pill">🎬 Host Mode</div>
+    <header class="top-header">
+      <div class="navbar">
+        <div class="brand-wrap">
+          <span class="brand-mark">🍻</span>
+          <div>
+            <h1>Beerlympics</h1>
+            <p class="subtitle">Live game night scoreboard</p>
+          </div>
+        </div>
+        <div class="mode-banner">
+          <div class="mode-pill" id="mode-pill">🎈 Player Mode</div>
+          <div class="mode-pill host hidden" id="host-pill">🎬 Host Mode</div>
+        </div>
       </div>
-      <div class="tabs">
+      <nav class="tabs" aria-label="Main navigation">
         <button class="tab active" data-view="player">Play</button>
         <button class="tab" data-view="roster">Roster</button>
         <button class="tab" data-view="leaderboard">Leaderboard</button>
         <button class="tab hidden" data-view="control" id="control-tab">Control</button>
-      </div>
+      </nav>
     </header>
 
     <main>
@@ -187,14 +194,22 @@
       </section>
 
       <section class="card hidden leaderboard-section" id="leaderboard-section">
-        <div class="leaderboard-heading">
-          <h2>Leaderboard Live</h2>
-          <p class="status">Project this on the big screen for instant bragging rights.</p>
+        <div class="leaderboard-stage">
+          <p class="stage-kicker">Join at <span id="join-domain">your link</span></p>
+          <div class="game-code-hero" id="game-code">----</div>
+          <p class="status">Game code</p>
+          <div class="join-tools">
+            <img id="join-qr" class="join-qr" alt="QR code to join game" />
+            <div>
+              <p class="status">Scan to join on your phone</p>
+              <p class="join-link" id="join-link">--</p>
+              <button class="btn ghost small" type="button" id="copy-join-link">Copy join link</button>
+            </div>
+          </div>
         </div>
-        <div class="game-card">
-          <h3>Game code</h3>
-          <div class="game-code" id="game-code">----</div>
-          <p class="status">Share this code so players can join your match.</p>
+        <div class="leaderboard-heading">
+          <h2>Leaderboard</h2>
+          <p class="status">Simple, clear, and ready for everyone in the room.</p>
         </div>
         <div class="leaderboard-split">
           <div class="game-card current-matches-card">
