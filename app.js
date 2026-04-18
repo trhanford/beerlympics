@@ -229,6 +229,19 @@
         setMobileOnboardingStep("code");
       };
 
+      const dismissMobileKeyboard = () => {
+        const active = document.activeElement;
+        if (!active) return;
+        if (
+          active.tagName === "INPUT" ||
+          active.tagName === "TEXTAREA" ||
+          active.tagName === "SELECT" ||
+          active.isContentEditable
+        ) {
+          active.blur();
+        }
+      };
+
       const triggerConfetti = () => {
         const colors = ["#5b6cff", "#ff7ab2", "#49d9c2", "#ffc94a"];
         const count = 18;
@@ -1293,29 +1306,31 @@
           .filter(Boolean);
 
         const gameType = GAME_TYPES.find((entry) => entry.id === match.gameType);
+        const opponentSummary = opponents.length
+          ? opponents
+              .map((team) => {
+                const members = [team.playerName, team.partnerName].filter(Boolean).join(" + ");
+                const country = team.country || "Unknown country";
+                return `
+                  <article class="opponent-card">
+                    <div class="opponent-head">
+                      ${renderFlagAvatar(country)}
+                      <div class="opponent-meta">
+                        <span class="opponent-country">${country}</span>
+                        <span class="opponent-members">${members || "Team TBD"}</span>
+                      </div>
+                    </div>
+                  </article>
+                `;
+              })
+              .join("")
+          : `<p class="status">Opponent team was removed. Waiting for a new matchup…</p>`;
 
         nextGameCard.innerHTML = `
-          <h3>${gameType?.name || match.gameType}</h3>
-          <p class="status">Match ID: ${match.id}</p>
-          <div class="reward-banner ready">
-            <span>Ready to play?</span>
-            <span class="status">Tap the result when it’s done.</span>
-          </div>
-          <div class="opponents">
-            ${
-              opponents.length
-                ? opponents
-                    .map(
-                      (team) => `
-                    <div class="opponent-pill">
-                      <span>${team.playerName} + ${team.partnerName}</span>
-                      ${renderFlagAvatar(team.country)}
-                    </div>
-                  `
-                    )
-                    .join("")
-                : `<p class="status">Opponent team was removed. Waiting for a new matchup…</p>`
-            }
+          <h3>You're playing ${gameType?.name || match.gameType}</h3>
+          <p class="matchup-subtitle">against:</p>
+          <div class="opponents aesthetic">
+            ${opponentSummary}
           </div>
         `;
 
@@ -1331,6 +1346,7 @@
           scoreActions.appendChild(powerupStatus);
 
           const doubleDownButton = document.createElement("button");
+          doubleDownButton.type = "button";
           doubleDownButton.className = "btn ghost";
           const isDoubleDown = Boolean(match.doubleDown?.[activeTeamId]);
           doubleDownButton.textContent = isDoubleDown
@@ -1338,6 +1354,7 @@
             : "Use Double Points Powerup 💥";
           doubleDownButton.disabled = activeTeam.powerupsRemaining <= 0 && !isDoubleDown;
           doubleDownButton.addEventListener("click", () => {
+            dismissMobileKeyboard();
             void toggleDoubleDown(activeTeamId, match.id);
           });
           scoreActions.appendChild(doubleDownButton);
@@ -1345,16 +1362,20 @@
 
         if (match.gameType !== "flip_cup") {
           const winButton = document.createElement("button");
+          winButton.type = "button";
           winButton.className = "btn";
           winButton.textContent = "We won! 🏆";
           winButton.addEventListener("click", () => {
+            dismissMobileKeyboard();
             void recordResult(match.id, { winnerTeamId: activeTeamId });
           });
 
           const loseButton = document.createElement("button");
+          loseButton.type = "button";
           loseButton.className = "btn secondary";
           loseButton.textContent = "We lost 😅";
           loseButton.addEventListener("click", () => {
+            dismissMobileKeyboard();
             const opponentId = match.teamIds.find((id) => id !== activeTeamId);
             if (!opponentId) return;
             void recordResult(match.id, { winnerTeamId: opponentId });
@@ -1380,21 +1401,25 @@
           const buttonWrap = document.createElement("div");
           buttonWrap.className = "score-actions";
           const sideAButton = document.createElement("button");
+          sideAButton.type = "button";
           sideAButton.className = "btn";
           sideAButton.textContent = `${pairing.pairA
             .map((id) => teams.find((team) => team.id === id))
             .map((team) => `${team.playerName} + ${team.partnerName}`)
             .join(" & ")} won`;
           sideAButton.addEventListener("click", () => {
+            dismissMobileKeyboard();
             void recordResult(match.id, { winnerSide: "A" });
           });
           const sideBButton = document.createElement("button");
+          sideBButton.type = "button";
           sideBButton.className = "btn secondary";
           sideBButton.textContent = `${pairing.pairB
             .map((id) => teams.find((team) => team.id === id))
             .map((team) => `${team.playerName} + ${team.partnerName}`)
             .join(" & ")} won`;
           sideBButton.addEventListener("click", () => {
+            dismissMobileKeyboard();
             void recordResult(match.id, { winnerSide: "B" });
           });
           buttonWrap.appendChild(sideAButton);
