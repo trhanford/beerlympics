@@ -1292,8 +1292,8 @@
               <p class="status">All your remaining games are currently in play. Check back soon.</p>
             `
             : `
-              <h3>All done for now 🎉</h3>
-              <p class="status">No pending matches. Hang tight or celebrate!</p>
+              <h3>Hang tight 🎉</h3>
+              <p class="status">We're waiting for a team so you can beat them.</p>
             `;
           scoreActions.innerHTML = "";
           updateStepIndicator({ hasCoreInfo: true, hasCode: true });
@@ -1327,7 +1327,7 @@
           : `<p class="status">Opponent team was removed. Waiting for a new matchup…</p>`;
 
         nextGameCard.innerHTML = `
-          <h3>You're playing ${gameType?.name || match.gameType}</h3>
+          <h3>Game: ${gameType?.name || match.gameType}</h3>
           <p class="matchup-subtitle">against:</p>
           <div class="opponents aesthetic">
             ${opponentSummary}

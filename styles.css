@@ -884,6 +884,31 @@ body[data-view="leaderboard"] .hero { display: none; }
     color: rgba(255, 255, 255, 0.85);
   }
 
+  body.mobile-app .mobile-play-panel .game-card {
+    color: #1b2340;
+  }
+
+  body.mobile-app .mobile-play-panel .game-card .status {
+    color: #566180;
+  }
+
+  body.mobile-app .mobile-play-panel .matchup-subtitle {
+    color: #435075;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  body.mobile-app .mobile-play-panel .opponent-country {
+    color: #2c4bae;
+    font-size: 0.82rem;
+  }
+
+  body.mobile-app .mobile-play-panel .opponent-members {
+    color: #1a2649;
+    font-size: 1.2rem;
+    line-height: 1.2;
+  }
+
   body.mobile-app .mobile-register-panel input,
   body.mobile-app .mobile-access-panel input,
   body.mobile-app .mobile-welcome-card input {
