@@ -99,7 +99,14 @@
       const mobileWelcome = document.getElementById("mobile-welcome");
       const mobileDock = document.getElementById("mobile-dock");
       const mobileContinueButton = document.getElementById("mobile-continue");
-      const welcomeContinueButton = document.getElementById("welcomeContinueBtn");
+      const mobileCodeContinueButton = document.getElementById("mobileCodeContinueBtn");
+      const mobileLetsPlayButton = document.getElementById("mobileLetsPlayBtn");
+      const mobileOnboardingCodeCard = document.getElementById("mobile-onboarding-code");
+      const mobileOnboardingTeamCard = document.getElementById("mobile-onboarding-team");
+      const mobileGameCodeInput = document.getElementById("mobileGameCodeInput");
+      const mobilePlayerNameInput = document.getElementById("mobilePlayerNameInput");
+      const mobilePartnerNameInput = document.getElementById("mobilePartnerNameInput");
+      const mobileCountryInput = document.getElementById("mobileCountryInput");
       const mobileRegisterPanel = document.getElementById("mobile-register-panel");
       const mobileAccessPanel = document.getElementById("mobile-access-panel");
       const mobilePlayPanel = document.getElementById("mobile-play-panel");
@@ -164,13 +171,17 @@
         }
       };
 
-      const MOBILE_STORAGE_KEYS = {
-        welcomeSeen: "beerlympics_mobile_welcome_seen",
-        accessReady: "beerlympics_mobile_access_ready",
-      };
+      let pendingMobileGameCode = "";
 
       const isMobileLayout = () =>
         window.matchMedia ? window.matchMedia("(max-width: 767px)").matches : false;
+
+      const setMobileOnboardingStep = (step) => {
+        if (!mobileOnboardingCodeCard || !mobileOnboardingTeamCard) return;
+        const showCode = step === "code";
+        mobileOnboardingCodeCard.classList.toggle("is-visible", showCode);
+        mobileOnboardingTeamCard.classList.toggle("is-visible", !showCode);
+      };
 
       const setMobileState = (state) => {
         // IMPORTANT: never remove panels from the DOM.
@@ -183,9 +194,7 @@
         const hasTeam = Boolean(getActiveTeamId());
         const hasGame = Boolean(getActiveGameCode());
         if (hasTeam && hasGame) return "playing";
-        const accessReady =
-          sessionStorage.getItem(MOBILE_STORAGE_KEYS.accessReady) === "true";
-        return accessReady ? "access" : "register";
+        return "onboarding-code";
       };
 
       const scheduleManualRefreshPrompt = (state) => {
@@ -214,14 +223,10 @@
 
       const runMobileWelcome = () => {
         if (!isMobileLayout()) return;
-        const hasSeen =
-          sessionStorage.getItem(MOBILE_STORAGE_KEYS.welcomeSeen) === "true";
-        if (hasSeen) {
-          updateMobileState();
-          return;
-        }
         document.body.classList.add("mobile-app");
-        setMobileState("welcome");
+        const state = computeMobileState();
+        setMobileState(state);
+        setMobileOnboardingStep("code");
       };
 
       const triggerConfetti = () => {
@@ -1772,7 +1777,6 @@
       if (mobileContinueButton) {
         mobileContinueButton.addEventListener("click", () => {
           if (mobileContinueButton.disabled) return;
-          sessionStorage.setItem(MOBILE_STORAGE_KEYS.accessReady, "true");
           if (mobileRegisterPanel) {
             mobileRegisterPanel.classList.add("is-exiting");
             // Allow the exit animation, then just change state (do NOT remove the panel).
@@ -1783,10 +1787,49 @@
         });
       }
 
-      if (welcomeContinueButton) {
-        welcomeContinueButton.addEventListener("click", () => {
-          sessionStorage.setItem(MOBILE_STORAGE_KEYS.welcomeSeen, "true");
-          updateMobileState("register");
+      if (mobileCodeContinueButton) {
+        mobileCodeContinueButton.addEventListener("click", async () => {
+          const submittedCode = normalizeGameCode(mobileGameCodeInput?.value || "");
+          if (!submittedCode) {
+            showToast("Please enter a game code first.", "warning");
+            return;
+          }
+          setButtonLoading(mobileCodeContinueButton, true, "Checking code...");
+          try {
+            const game = await withTimeout(fetchGame(submittedCode), 7000, "Timed out joining the game.");
+            if (!game) {
+              alert("we couldnt find that game!");
+              showToast("we couldnt find that game!", "warning");
+              return;
+            }
+            pendingMobileGameCode = submittedCode;
+            setMobileState("onboarding-team");
+            setMobileOnboardingStep("team");
+          } catch (error) {
+            console.error("Unable to verify game code.", error);
+            showToast("Could not check that game code right now.", "warning");
+          } finally {
+            setButtonLoading(mobileCodeContinueButton, false);
+          }
+        });
+      }
+
+      if (mobileLetsPlayButton) {
+        mobileLetsPlayButton.addEventListener("click", async () => {
+          const playerName = mobilePlayerNameInput?.value.trim() || "";
+          const partnerName = mobilePartnerNameInput?.value.trim() || "";
+          const country = mobileCountryInput?.value.trim() || "";
+          if (!pendingMobileGameCode || !playerName || !partnerName || !country) {
+            showToast("Please fill out each field to continue.", "warning");
+            return;
+          }
+
+          playerNameInput.value = playerName;
+          partnerNameInput.value = partnerName;
+          countryInput.value = country;
+          gameCodeInput.value = pendingMobileGameCode;
+          validateTeamInputs();
+          form.requestSubmit();
         });
       }
 
