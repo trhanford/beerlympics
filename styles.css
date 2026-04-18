@@ -28,6 +28,10 @@ body {
   min-height: 100%;
 }
 
+html {
+  background: linear-gradient(160deg, #000000 0%, #221c12 48%, #ceb88f 76%, #ffffff 100%);
+}
+
 body {
   font-family: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text);
@@ -39,7 +43,9 @@ body {
 
 body.mobile-app {
   min-height: 100dvh;
+  min-height: 100svh;
   background: linear-gradient(160deg, #000000 0%, #221c12 48%, #ceb88f 76%, #ffffff 100%);
+  background-attachment: fixed;
 }
 
 
@@ -761,6 +767,18 @@ body:not([data-mobile-state="onboarding-code"]):not([data-mobile-state="onboardi
   width: 100%;
 }
 
+.mobile-onboarding-note {
+  margin: 0;
+  color: rgba(17, 26, 44, 0.78);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.mobile-onboarding-note.success {
+  color: #0f8f69;
+}
+
+
 .mobile-dock {
   display: none;
   align-items: center;
@@ -887,7 +905,30 @@ body[data-view="leaderboard"] .hero { display: none; }
   body.mobile-app .mobile-register-panel .status,
   body.mobile-app .mobile-access-panel .status,
   body.mobile-app .mobile-panel-kicker {
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  body.mobile-app .mobile-register-panel label,
+  body.mobile-app .mobile-access-panel label,
+  body.mobile-app .mobile-register-panel h3,
+  body.mobile-app .mobile-access-panel h3,
+  body.mobile-app .mobile-register-panel .section-title h2,
+  body.mobile-app .mobile-access-panel .section-title h3,
+  body.mobile-app #player-section .section-title h2 {
+    color: #f6f8ff;
+  }
+
+  body.mobile-app .mobile-register-panel .mobile-panel-header,
+  body.mobile-app .mobile-access-panel .mobile-panel-header {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  body.mobile-app .mobile-register-panel .btn.secondary,
+  body.mobile-app .mobile-access-panel .btn,
+  body.mobile-app .mobile-welcome-card .btn.primary {
+    color: #fff;
+    font-weight: 700;
   }
 
   body.mobile-app .mobile-play-panel .game-card {
