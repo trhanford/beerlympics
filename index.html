@@ -14,12 +14,33 @@
   </head>
   <body>
     <div class="mobile-welcome-screen mobile-only" id="mobile-welcome">
-      <div class="mobile-welcome-card">
-        <div class="mobile-welcome-logo">🏅</div>
-        <h1>Welcome to the 2026 Annual Beerlympics!</h1>
-        <p>Warm up those throwing arms—games are about to begin.</p>
-        <button id="welcomeContinueBtn" class="btn primary welcome-continue" type="button">
+      <div class="mobile-welcome-card is-visible" id="mobile-onboarding-code">
+        <h1>Welcome to the Beerlympics</h1>
+        <label for="mobileGameCodeInput">Game code:</label>
+        <input
+          id="mobileGameCodeInput"
+          name="mobileGameCodeInput"
+          placeholder="e.g. 7421"
+          inputmode="numeric"
+        />
+        <button id="mobileCodeContinueBtn" class="btn primary welcome-continue" type="button">
           Continue
+        </button>
+      </div>
+      <div class="mobile-welcome-card" id="mobile-onboarding-team">
+        <h2>Almost there!</h2>
+        <label for="mobilePlayerNameInput">Your Name</label>
+        <input id="mobilePlayerNameInput" name="mobilePlayerNameInput" placeholder="e.g. Jordan" />
+        <label for="mobilePartnerNameInput">Partner Name</label>
+        <input
+          id="mobilePartnerNameInput"
+          name="mobilePartnerNameInput"
+          placeholder="e.g. Sam"
+        />
+        <label for="mobileCountryInput">Country Represented</label>
+        <input id="mobileCountryInput" name="mobileCountryInput" placeholder="e.g. Brazil" />
+        <button id="mobileLetsPlayBtn" class="btn primary welcome-continue" type="button">
+          lets play!
         </button>
       </div>
     </div>
