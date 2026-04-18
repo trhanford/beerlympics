@@ -218,7 +218,8 @@
         const hasTeam = Boolean(getActiveTeamId());
         const hasGame = Boolean(getActiveGameCode());
         if (hasTeam && hasGame) return "playing";
-        return "onboarding-code";
+        if (hasTeam) return "access";
+        return "register";
       };
 
       const scheduleManualRefreshPrompt = (state) => {
@@ -250,7 +251,6 @@
         document.body.classList.add("mobile-app");
         const state = computeMobileState();
         setMobileState(state);
-        setMobileOnboardingStep("code");
       };
 
       const dismissMobileKeyboard = () => {
