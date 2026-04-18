@@ -104,6 +104,7 @@
       const mobileOnboardingCodeCard = document.getElementById("mobile-onboarding-code");
       const mobileOnboardingTeamCard = document.getElementById("mobile-onboarding-team");
       const mobileGameCodeInput = document.getElementById("mobileGameCodeInput");
+      const mobileOnboardingNote = document.getElementById("mobile-onboarding-note");
       const mobilePlayerNameInput = document.getElementById("mobilePlayerNameInput");
       const mobilePartnerNameInput = document.getElementById("mobilePartnerNameInput");
       const mobileCountryInput = document.getElementById("mobileCountryInput");
@@ -181,6 +182,12 @@
         const showCode = step === "code";
         mobileOnboardingCodeCard.classList.toggle("is-visible", showCode);
         mobileOnboardingTeamCard.classList.toggle("is-visible", !showCode);
+      };
+
+      const resetMobileOnboardingMessage = () => {
+        if (!mobileOnboardingNote) return;
+        mobileOnboardingNote.textContent = "Enter your 4-digit game code to continue.";
+        mobileOnboardingNote.classList.remove("success");
       };
 
       const syncMobilePanelActivity = (state) => {
@@ -1808,7 +1815,9 @@
           subscribeToGame(submittedCode);
           await registerTeam({ playerName, country, partnerName });
           pendingMobileGameCode = "";
+          if (mobileGameCodeInput) mobileGameCodeInput.value = "";
           setMobileOnboardingStep("code");
+          resetMobileOnboardingMessage();
         } catch (error) {
           console.error("Join failed.", error);
           const message = error?.message || String(error);
@@ -1849,13 +1858,20 @@
           try {
             const game = await withTimeout(fetchGame(submittedCode), 7000, "Timed out joining the game.");
             if (!game) {
-              alert("we couldnt find that game!");
-              showToast("we couldnt find that game!", "warning");
+              resetMobileOnboardingMessage();
+              showToast("We couldn't find that game code.", "warning");
               return;
             }
             pendingMobileGameCode = submittedCode;
-            setMobileState("onboarding-team");
-            setMobileOnboardingStep("team");
+            if (mobileOnboardingNote) {
+              mobileOnboardingNote.textContent = "We found your game!";
+              mobileOnboardingNote.classList.add("success");
+            }
+            setTimeout(() => {
+              setMobileState("onboarding-team");
+              setMobileOnboardingStep("team");
+              resetMobileOnboardingMessage();
+            }, 550);
           } catch (error) {
             console.error("Unable to verify game code.", error);
             showToast("Could not check that game code right now.", "warning");
@@ -2190,10 +2206,16 @@
 
       const init = async () => {
         runMobileWelcome();
+        resetMobileOnboardingMessage();
+        if (mobileGameCodeInput) {
+          mobileGameCodeInput.value = "";
+        }
         const params = new URLSearchParams(window.location.search);
         const joinFromUrl = normalizeGameCode(params.get("join") || params.get("code") || "");
         if (joinFromUrl) {
           gameCodeInput.value = joinFromUrl;
+        } else {
+          gameCodeInput.value = "";
         }
         const code = joinFromUrl || getActiveGameCode();
         if (code) {
