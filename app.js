@@ -71,6 +71,10 @@
       const adminPanel = document.getElementById("admin-panel");
       const adminActionStatus = document.getElementById("admin-action-status");
       const gameCodeEl = document.getElementById("game-code");
+      const joinQrEl = document.getElementById("join-qr");
+      const joinLinkEl = document.getElementById("join-link");
+      const joinDomainEl = document.getElementById("join-domain");
+      const copyJoinLinkButton = document.getElementById("copy-join-link");
       const currentMatchesEl = document.getElementById("current-matches");
       const newGameButton = document.getElementById("new-game");
       const resetGameButton = document.getElementById("reset-game");
@@ -1620,7 +1624,7 @@
 
       const updateTabsVisibility = () => {
         const hasGame = Boolean(getActiveGameCode());
-        const showControl = isHost() || isAdmin();
+        const showControl = isAdmin();
         tabs.forEach((tab) => {
           if (tab.dataset.view === "player") {
             tab.classList.remove("hidden");
@@ -2013,15 +2017,55 @@
         renderLeaderboard();
       });
 
+      if (copyJoinLinkButton) {
+        copyJoinLinkButton.addEventListener("click", async () => {
+          const code = getActiveGameCode();
+          if (!code) {
+            showToast("Start or join a game first.", "warning");
+            return;
+          }
+          const joinUrl = getJoinUrl(code);
+          try {
+            await navigator.clipboard.writeText(joinUrl);
+            showToast("Join link copied.", "success");
+          } catch (error) {
+            console.error("Unable to copy join link.", error);
+            showToast("Could not copy the link on this device.", "warning");
+          }
+        });
+      }
+
       tabs.forEach((tab) => {
         tab.addEventListener("click", () => {
           setView(tab.dataset.view);
         });
       });
 
+      const getJoinUrl = (code) => {
+        if (!code) return "";
+        const base = `${window.location.origin}${window.location.pathname}`;
+        return `${base}?join=${encodeURIComponent(code)}`;
+      };
+
       const updateGameCodeDisplay = () => {
         const currentCode = getActiveGameCode();
         gameCodeEl.textContent = currentCode || "----";
+        const joinUrl = getJoinUrl(currentCode);
+        if (joinLinkEl) {
+          joinLinkEl.textContent = joinUrl || "Start a game to generate a join link.";
+        }
+        if (joinDomainEl) {
+          joinDomainEl.textContent = `${window.location.host}${window.location.pathname}`;
+        }
+        if (joinQrEl) {
+          if (joinUrl) {
+            joinQrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(joinUrl)}`;
+            joinQrEl.classList.remove("hidden");
+          } else {
+            joinQrEl.removeAttribute("src");
+            joinQrEl.classList.add("hidden");
+          }
+        }
       };
 
       const refreshState = () => {
@@ -2035,7 +2079,7 @@
         const hostMode = isHost();
         adminToggle.checked = isAdminMode;
         adminStatus.textContent = isAdminMode ? "Admin tools unlocked." : "Admin tools are locked.";
-        adminPanel.classList.toggle("hidden", !isAdminMode && !hostMode);
+        adminPanel.classList.toggle("hidden", !isAdminMode);
         hostPill.classList.toggle("hidden", !hostMode);
         if (hostMode) {
           modePill.textContent = "🎬 Host Mode";
@@ -2052,8 +2096,14 @@
 
       const init = async () => {
         runMobileWelcome();
-        const code = getActiveGameCode();
+        const params = new URLSearchParams(window.location.search);
+        const joinFromUrl = normalizeGameCode(params.get("join") || params.get("code") || "");
+        if (joinFromUrl) {
+          gameCodeInput.value = joinFromUrl;
+        }
+        const code = joinFromUrl || getActiveGameCode();
         if (code) {
+          setGameCodes(code);
           const game = await fetchGame(code);
           if (!game) {
             localStorage.removeItem(STORAGE_KEYS.activeGameCode);
