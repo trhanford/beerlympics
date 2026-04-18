@@ -39,7 +39,7 @@ body {
 
 body.mobile-app {
   min-height: 100dvh;
-  background: linear-gradient(160deg, #050505 0%, #2e2618 45%, #d9c7a0 72%, #ffffff 100%);
+  background: linear-gradient(160deg, #000000 0%, #221c12 48%, #ceb88f 76%, #ffffff 100%);
 }
 
 
@@ -748,7 +748,7 @@ body[data-mobile-state="onboarding-code"] .mobile-welcome-screen,
 body[data-mobile-state="onboarding-team"] .mobile-welcome-screen {
   pointer-events: auto;
   opacity: 1;
-  background: #0f1831;
+  background: linear-gradient(160deg, #000000 0%, #221c12 48%, #ceb88f 76%, #ffffff 100%);
 }
 
 
@@ -874,8 +874,8 @@ body[data-view="leaderboard"] .hero { display: none; }
   body.mobile-app .mobile-register-panel,
   body.mobile-app .mobile-access-panel,
   body.mobile-app[data-mobile-state="playing"] .mobile-play-panel {
-    background: linear-gradient(145deg, rgba(0, 0, 0, 0.86), rgba(38, 30, 18, 0.84), rgba(255, 255, 255, 0.18));
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: linear-gradient(160deg, rgba(0, 0, 0, 0.92), rgba(34, 28, 18, 0.9), rgba(206, 184, 143, 0.42));
+    border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: 14px;
     padding: 14px;
     color: #fff;
