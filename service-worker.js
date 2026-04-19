@@ -1,4 +1,4 @@
-const CACHE_NAME = "beerlympics-static-v2";
+const CACHE_NAME = "beerlympics-static-v3";
 const CORE_ASSETS = [
   "./",
   "./index.html",
@@ -7,7 +7,8 @@ const CORE_ASSETS = [
   "./manifest.webmanifest",
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",
-  "./assets/icons/apple-touch-icon-180.png"
+  "./assets/icons/apple-touch-icon-180.png",
+  "./assets/icons/beerlogo.png"
 ];
 
 self.addEventListener("install", (event) => {
