@@ -996,6 +996,8 @@ async function processPendingTeamAction() {
         clearActiveSession(activeGameCode);
         setView("player");
         setMobileState("onboarding-code");
+        setMobileOnboardingStep("code");
+        resetMobileJoinFlow();
         showToast("Round finished. Team removed.", "info");
       }
     } else if (pendingAction.type === "pause") {
@@ -2432,6 +2434,7 @@ exitRemoveButton?.addEventListener("click", async () => {
     closeExitModal();
     setView("player");
     setMobileState("onboarding-code");
+    setMobileOnboardingStep("code");
     resetMobileJoinFlow();
     showToast("Team removed. You can rejoin anytime.", "info");
     refreshState();
@@ -2771,18 +2774,24 @@ window.addEventListener("storage", refreshState);
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
-    finalizeMobileBoot();
+    if (!document.body.classList.contains("is-splash-active")) {
+      finalizeMobileBoot();
+    }
     refreshState();
   }
 });
 
 window.addEventListener("pageshow", () => {
-  finalizeMobileBoot();
+  if (!document.body.classList.contains("is-splash-active")) {
+    finalizeMobileBoot();
+  }
   refreshState();
 });
 
 window.addEventListener("load", () => {
-  finalizeMobileBoot();
+  if (!document.body.classList.contains("is-splash-active")) {
+    finalizeMobileBoot();
+  }
 });
 
 const init = async () => {
@@ -2792,8 +2801,10 @@ const init = async () => {
   runMobileSplash();
 
   setTimeout(() => {
-    finalizeMobileBoot();
-  }, MOBILE_SPLASH_MS + 250);
+    if (!mobileBootFinalized) {
+      finalizeMobileBoot();
+    }
+  }, MOBILE_SPLASH_MS + MOBILE_SPLASH_EXIT_MS + 150);
 
   resetMobileJoinFlow();
   const params = new URLSearchParams(window.location.search);
