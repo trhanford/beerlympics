@@ -1179,16 +1179,20 @@ body.mobile-app[data-mobile-state="playing"] .team-setup-column {
 
 @media (max-width: 767px) {
   .navbar {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
   }
 
   .tabs {
     gap: 8px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
   }
 
   .tab {
-    flex: 1 1 45%;
+    flex: 0 0 auto;
+    min-width: 120px;
   }
 
   .join-qr {
@@ -1209,7 +1213,7 @@ body.mobile-app {
   background-color: #040404 !important;
   min-height: 100dvh;
   min-height: 100svh;
-  overflow: hidden;
+  overflow-y: auto;
   overflow-x: hidden;
 }
 
@@ -1262,7 +1266,9 @@ body.mobile-app main {
   display: block;
   position: relative;
   z-index: 1;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 body.mobile-app #player-section,
@@ -1276,8 +1282,8 @@ body.mobile-app .mobile-play-panel {
 
 body.mobile-app #player-section {
   min-height: calc(100dvh - max(10px, env(safe-area-inset-top, 0px)) - max(22px, env(safe-area-inset-bottom, 0px)));
-  padding-top: calc(88px + env(safe-area-inset-top, 0px));
-  overflow: hidden;
+  padding-top: calc(66px + env(safe-area-inset-top, 0px));
+  overflow: visible;
 }
 
 body.mobile-app[data-view="leaderboard"] #player-section {
@@ -1294,9 +1300,18 @@ body.mobile-app[data-view="leaderboard"] #leaderboard-section {
   display: block !important;
   height: calc(100dvh - max(10px, env(safe-area-inset-top, 0px)) - 84px - env(safe-area-inset-bottom, 0px));
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
   position: relative;
+}
+
+body.mobile-app[data-view="rules"] #rules-section {
+  display: block !important;
+  max-height: calc(100dvh - max(10px, env(safe-area-inset-top, 0px)) - 84px - env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
 }
 
 body.mobile-app[data-view="leaderboard"] #leaderboard-section::after {
@@ -1324,7 +1339,7 @@ body.mobile-app[data-mobile-state="playing"] .mobile-play-panel {
 body.mobile-app .mobile-dock {
   display: flex !important;
   justify-content: center;
-  margin: 0 auto 2px;
+  margin: 0 auto;
   width: 100%;
   background: transparent;
   border: 0;
@@ -1341,8 +1356,8 @@ body.mobile-app .hint {
 }
 
 body.mobile-app .mobile-dock-logo {
-  width: min(86vw, 360px);
-  max-height: 114px;
+  width: min(92vw, 392px);
+  max-height: 142px;
   object-fit: contain;
 }
 
@@ -1844,11 +1859,12 @@ body.mobile-app .exit-modal-sheet .btn.ghost {
   }
 
   .navbar {
-    align-items: flex-start;
+    align-items: center;
+    flex-wrap: wrap;
   }
 
   .install-app-btn {
-    width: 100%;
-    margin-top: 8px;
+    width: auto;
+    margin-top: 0;
   }
 }
