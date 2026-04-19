@@ -1868,3 +1868,183 @@ body.mobile-app .exit-modal-sheet .btn.ghost {
     margin-top: 0;
   }
 }
+
+/* ===== FINAL MOBILE POLISH OVERRIDES ===== */
+
+html.mobile-app-bg,
+body.mobile-app {
+  background: #040404 !important;
+  min-height: 100dvh;
+  min-height: 100svh;
+  overflow-x: hidden;
+}
+
+body.mobile-app::before {
+  top: -12vh !important;
+  right: 0;
+  bottom: -12vh !important;
+  left: 0;
+  background:
+    radial-gradient(circle at 50% -8%, rgba(255, 255, 255, 0.08), transparent 30%),
+    radial-gradient(circle at 12% 90%, rgba(206, 184, 143, 0.15), transparent 32%),
+    linear-gradient(180deg, #040404 0%, #17120b 40%, #5b4a2d 76%, #f4efe6 100%) !important;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+body.mobile-app main {
+  height: auto !important;
+  min-height: 100dvh;
+  min-height: 100svh;
+  padding:
+    calc(8px + env(safe-area-inset-top, 0px))
+    14px
+    calc(104px + env(safe-area-inset-bottom, 0px)) !important;
+  overflow: visible !important;
+}
+
+/* remove the big dead space above the logo */
+body.mobile-app #player-section {
+  min-height: auto !important;
+  padding-top: calc(10px + env(safe-area-inset-top, 0px)) !important;
+  overflow: visible !important;
+}
+
+/* make the logo bigger and tighten spacing above/below it */
+body.mobile-app .mobile-dock {
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 2px !important;
+  padding: 0 !important;
+}
+
+body.mobile-app .mobile-dock-logo {
+  width: min(96vw, 440px) !important;
+  max-height: 172px !important;
+  object-fit: contain;
+  display: block;
+}
+
+/* tighten the heading under the logo */
+body.mobile-app .mobile-play-panel {
+  gap: 10px !important;
+}
+
+body.mobile-app .mobile-play-panel .section-title {
+  margin: 0 0 2px !important;
+}
+
+body.mobile-app .mobile-play-panel .section-title h2 {
+  font-size: 1.5rem !important;
+  line-height: 1.05;
+}
+
+/* make the leaderboard/rules pages feel like part of the same background,
+   not their own rectangular panel */
+body.mobile-app #leaderboard-section,
+body.mobile-app #rules-section {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* give the leaderboard content breathing room so the first place card
+   does not visually crash into the heading */
+body.mobile-app .leaderboard-stage {
+  margin-bottom: 14px !important;
+}
+
+body.mobile-app .leaderboard-heading {
+  margin-bottom: 14px !important;
+}
+
+body.mobile-app .leaderboard-split {
+  margin-top: 0 !important;
+  gap: 14px !important;
+}
+
+body.mobile-app .leaderboard {
+  gap: 14px !important;
+  padding-top: 4px !important;
+}
+
+/* leaderboard list container sizing */
+body.mobile-app[data-view="leaderboard"] #leaderboard-section {
+  display: block !important;
+  height: auto !important;
+  min-height: calc(100dvh - 140px) !important;
+  overflow: visible !important;
+  padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* keep the bottom fade, but position it cleanly above the nav */
+body.mobile-app[data-view="leaderboard"] #leaderboard-section::after {
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+  height: 72px !important;
+  background: linear-gradient(
+    to bottom,
+    rgba(4, 4, 4, 0),
+    rgba(4, 4, 4, 0.88) 58%,
+    rgba(4, 4, 4, 1)
+  ) !important;
+}
+
+/* THIS fixes the bottom nav stacking vertically.
+   body.mobile-app .mobile-only was overriding your grid layout before. */
+body.mobile-app .mobile-bottom-nav.mobile-only {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  align-items: center;
+}
+
+body.mobile-app .mobile-bottom-nav {
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100% - 24px)) !important;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+  gap: 8px !important;
+  padding: 8px !important;
+  border-radius: 18px !important;
+}
+
+body.mobile-app .mobile-bottom-nav__tab {
+  width: 100%;
+  min-width: 0;
+  min-height: 52px !important;
+  padding: 0 10px;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+body.mobile-app .mobile-bottom-nav__tab span {
+  display: inline-block;
+}
+
+body.mobile-app .mobile-bottom-nav__tab.is-active {
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+}
+
+/* slightly cleaner cards overall */
+body.mobile-app .game-card,
+body.mobile-app .leaderboard-card,
+body.mobile-app .opponent-card,
+body.mobile-app .current-match-card,
+body.mobile-app .reward-banner {
+  border-radius: 18px !important;
+}
+
+/* prevent accidental little seams from nested panels */
+body.mobile-app,
+body.mobile-app main,
+body.mobile-app #player-section,
+body.mobile-app .mobile-play-panel {
+  background-color: transparent !important;
+}
