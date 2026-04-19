@@ -100,6 +100,7 @@ const mobileWelcome = document.getElementById("mobile-welcome");
 const mobileDock = document.getElementById("mobile-dock");
 const mobileContinueButton = document.getElementById("mobile-continue");
 const mobileCodeContinueButton = document.getElementById("mobileCodeContinueBtn");
+const mobileDownloadAppButton = document.getElementById("mobileDownloadAppBtn");
 const mobileLetsPlayButton = document.getElementById("mobileLetsPlayBtn");
 const mobileOnboardingCodeCard = document.getElementById("mobile-onboarding-code");
 const mobileOnboardingTeamCard = document.getElementById("mobile-onboarding-team");
@@ -237,7 +238,28 @@ const registerServiceWorker = async () => {
 };
 
 const initInstallFlow = () => {
-  if (!installAppButton) return;
+  const triggerInstallFlow = async () => {
+    if (isStandaloneMode()) return;
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      const choice = await deferredInstallPrompt.userChoice;
+      if (choice.outcome === "accepted") {
+        showToast("Install started.", "success");
+      }
+      deferredInstallPrompt = null;
+      setInstallButtonState();
+      return;
+    }
+    if (isIos()) {
+      openInstallModal(
+        isSafari()
+          ? "Safari supports Add to Home Screen from the Share menu."
+          : "Open in Safari to add Beerlympics to your Home Screen."
+      );
+      return;
+    }
+    openInstallModal("Use your browser menu and choose Install App.");
+  };
 
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
@@ -258,31 +280,17 @@ const initInstallFlow = () => {
     setInstallButtonState();
   });
 
-  installAppButton.addEventListener("click", async () => {
-    if (isStandaloneMode()) return;
-    if (deferredInstallPrompt) {
-      deferredInstallPrompt.prompt();
-      const choice = await deferredInstallPrompt.userChoice;
-      if (choice.outcome === "accepted") {
-        showToast("Install started.", "success");
-      }
-      deferredInstallPrompt = null;
-      setInstallButtonState();
-      return;
-    }
-    if (isIos()) {
-      openInstallModal(
-        isSafari()
-          ? "Safari supports Add to Home Screen from the Share menu."
-          : "Open in Safari to add Beerlympics to your Home Screen."
-      );
-    }
-  });
+  installAppButton?.addEventListener("click", triggerInstallFlow);
+  mobileDownloadAppButton?.addEventListener("click", triggerInstallFlow);
 
   installModalBackdrop?.addEventListener("click", closeInstallModal);
   installModalClose?.addEventListener("click", closeInstallModal);
 
-  setInstallButtonState();
+  if (installAppButton) {
+    setInstallButtonState();
+  } else if (mobileDownloadAppButton) {
+    mobileDownloadAppButton.classList.remove("hidden");
+  }
 };
 
 const isProbablyPhone = () => {
