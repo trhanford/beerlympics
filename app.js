@@ -40,6 +40,7 @@ const STORAGE_KEYS = {
   activeGameCode: "beerlympics_active_game_code",
   currentGameCode: "beerlympics_current_game_code",
   hostId: "beerlympics_host_id",
+  pendingTeamAction: "beerlympics_pending_team_action",
 };
 
 const form = document.getElementById("team-form");
@@ -161,6 +162,30 @@ const setSessionValue = (key, value) => {
 const clearSessionValue = (key) => {
   sessionStorage.removeItem(key);
   localStorage.removeItem(key);
+};
+
+const getPendingTeamAction = () => {
+  const raw = getSessionValue(STORAGE_KEYS.pendingTeamAction);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    console.warn("Invalid pending team action payload; clearing.", error);
+    clearSessionValue(STORAGE_KEYS.pendingTeamAction);
+    return null;
+  }
+};
+
+const setPendingTeamAction = (payload) => {
+  if (!payload) {
+    clearSessionValue(STORAGE_KEYS.pendingTeamAction);
+    return;
+  }
+  setSessionValue(STORAGE_KEYS.pendingTeamAction, JSON.stringify(payload));
+};
+
+const clearPendingTeamAction = () => {
+  clearSessionValue(STORAGE_KEYS.pendingTeamAction);
 };
 
 const getCurrentGameCode = () => getSessionValue(STORAGE_KEYS.currentGameCode);
@@ -682,6 +707,7 @@ let unsubscribeGame = null;
 let unsubscribeTeams = null;
 let unsubscribeMatches = null;
 let adminEditingTeamId = null;
+let pendingTeamActionInFlight = false;
 
 const activeTeamStorageKey = (code = getActiveGameCode()) =>
   code ? `${STORAGE_KEYS.activeTeamId}:${code}` : STORAGE_KEYS.activeTeamId;
@@ -699,6 +725,7 @@ const clearActiveSession = (code = getActiveGameCode()) => {
   clearActiveTeamId(code);
   clearSessionValue(STORAGE_KEYS.activeGameCode);
   clearSessionValue(STORAGE_KEYS.currentGameCode);
+  clearPendingTeamAction();
 };
 
 const initials = (value) =>
@@ -886,6 +913,7 @@ function subscribeToGame(code) {
     renderRoster();
     renderMatch();
     scheduleFillMatches(code);
+    void processPendingTeamAction();
   });
 
   unsubscribeMatches = onSnapshot(matchesCollection(code), (snap) => {
@@ -893,6 +921,58 @@ function subscribeToGame(code) {
     renderLeaderboard();
     renderMatch();
   });
+}
+
+async function processPendingTeamAction() {
+  if (pendingTeamActionInFlight) return;
+  const pendingAction = getPendingTeamAction();
+  if (!pendingAction) return;
+
+  const activeGameCode = getActiveGameCode();
+  if (!activeGameCode || pendingAction.gameCode !== activeGameCode) {
+    clearPendingTeamAction();
+    return;
+  }
+
+  const targetTeam = getTeams().find((team) => team.id === pendingAction.teamId);
+  if (!targetTeam) {
+    clearPendingTeamAction();
+    return;
+  }
+
+  if (targetTeam.currentMatchId) return;
+
+  pendingTeamActionInFlight = true;
+  try {
+    if (pendingAction.type === "remove") {
+      await clearTeamFromMatches(activeGameCode, pendingAction.teamId);
+      await deleteTeamFromCloud(activeGameCode, pendingAction.teamId);
+      if (getActiveTeamId() === pendingAction.teamId) {
+        clearActiveSession(activeGameCode);
+        setView("player");
+        setMobileState("onboarding-code");
+        showToast("Round finished. Team removed.", "info");
+      }
+    } else if (pendingAction.type === "pause") {
+      await clearTeamFromMatches(activeGameCode, pendingAction.teamId);
+      await updateDoc(doc(teamsCollection(activeGameCode), pendingAction.teamId), {
+        paused: true,
+      });
+      if (getActiveTeamId() === pendingAction.teamId) {
+        showToast("Round finished. Your team is now paused.", "success");
+      }
+    } else {
+      console.warn("Unknown pending action; clearing.", pendingAction.type);
+    }
+
+    clearPendingTeamAction();
+    refreshState();
+    scheduleFillMatches(activeGameCode);
+  } catch (error) {
+    console.error("Unable to process pending team action.", error);
+  } finally {
+    pendingTeamActionInFlight = false;
+  }
 }
 
 async function clearTeamsInCloud(code) {
@@ -2253,7 +2333,7 @@ const getCountryLabel = (team) => team?.country || "your team";
 const showFinishRoundToast = (actionWord, team) => {
   const country = getCountryLabel(team);
   showToast(
-    `Finish off this round — we’ll ${actionWord} ${country} after this game!`,
+    `Finish off this round — we’ll ${actionWord} ${country} after this game.`,
     "warning"
   );
 };
@@ -2280,6 +2360,11 @@ exitRemoveButton?.addEventListener("click", async () => {
   const { activeTeam, match } = getActiveTeamMatchContext();
   if (!activeGameCode || !activeTeamId) return;
   if (match) {
+    setPendingTeamAction({
+      type: "remove",
+      teamId: activeTeamId,
+      gameCode: activeGameCode,
+    });
     showFinishRoundToast("exit", activeTeam);
     closeExitModal();
     return;
@@ -2300,6 +2385,11 @@ exitPauseButton?.addEventListener("click", async () => {
   const { activeTeam, match } = getActiveTeamMatchContext();
   if (!activeGameCode || !activeTeamId) return;
   if (match) {
+    setPendingTeamAction({
+      type: "pause",
+      teamId: activeTeamId,
+      gameCode: activeGameCode,
+    });
     showFinishRoundToast("pause", activeTeam);
     closeExitModal();
     return;

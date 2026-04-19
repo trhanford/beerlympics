@@ -702,9 +702,13 @@ input.small {
   bottom: 18px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 200;
+  z-index: 1200;
   display: grid;
   gap: 8px;
+}
+
+body.mobile-app .toast-container {
+  bottom: calc(94px + env(safe-area-inset-bottom, 0px));
 }
 
 .toast {
@@ -1613,17 +1617,17 @@ body.mobile-app .install-modal-sheet .status {
   color: var(--muted);
 }
 
-body.mobile-app .install-modal-sheet .btn.secondary {
-  background: linear-gradient(120deg, var(--secondary), #ff78b3);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 8px 18px rgba(255, 79, 149, 0.22);
+body.mobile-app .exit-modal-sheet .btn.secondary {
+  background: linear-gradient(135deg, #d8bf7c 0%, #f7f1de 52%, #b89146 100%);
+  color: #0b0b0b;
+  border-color: rgba(255,255,255,0.22);
+  box-shadow: 0 16px 30px rgba(0,0,0,0.24);
 }
 
-body.mobile-app .install-modal-sheet .btn.ghost {
-  background: #edf3ff;
-  color: #2e4bb1;
-  border-color: rgba(47, 89, 255, 0.18);
+body.mobile-app .exit-modal-sheet .btn.ghost {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border-color: rgba(255,255,255,0.2);
   box-shadow: none;
 }
 
