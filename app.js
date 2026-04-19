@@ -246,11 +246,29 @@ const setButtonLoading = (button, isLoading, label) => {
 let pendingMobileGameCode = "";
 let deferredInstallPrompt = null;
 const MOBILE_SPLASH_MS = 1500;
+const MOBILE_SPLASH_EXIT_MS = 560;
 let mobileSplashTimer = null;
 let mobileBootFinalized = false;
+let mobileSplashExitTimer = null;
+
+const resetJoinButtonLabels = () => {
+  if (joinGameButton) {
+    joinGameButton.dataset.defaultLabel = "Lock in our team 🚀";
+    setButtonLoading(joinGameButton, false);
+  }
+  if (mobileCodeContinueButton) {
+    mobileCodeContinueButton.dataset.defaultLabel = "Join game";
+    setButtonLoading(mobileCodeContinueButton, false);
+  }
+};
 
 const finalizeMobileBoot = () => {
   if (!document.body) return;
+
+  if (mobileSplashExitTimer) {
+    clearTimeout(mobileSplashExitTimer);
+    mobileSplashExitTimer = null;
+  }
 
   mobileBootFinalized = true;
 
@@ -259,12 +277,24 @@ const finalizeMobileBoot = () => {
     mobileSplashTimer = null;
   }
 
-  document.body.classList.remove("is-splash-active", "pre-mobile-app");
+  const completeBoot = () => {
+    document.body.classList.remove("is-splash-active", "is-splash-exiting", "pre-mobile-app");
+    if (isMobileLayout()) {
+      document.body.classList.add("mobile-app");
+      document.documentElement.classList.add("mobile-app-bg");
+    }
+  };
 
-  if (isMobileLayout()) {
-    document.body.classList.add("mobile-app");
-    document.documentElement.classList.add("mobile-app-bg");
+  if (document.body.classList.contains("is-splash-active")) {
+    document.body.classList.add("is-splash-exiting");
+    mobileSplashExitTimer = setTimeout(() => {
+      mobileSplashExitTimer = null;
+      completeBoot();
+    }, MOBILE_SPLASH_EXIT_MS);
+    return;
   }
+
+  completeBoot();
 };
 
 const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent || "");
@@ -447,12 +477,22 @@ const setMobileOnboardingStep = (step) => {
   const showCode = step === "code";
   mobileOnboardingCodeCard.classList.toggle("is-visible", showCode);
   mobileOnboardingTeamCard.classList.toggle("is-visible", !showCode);
+  if (showCode) {
+    resetJoinButtonLabels();
+  }
 };
 
 const resetMobileOnboardingMessage = () => {
   if (!mobileOnboardingNote) return;
   mobileOnboardingNote.textContent = "Enter your 4-digit game code to continue.";
   mobileOnboardingNote.classList.remove("success");
+};
+
+const resetMobileJoinFlow = () => {
+  pendingMobileGameCode = "";
+  if (mobileGameCodeInput) mobileGameCodeInput.value = "";
+  resetJoinButtonLabels();
+  resetMobileOnboardingMessage();
 };
 
 const syncMobilePanelActivity = (state) => {
@@ -2392,6 +2432,7 @@ exitRemoveButton?.addEventListener("click", async () => {
     closeExitModal();
     setView("player");
     setMobileState("onboarding-code");
+    resetMobileJoinFlow();
     showToast("Team removed. You can rejoin anytime.", "info");
     refreshState();
   } catch (error) {
@@ -2754,10 +2795,7 @@ const init = async () => {
     finalizeMobileBoot();
   }, MOBILE_SPLASH_MS + 250);
 
-  resetMobileOnboardingMessage();
-  if (mobileGameCodeInput) {
-    mobileGameCodeInput.value = "";
-  }
+  resetMobileJoinFlow();
   const params = new URLSearchParams(window.location.search);
   const joinFromUrl = normalizeGameCode(params.get("join") || params.get("code") || "");
   if (joinFromUrl) {
