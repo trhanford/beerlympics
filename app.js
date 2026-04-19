@@ -242,16 +242,25 @@ const isStandaloneMode = () => {
 };
 
 const setInstallButtonState = () => {
-  if (!installAppButton) return;
-  if (isStandaloneMode()) {
-    installAppButton.classList.add("hidden");
-    return;
+  const standalone = isStandaloneMode();
+
+  if (installAppButton) {
+    if (standalone) {
+      installAppButton.classList.add("hidden");
+    } else if (deferredInstallPrompt || isIos()) {
+      installAppButton.classList.remove("hidden");
+      installAppButton.textContent = isIos() ? "Add to Home Screen" : "Install App";
+    } else {
+      installAppButton.classList.add("hidden");
+    }
   }
-  if (deferredInstallPrompt || isIos()) {
-    installAppButton.classList.remove("hidden");
-    installAppButton.textContent = isIos() ? "Add to Home Screen" : "Install App";
-  } else {
-    installAppButton.classList.add("hidden");
+
+  if (mobileDownloadAppButton) {
+    if (standalone) {
+      mobileDownloadAppButton.classList.add("hidden");
+    } else {
+      mobileDownloadAppButton.classList.remove("hidden");
+    }
   }
 };
 
