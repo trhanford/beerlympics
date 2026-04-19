@@ -2239,6 +2239,25 @@ if (manualRefreshButton) {
   });
 }
 
+const getActiveTeamMatchContext = () => {
+  const activeTeamId = getActiveTeamId();
+  const activeTeam = getTeams().find((team) => team.id === activeTeamId);
+  const match = activeTeam?.currentMatchId
+    ? getMatches().find((entry) => entry.id === activeTeam.currentMatchId)
+    : null;
+  return { activeTeam, match };
+};
+
+const getCountryLabel = (team) => team?.country || "your team";
+
+const showFinishRoundToast = (actionWord, team) => {
+  const country = getCountryLabel(team);
+  showToast(
+    `Finish off this round — we’ll ${actionWord} ${country} after this game!`,
+    "warning"
+  );
+};
+
 const openExitModal = () => {
   if (!exitModal) return;
   exitModal.classList.remove("hidden");
@@ -2258,7 +2277,13 @@ exitModalClose?.addEventListener("click", closeExitModal);
 exitRemoveButton?.addEventListener("click", async () => {
   const activeGameCode = getActiveGameCode();
   const activeTeamId = getActiveTeamId();
+  const { activeTeam, match } = getActiveTeamMatchContext();
   if (!activeGameCode || !activeTeamId) return;
+  if (match) {
+    showFinishRoundToast("exit", activeTeam);
+    closeExitModal();
+    return;
+  }
   await clearTeamFromMatches(activeGameCode, activeTeamId);
   await deleteTeamFromCloud(activeGameCode, activeTeamId);
   clearActiveSession(activeGameCode);
@@ -2272,7 +2297,13 @@ exitRemoveButton?.addEventListener("click", async () => {
 exitPauseButton?.addEventListener("click", async () => {
   const activeGameCode = getActiveGameCode();
   const activeTeamId = getActiveTeamId();
+  const { activeTeam, match } = getActiveTeamMatchContext();
   if (!activeGameCode || !activeTeamId) return;
+  if (match) {
+    showFinishRoundToast("pause", activeTeam);
+    closeExitModal();
+    return;
+  }
   await clearTeamFromMatches(activeGameCode, activeTeamId);
   await updateDoc(doc(teamsCollection(activeGameCode), activeTeamId), { paused: true });
   closeExitModal();
