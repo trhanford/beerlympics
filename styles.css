@@ -371,6 +371,13 @@ input.small {
   box-shadow: none;
 }
 
+#exit-pause-btn {
+  color: #163067;
+  background: #e9f0ff;
+  border-color: rgba(22, 66, 156, 0.35);
+  font-weight: 700;
+}
+
 .btn.small {
   min-height: 34px;
   padding: 7px 10px;
@@ -719,11 +726,40 @@ body.mobile-app .toast-container {
   font-weight: 600;
   box-shadow: var(--shadow-md);
   background: #1c2a4b;
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  animation: toast-in 220ms ease forwards;
 }
 
 .toast.success { background: #204fcf; }
 .toast.warning { background: var(--warning); }
 .toast.info { background: #2f3f6e; }
+
+.toast.is-leaving {
+  animation: toast-out 260ms ease forwards;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
 
 .confetti {
   position: fixed;
@@ -1625,10 +1661,11 @@ body.mobile-app .exit-modal-sheet .btn.secondary {
 }
 
 body.mobile-app .exit-modal-sheet .btn.ghost {
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-  border-color: rgba(255,255,255,0.2);
-  box-shadow: none;
+  background: rgba(20, 32, 62, 0.08);
+  color: #132750;
+  border-color: rgba(20, 55, 130, 0.36);
+  box-shadow: inset 0 0 0 1px rgba(20, 55, 130, 0.08);
+  text-shadow: none;
 }
 
 .exit-options {
