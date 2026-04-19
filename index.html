@@ -24,8 +24,9 @@
         var smallestViewportSide = Math.min(window.innerWidth || 0, window.innerHeight || 0);
         var hasTouch = navigator.maxTouchPoints > 0;
         var isPhoneLike = mobileUaPattern.test(ua) || (hasTouch && smallestViewportSide > 0 && smallestViewportSide <= 900);
+        window.__BEERLYMPICS_EARLY_MOBILE__ = isPhoneLike;
         if (isPhoneLike) {
-          document.documentElement.classList.add("mobile-app-bg");
+          document.documentElement.classList.add("mobile-app-bg", "mobile-preload");
           document.addEventListener("DOMContentLoaded", function () {
             document.body.classList.add("mobile-app", "pre-mobile-app");
             document.body.dataset.mobileState = "onboarding-code";
@@ -33,6 +34,37 @@
         }
       })();
     </script>
+    <style>
+      html.mobile-preload {
+        background:
+          radial-gradient(circle at 50% -10%, rgba(255, 255, 255, 0.1), transparent 34%),
+          radial-gradient(circle at 10% 92%, rgba(206, 184, 143, 0.16), transparent 34%),
+          linear-gradient(180deg, #040404 0%, #17120b 42%, #5b4a2d 78%, #f4efe6 100%);
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-color: #040404;
+      }
+
+      html.mobile-preload body {
+        min-height: 100vh;
+        min-height: 100dvh;
+        margin: 0;
+        background: transparent;
+      }
+
+      html.mobile-preload body > :not(#mobile-splash) {
+        visibility: hidden;
+      }
+
+      html.mobile-preload #mobile-splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+    </style>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
