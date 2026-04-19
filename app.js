@@ -207,7 +207,7 @@ const setButtonLoading = (button, isLoading, label) => {
 
 let pendingMobileGameCode = "";
 let deferredInstallPrompt = null;
-const MOBILE_SPLASH_MS = 1100;
+const MOBILE_SPLASH_MS = 1500;
 let mobileSplashTimer = null;
 
 const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent || "");
@@ -1960,6 +1960,9 @@ const registerTeam = async ({ playerName, country, partnerName }) => {
   );
 
   setActiveTeamId(teamId);
+  document.body.classList.add("has-active-team");
+  setView("player");
+  setMobileState("playing");
   renderMatch();
   renderLeaderboard();
   renderRoster();
@@ -2387,6 +2390,7 @@ const refreshState = () => {
     modePill.textContent = "🎈 Player Mode";
   }
   updateStepIndicator();
+  document.body.classList.toggle("has-active-team", Boolean(getActiveTeamId()));
   updateMobileState();
 };
 
