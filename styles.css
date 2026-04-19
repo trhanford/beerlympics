@@ -1249,10 +1249,11 @@ body.mobile-app[data-mobile-state="onboarding-team"] .mobile-welcome-screen {
 }
 
 body.mobile-app .mobile-welcome-card {
+  display: none;
   position: relative;
   top: auto;
   left: auto;
-  transform: translateY(18px) scale(0.985);
+  transform: none;
   width: min(100%, 420px);
   max-width: 420px;
   margin: auto;
@@ -1267,6 +1268,13 @@ body.mobile-app .mobile-welcome-card {
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   gap: 14px;
+}
+
+body.mobile-app .mobile-welcome-card.is-visible {
+  display: grid;
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
 }
 
 body.mobile-app .mobile-welcome-card::before {
