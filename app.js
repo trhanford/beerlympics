@@ -112,6 +112,12 @@ const mobileRegisterPanel = document.getElementById("mobile-register-panel");
 const mobileAccessPanel = document.getElementById("mobile-access-panel");
 const mobilePlayPanel = document.getElementById("mobile-play-panel");
 const manualRefreshButton = document.getElementById("manual-refresh");
+const installAppButton = document.getElementById("install-app-btn");
+const installModal = document.getElementById("install-modal");
+const installModalBackdrop = document.getElementById("install-modal-backdrop");
+const installModalClose = document.getElementById("install-modal-close");
+const installModalNote = document.getElementById("install-modal-note");
+const installSteps = document.getElementById("install-steps");
 
 const ADMIN_PASSCODE = "3241";
 
@@ -173,6 +179,111 @@ const setButtonLoading = (button, isLoading, label) => {
 };
 
 let pendingMobileGameCode = "";
+let deferredInstallPrompt = null;
+
+const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent || "");
+const isSafari = () => {
+  const ua = navigator.userAgent || "";
+  return /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|OPT/i.test(ua);
+};
+const isStandaloneMode = () => {
+  const displayModeMedia = window.matchMedia
+    ? window.matchMedia("(display-mode: standalone)")
+    : null;
+  return Boolean(displayModeMedia?.matches || window.navigator.standalone);
+};
+
+const setInstallButtonState = () => {
+  if (!installAppButton) return;
+  if (isStandaloneMode()) {
+    installAppButton.classList.add("hidden");
+    return;
+  }
+  if (deferredInstallPrompt || isIos()) {
+    installAppButton.classList.remove("hidden");
+    installAppButton.textContent = isIos() ? "Add to Home Screen" : "Install App";
+  } else {
+    installAppButton.classList.add("hidden");
+  }
+};
+
+const openInstallModal = (note) => {
+  if (!installModal) return;
+  if (installModalNote) {
+    installModalNote.textContent = note || "You can keep using the website normally too.";
+  }
+  if (installSteps) {
+    installSteps.innerHTML = isSafari()
+      ? "<li>Tap the Share button in Safari.</li><li>Choose <strong>Add to Home Screen</strong>.</li><li>Tap <strong>Add</strong> to finish.</li>"
+      : "<li>Open this page in Safari.</li><li>Tap the Share button.</li><li>Tap <strong>Add to Home Screen</strong>.</li>";
+  }
+  installModal.classList.remove("hidden");
+  installModal.setAttribute("aria-hidden", "false");
+};
+
+const closeInstallModal = () => {
+  if (!installModal) return;
+  installModal.classList.add("hidden");
+  installModal.setAttribute("aria-hidden", "true");
+};
+
+const registerServiceWorker = async () => {
+  if (!("serviceWorker" in navigator)) return;
+  try {
+    await navigator.serviceWorker.register("./service-worker.js");
+  } catch (error) {
+    console.warn("Service worker registration failed.", error);
+  }
+};
+
+const initInstallFlow = () => {
+  if (!installAppButton) return;
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    setInstallButtonState();
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    showToast("Beerlympics installed.", "success");
+    setInstallButtonState();
+  });
+
+  const displayModeMedia = window.matchMedia
+    ? window.matchMedia("(display-mode: standalone)")
+    : null;
+  displayModeMedia?.addEventListener("change", () => {
+    setInstallButtonState();
+  });
+
+  installAppButton.addEventListener("click", async () => {
+    if (isStandaloneMode()) return;
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      const choice = await deferredInstallPrompt.userChoice;
+      if (choice.outcome === "accepted") {
+        showToast("Install started.", "success");
+      }
+      deferredInstallPrompt = null;
+      setInstallButtonState();
+      return;
+    }
+    if (isIos()) {
+      openInstallModal(
+        isSafari()
+          ? "Safari supports Add to Home Screen from the Share menu."
+          : "Open in Safari to add Beerlympics to your Home Screen."
+      );
+    }
+  });
+
+  installModalBackdrop?.addEventListener("click", closeInstallModal);
+  installModalClose?.addEventListener("click", closeInstallModal);
+
+  setInstallButtonState();
+};
 
 const isProbablyPhone = () => {
   const ua = navigator.userAgent || "";
@@ -2225,6 +2336,8 @@ const refreshState = () => {
 window.addEventListener("storage", refreshState);
 
 const init = async () => {
+  initInstallFlow();
+  void registerServiceWorker();
   runMobileWelcome();
   resetMobileOnboardingMessage();
   if (mobileGameCodeInput) {
