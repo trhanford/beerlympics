@@ -1019,13 +1019,16 @@ async function closeMatchForRemoval(code, match, removedTeamId = null) {
     if (!matchSnap.exists()) return;
     const matchData = matchSnap.data();
     const teamIds = matchData.teamIds || [];
-    teamIds
-      .filter((teamId) => teamId && teamId !== removedTeamId)
-      .forEach((teamId) => {
-        transaction.update(doc(teamsCollection(code), teamId), {
-          currentMatchId: null,
-        });
+    for (const teamId of teamIds.filter(
+      (entryTeamId) => entryTeamId && entryTeamId !== removedTeamId
+    )) {
+      const teamRef = doc(teamsCollection(code), teamId);
+      const teamSnap = await transaction.get(teamRef);
+      if (!teamSnap.exists()) continue;
+      transaction.update(teamRef, {
+        currentMatchId: null,
       });
+    }
     transaction.update(matchRef, {
       status: "complete",
       result: { abandoned: true, removedTeamId },
@@ -1059,8 +1062,8 @@ async function deleteTeamFromCloud(code, teamId) {
 }
 
 async function clearTeamFromMatches(code, teamId) {
-  const impactedMatches = getMatches().filter((match) =>
-    match.teamIds?.includes(teamId)
+  const impactedMatches = getMatches().filter(
+    (match) => match.status !== "complete" && match.teamIds?.includes(teamId)
   );
   for (const match of impactedMatches) {
     await closeMatchForRemoval(code, match, teamId);
@@ -1513,9 +1516,17 @@ const renderLeaderboard = () => {
   standings.forEach((team, index) => {
     const card = document.createElement("div");
     card.className = `leaderboard-card${isAdminMode ? " admin" : ""}`;
+    const rankClass =
+      index === 0
+        ? "rank rank--gold"
+        : index === 1
+          ? "rank rank--silver"
+          : index === 2
+            ? "rank rank--bronze"
+            : "rank rank--default";
     card.innerHTML = `
       <div class="team-row">
-        <span class="rank">#${index + 1}</span>
+        <span class="${rankClass}">#${index + 1}</span>
         <div class="team-info">
           <div class="team-row">
             ${renderFlagAvatar(team.country)}
@@ -2374,14 +2385,19 @@ exitRemoveButton?.addEventListener("click", async () => {
     closeExitModal();
     return;
   }
-  await clearTeamFromMatches(activeGameCode, activeTeamId);
-  await deleteTeamFromCloud(activeGameCode, activeTeamId);
-  clearActiveSession(activeGameCode);
-  closeExitModal();
-  setView("player");
-  setMobileState("onboarding-code");
-  showToast("Team removed. You can rejoin anytime.", "info");
-  refreshState();
+  try {
+    await clearTeamFromMatches(activeGameCode, activeTeamId);
+    await deleteTeamFromCloud(activeGameCode, activeTeamId);
+    clearActiveSession(activeGameCode);
+    closeExitModal();
+    setView("player");
+    setMobileState("onboarding-code");
+    showToast("Team removed. You can rejoin anytime.", "info");
+    refreshState();
+  } catch (error) {
+    console.error("Unable to remove team on exit.", error);
+    showToast("Couldn't exit right now. Please try again.", "warning");
+  }
 });
 
 exitPauseButton?.addEventListener("click", async () => {
@@ -2399,12 +2415,17 @@ exitPauseButton?.addEventListener("click", async () => {
     closeExitModal();
     return;
   }
-  await clearTeamFromMatches(activeGameCode, activeTeamId);
-  await updateDoc(doc(teamsCollection(activeGameCode), activeTeamId), { paused: true });
-  closeExitModal();
-  showToast("Paused. Your team stays on the leaderboard.", "success");
-  renderMatch();
-  scheduleFillMatches(activeGameCode);
+  try {
+    await clearTeamFromMatches(activeGameCode, activeTeamId);
+    await updateDoc(doc(teamsCollection(activeGameCode), activeTeamId), { paused: true });
+    closeExitModal();
+    showToast("Paused. Your team stays on the leaderboard.", "success");
+    renderMatch();
+    scheduleFillMatches(activeGameCode);
+  } catch (error) {
+    console.error("Unable to pause team on exit.", error);
+    showToast("Couldn't pause right now. Please try again.", "warning");
+  }
 });
 
 [playerNameInput, partnerNameInput, countryInput, gameCodeInput].forEach((input) => {

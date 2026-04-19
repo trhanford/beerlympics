@@ -559,8 +559,24 @@ input.small {
 .rank {
   font-size: 1.15rem;
   font-weight: 800;
-  color: var(--primary-strong);
+  color: #fff;
   margin-right: 10px;
+}
+
+.rank--gold {
+  color: #ffd700;
+}
+
+.rank--silver {
+  color: #c0c0c0;
+}
+
+.rank--bronze {
+  color: #cd7f32;
+}
+
+.rank--default {
+  color: #fff;
 }
 
 .team-info {
