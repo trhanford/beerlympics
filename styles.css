@@ -564,7 +564,10 @@ input.small {
 }
 
 .rank--gold {
-  color: #ffd700;
+  color: transparent;
+  background: linear-gradient(135deg, #d8bf7c 0%, #f7f1de 52%, #b89146 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 .rank--silver {
@@ -1302,11 +1305,13 @@ body.mobile-app[data-mobile-state="playing"] .mobile-play-panel {
 body.mobile-app .mobile-dock {
   display: flex !important;
   justify-content: center;
-  margin-bottom: 16px;
-  background: rgba(8, 8, 8, 0.46);
-  border: 1px solid rgba(255,255,255,0.14);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  margin: 0 auto 18px;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   color: #fff;
 }
 
@@ -1317,8 +1322,8 @@ body.mobile-app .hint {
 }
 
 body.mobile-app .mobile-dock-logo {
-  width: min(58vw, 220px);
-  max-height: 72px;
+  width: min(76vw, 320px);
+  max-height: 110px;
   object-fit: contain;
 }
 
@@ -1346,11 +1351,12 @@ body.mobile-app.is-splash-active .mobile-splash-screen {
 }
 
 body.mobile-app .mobile-splash-logo {
-  width: min(64vw, 260px);
+  width: min(78vw, 330px);
   max-height: 36vh;
   object-fit: contain;
   filter: drop-shadow(0 14px 38px rgba(0, 0, 0, 0.35));
-  animation: splashPulse 1300ms ease-in-out infinite alternate;
+  transform-origin: center center;
+  animation: splashZoomIn 1650ms cubic-bezier(0.16, 0.84, 0.24, 1) forwards;
 }
 
 body.mobile-app.is-splash-exiting .mobile-splash-screen {
@@ -1360,9 +1366,7 @@ body.mobile-app.is-splash-exiting .mobile-splash-screen {
 }
 
 body.mobile-app.is-splash-exiting .mobile-splash-logo {
-  animation:
-    splashPulse 420ms ease-in-out 1 alternate,
-    splashFlyOut 560ms cubic-bezier(0.21, 0.83, 0.2, 1) forwards;
+  animation: splashZoomOutFast 320ms cubic-bezier(0.4, 0.0, 1, 1) forwards;
 }
 
 /* Keep the app content mounted under the splash overlay.
@@ -1572,18 +1576,28 @@ body.mobile-app[data-mobile-state="onboarding-team"] .mobile-dock {
   display: none !important;
 }
 
-@keyframes splashPulse {
-  from { transform: scale(0.98); opacity: 0.88; }
-  to { transform: scale(1.02); opacity: 1; }
+@keyframes splashZoomIn {
+  0% {
+    transform: scale(0.68);
+    opacity: 0.42;
+  }
+  60% {
+    transform: scale(1.04);
+    opacity: 0.94;
+  }
+  100% {
+    transform: scale(1.14);
+    opacity: 1;
+  }
 }
 
-@keyframes splashFlyOut {
+@keyframes splashZoomOutFast {
   from {
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: scale(1.14);
     opacity: 1;
   }
   to {
-    transform: translate3d(0, -34vh, 0) scale(0.34);
+    transform: scale(0.22);
     opacity: 0;
   }
 }
