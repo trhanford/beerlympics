@@ -1202,45 +1202,33 @@ body.mobile-app[data-mobile-state="playing"] .team-setup-column {
 }
 
 
-/* ===== Mobile rebuild overrides ===== */
-html, body {
+/* ===== CLEAN MOBILE SHELL ===== */
+
+html.mobile-app-bg {
   min-height: 100%;
+  background:
+    radial-gradient(circle at 50% -8%, rgba(255, 255, 255, 0.08), transparent 30%),
+    radial-gradient(circle at 12% 90%, rgba(206, 184, 143, 0.14), transparent 32%),
+    linear-gradient(180deg, #040404 0%, #17120b 40%, #5b4a2d 76%, #f4efe6 100%) fixed !important;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-color: #040404;
 }
 
 body.mobile-app {
-  color: #fff;
-  background: transparent !important;
-  background-color: #040404 !important;
   min-height: 100dvh;
   min-height: 100svh;
-  overflow-y: auto;
+  color: #fff;
+  background: transparent !important;
+  background-color: transparent !important;
   overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: none;
 }
 
-body.mobile-app::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  background:
-    radial-gradient(circle at 50% -8%, rgba(255,255,255,0.08), transparent 30%),
-    radial-gradient(circle at 12% 90%, rgba(206,184,143,0.14), transparent 32%),
-    linear-gradient(180deg, #040404 0%, #17120b 40%, #5b4a2d 76%, #f4efe6 100%);
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  background-attachment: fixed;
-}
-
+body.mobile-app::before,
 body.mobile-app::after {
-  content: "";
-  position: fixed;
-  top: calc(-1 * env(safe-area-inset-top, 0px));
-  right: 0;
-  bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
-  left: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: transparent;
+  display: none !important;
 }
 
 body.mobile-app header,
@@ -1255,65 +1243,101 @@ body.mobile-app .top-header {
   display: none !important;
 }
 
+body.mobile-app .mobile-only {
+  display: block;
+}
+
 body.mobile-app main {
   width: 100%;
   max-width: none;
   min-height: 100dvh;
   padding:
-    calc(6px + env(safe-area-inset-top, 0px))
+    calc(8px + env(safe-area-inset-top, 0px))
     14px
-    calc(122px + env(safe-area-inset-bottom, 0px));
+    calc(126px + env(safe-area-inset-bottom, 0px));
   display: block;
   position: relative;
   z-index: 1;
   overflow: visible;
+  background: transparent !important;
 }
 
-body.mobile-app #player-section,
-body.mobile-app .mobile-play-panel {
-  display: block;
+body.mobile-app #player-section.card,
+body.mobile-app #leaderboard-section.card,
+body.mobile-app #rules-section.card {
+  padding: 0 !important;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-  padding: 0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body.mobile-app #player-section,
+body.mobile-app .mobile-play-panel,
+body.mobile-app #leaderboard-section,
+body.mobile-app #rules-section {
+  background: transparent !important;
 }
 
 body.mobile-app #player-section {
   min-height: auto;
-  padding-top: calc(2px + env(safe-area-inset-top, 0px));
-  overflow: visible;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  overflow: visible !important;
 }
 
-body.mobile-app[data-view="leaderboard"] #player-section {
+body.mobile-app[data-view="leaderboard"] #player-section,
+body.mobile-app[data-view="rules"] #player-section {
   display: none !important;
 }
 
 body.mobile-app #leaderboard-section {
   display: none !important;
-  background: rgba(13, 13, 13, 0.34);
-  border-color: rgba(255,255,255,0.14);
+  position: relative;
+  overflow: visible !important;
 }
 
 body.mobile-app[data-view="leaderboard"] #leaderboard-section {
   display: block !important;
-  height: auto;
-  min-height: 0;
-  overflow: visible;
-  padding-bottom: calc(132px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(126px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+body.mobile-app #rules-section {
+  display: none !important;
   position: relative;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
+  overflow: visible !important;
 }
 
 body.mobile-app[data-view="rules"] #rules-section {
   display: block !important;
-  max-height: none;
-  overflow: visible;
-  padding-bottom: calc(132px + env(safe-area-inset-bottom, 0px));
-  background: transparent;
-  border: 0;
-  box-shadow: none;
+  padding-bottom: calc(126px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+body.mobile-app .leaderboard-section {
+  overflow: visible !important;
+}
+
+body.mobile-app .leaderboard-stage {
+  margin: 0 0 14px !important;
+  padding: 20px;
+  border-radius: 20px;
+}
+
+body.mobile-app .leaderboard-heading {
+  margin: 0 0 14px !important;
+}
+
+body.mobile-app .leaderboard-split {
+  margin-top: 0 !important;
+  gap: 14px !important;
+}
+
+body.mobile-app .leaderboard {
+  gap: 14px !important;
+}
+
+body.mobile-app .leaderboard-card:last-child {
+  margin-bottom: 0 !important;
 }
 
 body.mobile-app[data-view="leaderboard"] #leaderboard-section::after {
@@ -1328,8 +1352,8 @@ body.mobile-app[data-view="leaderboard"] #leaderboard-section::after {
   background: linear-gradient(
     to bottom,
     rgba(4, 4, 4, 0) 0%,
-    rgba(4, 4, 4, 0.72) 48%,
-    rgba(4, 4, 4, 0.94) 78%,
+    rgba(4, 4, 4, 0.68) 46%,
+    rgba(4, 4, 4, 0.92) 76%,
     rgba(4, 4, 4, 1) 100%
   );
 }
@@ -1348,9 +1372,9 @@ body.mobile-app .mobile-dock {
   display: flex !important;
   justify-content: center;
   align-items: center;
-  margin: 0 auto -18px;
-  padding: 0;
   width: 100%;
+  margin: 12px auto 16px;
+  padding: 0;
   background: transparent;
   border: 0;
   box-shadow: none;
@@ -1359,207 +1383,18 @@ body.mobile-app .mobile-dock {
   color: #fff;
 }
 
+body.mobile-app .mobile-dock-logo {
+  display: block;
+  width: min(92vw, 400px);
+  max-height: 156px;
+  object-fit: contain;
+  margin: 0;
+}
+
 body.mobile-app .mobile-dock-subtitle,
 body.mobile-app .status,
 body.mobile-app .hint {
-  color: rgba(255,255,255,0.78);
-}
-
-body.mobile-app .mobile-dock-logo {
-  width: min(96vw, 430px);
-  max-height: 128px;
-  display: block;
-  object-fit: contain;
-  clip-path: inset(18% 0 18% 0);
-  margin: -24px 0 -24px;
-}
-
-body.mobile-app .mobile-splash-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 900;
-  display: grid;
-  place-items: center;
-  padding: max(20px, env(safe-area-inset-top, 0px)) 24px max(20px, env(safe-area-inset-bottom, 0px));
-  background:
-    radial-gradient(circle at 50% -10%, rgba(255,255,255,0.10), transparent 34%),
-    radial-gradient(circle at 10% 92%, rgba(206, 184, 143, 0.16), transparent 34%),
-    linear-gradient(180deg, #040404 0%, #17120b 42%, #5b4a2d 78%, #f4efe6 100%);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 340ms ease, visibility 340ms ease;
-}
-
-body.mobile-app.is-splash-active .mobile-splash-screen {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-}
-
-body.mobile-app .mobile-splash-logo {
-  width: min(78vw, 330px);
-  max-height: 36vh;
-  object-fit: contain;
-  filter: drop-shadow(0 14px 38px rgba(0, 0, 0, 0.35));
-  transform-origin: center center;
-  animation: splashZoomIn 1650ms cubic-bezier(0.16, 0.84, 0.24, 1) forwards;
-}
-
-body.mobile-app.is-splash-exiting .mobile-splash-screen {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-body.mobile-app.is-splash-exiting .mobile-splash-logo {
-  animation: splashZoomOutFast 320ms cubic-bezier(0.4, 0.0, 1, 1) forwards;
-}
-
-/* Keep the app content mounted under the splash overlay.
-   Hiding main caused a blank gameplay screen if the splash/preload class stuck. */
-body.mobile-app.pre-mobile-app main,
-body.mobile-app.pre-mobile-app .mobile-welcome-screen,
-body.mobile-app.is-splash-active main,
-body.mobile-app.is-splash-active .mobile-welcome-screen,
-body.mobile-app.is-splash-exiting main,
-body.mobile-app.is-splash-exiting .mobile-welcome-screen {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-body.mobile-app .mobile-welcome-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 500;
-  padding: max(20px, env(safe-area-inset-top, 0px)) 18px max(20px, env(safe-area-inset-bottom, 0px));
-  display: grid;
-  place-items: center;
-  align-content: center;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  background: transparent !important;
-}
-
-body.mobile-app[data-mobile-state="onboarding-code"] .mobile-welcome-screen,
-body.mobile-app[data-mobile-state="onboarding-team"] .mobile-welcome-screen {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-}
-
-body.mobile-app .mobile-welcome-card {
-  display: none;
-  position: relative;
-  top: auto;
-  left: auto;
-  transform: none;
-  width: min(100%, 420px);
-  max-width: 420px;
-  margin: auto;
-  max-height: min(82dvh, 760px);
-  overflow-y: auto;
-  border-radius: 28px;
-  padding: 26px 22px 22px;
-  background: rgba(7, 7, 7, 0.72);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.14);
-  box-shadow: 0 24px 60px rgba(0,0,0,0.42);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  gap: 14px;
-}
-
-body.mobile-app .mobile-welcome-card.is-visible {
-  display: grid;
-  opacity: 1;
-  pointer-events: auto;
-  transform: none;
-}
-
-body.mobile-app .mobile-welcome-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(145deg, rgba(255,255,255,0.22), rgba(212,187,127,0.42), rgba(255,255,255,0.08));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-body.mobile-app .mobile-welcome-card h1,
-body.mobile-app .mobile-welcome-card h2,
-body.mobile-app .mobile-welcome-card label {
-  color: #fff;
-}
-
-body.mobile-app .mobile-welcome-card h1,
-body.mobile-app .mobile-welcome-card h2 {
-  font-size: clamp(2rem, 8vw, 2.6rem);
-  line-height: 1.02;
-  letter-spacing: -0.03em;
-  margin: 0 0 2px;
-}
-
-body.mobile-app .mobile-welcome-card label {
-  font-size: 0.92rem;
-  margin-bottom: 4px;
-}
-
-body.mobile-app .mobile-welcome-card input {
-  background: rgba(255,255,255,0.96);
-  color: #111;
-  border-radius: 16px;
-  min-height: 54px;
-  font-size: 1.04rem;
-  border: 1px solid rgba(255,255,255,0.16);
-}
-
-body.mobile-app .mobile-onboarding-note {
-  color: rgba(255,255,255,0.78);
-  min-height: 1.4em;
-}
-
-body.mobile-app .mobile-onboarding-note.success {
-  color: #c8ffd8;
-}
-
-body.mobile-app .welcome-download {
-  margin-top: 2px;
-}
-
-body.mobile-app .welcome-continue,
-body.mobile-app .btn {
-  border-radius: 18px;
-  min-height: 54px;
-  font-size: 1rem;
-  font-weight: 800;
-}
-
-body.mobile-app .btn,
-body.mobile-app .mobile-welcome-card .btn.primary {
-  background: linear-gradient(135deg, #d8bf7c 0%, #f7f1de 52%, #b89146 100%);
-  color: #0b0b0b;
-  box-shadow: 0 16px 30px rgba(0,0,0,0.24);
-}
-
-body.mobile-app .btn.secondary {
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.16);
-  box-shadow: none;
-}
-
-body.mobile-app .btn.ghost {
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.14);
+  color: rgba(255, 255, 255, 0.78);
 }
 
 body.mobile-app .game-card,
@@ -1568,8 +1403,8 @@ body.mobile-app .leaderboard-card,
 body.mobile-app .roster-team,
 body.mobile-app .opponent-card,
 body.mobile-app .current-match-card {
-  background: rgba(10,10,10,0.48);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(10, 10, 10, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   color: #fff;
@@ -1584,12 +1419,12 @@ body.mobile-app .opponent-members {
 }
 
 body.mobile-app .flag {
-  border-color: rgba(255,255,255,0.18);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 body.mobile-app .stat-pill {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.12);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.12);
   color: #fff;
 }
 
@@ -1607,7 +1442,7 @@ body.mobile-app .score-actions {
 }
 
 body.mobile-app .powerups {
-  color: rgba(255,255,255,0.86);
+  color: rgba(255, 255, 255, 0.86);
 }
 
 body.mobile-app .reward-banner {
@@ -1790,7 +1625,7 @@ body.mobile-app .exit-modal-sheet .btn.ghost {
   padding: 8px;
   border-radius: 18px;
   background: rgba(9, 9, 9, 0.88);
-  border: 1px solid rgba(255,255,255,0.18);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   overflow: hidden;
@@ -1799,18 +1634,27 @@ body.mobile-app .exit-modal-sheet .btn.ghost {
 .mobile-bottom-nav__tab {
   appearance: none;
   width: 100%;
-  display: inline-flex;
+  min-width: 0;
+  display: flex !important;
+  flex-direction: row !important;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.88);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.88);
   border-radius: 12px;
-  min-height: 44px;
+  min-height: 52px;
   font-weight: 600;
   text-align: center;
+  white-space: nowrap;
 }
+
+body.mobile-app nav.mobile-bottom-nav.mobile-only {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
 
 .mobile-bottom-nav__tab.is-active {
   color: #111a2c;
@@ -1883,22 +1727,3 @@ body.mobile-app .exit-modal-sheet .btn.ghost {
   }
 }
 
-body.mobile-app .leaderboard-section {
-  overflow: visible !important;
-}
-
-body.mobile-app .leaderboard {
-  gap: 14px;
-}
-
-body.mobile-app .leaderboard-card:last-child {
-  margin-bottom: 0;
-}
-
-body.mobile-app #leaderboard-section,
-body.mobile-app #rules-section,
-body.mobile-app #player-section,
-body.mobile-app .mobile-play-panel,
-body.mobile-app main {
-  background-color: transparent !important;
-}
