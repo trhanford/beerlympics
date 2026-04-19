@@ -238,6 +238,9 @@
               <p class="status">Register to unlock your matchup.</p>
             </div>
             <div class="score-actions" id="score-actions"></div>
+            <button class="btn ghost mobile-only" type="button" id="mobile-exit-game-btn">
+              Exit Game
+            </button>
             <button
               class="btn ghost mobile-only hidden"
               type="button"
@@ -349,18 +352,41 @@
         </div>
       </section>
     </main>
+    <nav class="mobile-bottom-nav mobile-only hidden" id="mobile-bottom-nav" aria-label="Mobile navigation">
+      <button class="mobile-bottom-nav__tab is-active" id="mobile-nav-game" type="button" data-view="player">
+        <span aria-hidden="true">🎮</span>
+        <span>Game</span>
+      </button>
+      <button class="mobile-bottom-nav__tab" id="mobile-nav-leaderboard" type="button" data-view="leaderboard">
+        <span aria-hidden="true">🏆</span>
+        <span>Leaderboard</span>
+      </button>
+    </nav>
     <div class="install-modal hidden" id="install-modal" aria-hidden="true">
       <div class="install-modal-backdrop" id="install-modal-backdrop"></div>
       <div class="install-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="install-modal-title">
         <button class="install-modal-close" id="install-modal-close" type="button" aria-label="Close install instructions">×</button>
         <p class="install-kicker">Install Beerlympics</p>
         <h2 id="install-modal-title">Add to your Home Screen</h2>
-        <ol class="install-steps" id="install-steps">
-          <li>Open this page in Safari.</li>
-          <li>Tap the Share button.</li>
-          <li>Tap <strong>Add to Home Screen</strong>.</li>
-        </ol>
+        <div class="install-steps" id="install-steps"></div>
         <p class="status" id="install-modal-note">You can keep using the website normally too.</p>
+      </div>
+    </div>
+    <div class="install-modal hidden" id="exit-modal" aria-hidden="true">
+      <div class="install-modal-backdrop" id="exit-modal-backdrop"></div>
+      <div class="install-modal-sheet exit-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="exit-modal-title">
+        <button class="install-modal-close" id="exit-modal-close" type="button" aria-label="Close exit game modal">×</button>
+        <p class="install-kicker">Need a break?</p>
+        <h2 id="exit-modal-title">Exit Game</h2>
+        <p class="status">Choose what you want to do with your team.</p>
+        <div class="exit-options">
+          <button class="btn secondary" type="button" id="exit-remove-btn">
+            I’m out, remove me from the games
+          </button>
+          <button class="btn ghost" type="button" id="exit-pause-btn">
+            Just pausing, I’ll be back
+          </button>
+        </div>
       </div>
     </div>
     
