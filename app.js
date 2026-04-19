@@ -20,7 +20,7 @@ const firebaseConfig = {
   projectId: "beerlympics-2026-live",
   storageBucket: "beerlympics-2026-live.firebasestorage.app",
   messagingSenderId: "514383788804",
-  appId: "1:514383788804:web:2c2c00a39a1a925f79ae51",
+  appId: "1:514383788804:web:2c2c00a39a1a925f79ae51"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -119,11 +119,13 @@ const MANUAL_REFRESH_DELAY_MS = 2 * 60 * 1000;
 let manualRefreshTimeout;
 
 const normalizeGameCode = (value) => value.trim().replace(/\s+/g, "");
-const generateGameCode = () => String(Math.floor(1000 + Math.random() * 9000));
+const generateGameCode = () =>
+  String(Math.floor(1000 + Math.random() * 9000));
 
 const getCurrentGameCode = () => localStorage.getItem(STORAGE_KEYS.currentGameCode);
 const getActiveGameCode = () => localStorage.getItem(STORAGE_KEYS.activeGameCode);
-const setActiveGameCode = (code) => localStorage.setItem(STORAGE_KEYS.activeGameCode, code);
+const setActiveGameCode = (code) =>
+  localStorage.setItem(STORAGE_KEYS.activeGameCode, code);
 
 const setCurrentGameCode = (code) =>
   localStorage.setItem(STORAGE_KEYS.currentGameCode, code);
@@ -222,6 +224,8 @@ const syncMobilePanelActivity = (state) => {
 };
 
 const setMobileState = (state) => {
+  // IMPORTANT: never remove panels from the DOM.
+  // Removing causes the Step 1 form to disappear until a full refresh.
   document.body.dataset.mobileState = state;
   syncMobilePanelActivity(state);
 };
@@ -231,8 +235,6 @@ const computeMobileState = () => {
   const hasTeam = Boolean(getActiveTeamId());
   const hasGame = Boolean(getActiveGameCode());
   if (hasTeam && hasGame) return "playing";
-  if (!hasTeam) return "onboarding-code";
-  if (hasTeam) return "access";
   return "onboarding-code";
 };
 
@@ -419,9 +421,11 @@ let adminEditingTeamId = null;
 const activeTeamStorageKey = (code = getActiveGameCode()) =>
   code ? `${STORAGE_KEYS.activeTeamId}:${code}` : STORAGE_KEYS.activeTeamId;
 
-const getActiveTeamId = () => localStorage.getItem(activeTeamStorageKey()) || null;
+const getActiveTeamId = () =>
+  localStorage.getItem(activeTeamStorageKey()) || null;
 
-const setActiveTeamId = (id) => localStorage.setItem(activeTeamStorageKey(), id);
+const setActiveTeamId = (id) =>
+  localStorage.setItem(activeTeamStorageKey(), id);
 
 const clearActiveTeamId = (code = getActiveGameCode()) =>
   localStorage.removeItem(activeTeamStorageKey(code));
@@ -530,7 +534,8 @@ const getCountryIso2 = (country) => {
   return countryLookup?.[finalKey] || null;
 };
 
-const getFlagUrl = (iso2) => (iso2 ? `https://flagcdn.com/w40/${iso2.toLowerCase()}.png` : null);
+const getFlagUrl = (iso2) =>
+  iso2 ? `https://flagcdn.com/w40/${iso2.toLowerCase()}.png` : null;
 
 const gameRef = (code) => doc(db, "games", code);
 const teamsCollection = (code) => collection(db, "games", code, "teams");
@@ -564,6 +569,8 @@ function isHost() {
   return game.hostId === ensureHostId();
 }
 
+// Host-only: create matches whenever the roster changes.
+// Debounced + locked so we don't spam Firestore writes.
 let fillMatchesTimer = null;
 let fillMatchesInFlight = false;
 
@@ -775,7 +782,8 @@ const findMatchingTeam = (teams, playerName, partnerName, country) => {
   });
 };
 
-const hasRecentOpponent = (team, opponentId) => (team.lastOpponents || []).includes(opponentId);
+const hasRecentOpponent = (team, opponentId) =>
+  (team.lastOpponents || []).includes(opponentId);
 
 const sortTeamsForMatch = (teams) =>
   [...teams].sort((a, b) => {
@@ -790,10 +798,17 @@ const countFreshTeamsForType = (teams, gameType) => {
 };
 
 const pickPair = (teams, gameTypeId) => {
+  // Strict rules (requested):
+  // - No team can play the same GAME twice in a row.
+  // - No team can play the same OPPONENT twice in a row.
+  // If no legal pairing exists for this game type, return null so
+  // fillMatches() can try another game type (or wait for more teams).
+
   const immediateOpponentId = (team) => (team.lastOpponents || [])[0] || null;
   const isImmediateOpponentPair = (a, b) =>
     immediateOpponentId(a) === b.id || immediateOpponentId(b) === a.id;
 
+  // Hard filter: no one repeating this game type.
   const eligible = teams.filter((t) => t.lastGameType !== gameTypeId);
   if (eligible.length < 2) return null;
 
@@ -802,9 +817,13 @@ const pickPair = (teams, gameTypeId) => {
     const opponents = pool.filter((candidate) => candidate.id !== team.id);
     if (!opponents.length) continue;
 
+    // Prefer: not an immediate rematch.
     let opponent = opponents.find((candidate) => !isImmediateOpponentPair(team, candidate));
     if (opponent) return [team, opponent];
 
+    // If every possible opponent is an immediate rematch, we must WAIT.
+    // (This prevents two teams from instantly re-playing each other when
+    // only they become available.)
     return null;
   }
 
@@ -812,6 +831,7 @@ const pickPair = (teams, gameTypeId) => {
 };
 
 const pickFlipCupGroup = (teams) => {
+  // Hard block: nobody can exceed a streak of 2
   const hardAllowed = teams.filter((t) => (t.flipCupStreak || 0) < 2);
   const working = hardAllowed.length >= 4 ? hardAllowed : teams;
 
@@ -820,6 +840,7 @@ const pickFlipCupGroup = (teams) => {
     (t) => t.lastGameType === "flip_cup" && (t.flipCupStreak || 0) < 2
   );
 
+  // Prefer 0 repeat teams; if not possible, allow at most 1 repeat team.
   const candidatePools = [
     nonRepeat,
     [...nonRepeat, ...repeatOk],
@@ -849,6 +870,7 @@ const pickFlipCupGroup = (teams) => {
       if (group.length === 4) break;
     }
 
+    // Fallback fill (still respecting repeat cap + streak cap)
     if (group.length < 4) {
       for (const team of sorted) {
         if (group.some((g) => g.id === team.id)) continue;
@@ -894,10 +916,16 @@ async function createMatchForTeams(code, gameTypeId, teams) {
 
 async function fillMatches(gameCode) {
   if (!isHost()) return;
-  const activeMatches = getMatches().filter((match) => match.status === "in_progress");
+  // 1) Build sets
+  const activeMatches = getMatches().filter(
+    (match) => match.status === "in_progress"
+  );
   const activeByType = new Set(activeMatches.map((match) => match.gameType));
-  let availableTeams = sortTeamsForMatch(getTeams().filter((team) => !team.currentMatchId));
+  let availableTeams = sortTeamsForMatch(
+    getTeams().filter((team) => !team.currentMatchId)
+  );
 
+  // 2) Flip Cup first (optional, but keeps everyone playing)
   if (!activeByType.has("flip_cup") && availableTeams.length >= 4) {
     const group = pickFlipCupGroup(availableTeams);
     if (group) {
@@ -908,6 +936,7 @@ async function fillMatches(gameCode) {
     }
   }
 
+  // 3) Rotate 2-team games so Beer Pong isn't always first
   const twoTeamTypes = GAME_TYPES.filter(
     (gameType) => gameType.teams === 2 && !activeByType.has(gameType.id)
   );
@@ -919,6 +948,7 @@ async function fillMatches(gameCode) {
     ...twoTeamTypes.slice(0, rotation),
   ];
 
+  // 4) Create as many 2-team matches as possible, using different game types first
   for (const gameType of rotatedTwoTeamTypes) {
     if (availableTeams.length < 2) break;
     const pair = pickPair(availableTeams, gameType.id);
@@ -946,7 +976,9 @@ const DEFAULT_LEADERBOARD_COLORS = {
 const rgbToCss = (rgb) => rgb.join(", ");
 
 const getDistance = (a, b) =>
-  Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2) + Math.pow(a[2] - b[2], 2));
+  Math.sqrt(
+    Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2) + Math.pow(a[2] - b[2], 2)
+  );
 
 const extractFlagColors = (iso2) =>
   new Promise((resolve) => {
@@ -979,12 +1011,16 @@ const extractFlagColors = (iso2) =>
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
-        const key = `${Math.round(r / 32)}-${Math.round(g / 32)}-${Math.round(b / 32)}`;
+        const key = `${Math.round(r / 32)}-${Math.round(g / 32)}-${Math.round(
+          b / 32
+        )}`;
         buckets.set(key, (buckets.get(key) || 0) + 1);
       }
       const sorted = [...buckets.entries()].sort((a, b) => b[1] - a[1]);
       const toRgb = (key) =>
-        key.split("-").map((value) => Math.min(255, Number(value) * 32 + 16));
+        key
+          .split("-")
+          .map((value) => Math.min(255, Number(value) * 32 + 16));
       const primary = sorted[0] ? toRgb(sorted[0][0]) : DEFAULT_LEADERBOARD_COLORS.primary;
       let secondary = DEFAULT_LEADERBOARD_COLORS.secondary;
       for (let i = 1; i < sorted.length; i += 1) {
@@ -1015,7 +1051,10 @@ const applyLeaderboardTheme = async (team) => {
     iso2 ? `url("https://flagcdn.com/w320/${iso2}.png")` : "none"
   );
   leaderboardSection.style.setProperty("--leaderboard-accent-rgb", rgbToCss(colors.primary));
-  leaderboardSection.style.setProperty("--leaderboard-secondary-rgb", rgbToCss(colors.secondary));
+  leaderboardSection.style.setProperty(
+    "--leaderboard-secondary-rgb",
+    rgbToCss(colors.secondary)
+  );
   leaderboardSection.style.setProperty(
     "--leaderboard-flag-url",
     iso2 ? `url("https://flagcdn.com/w320/${iso2}.png")` : "none"
@@ -1030,7 +1069,8 @@ const renderCurrentMatches = () => {
   currentMatchesEl.innerHTML = "";
 
   if (!matches.length) {
-    currentMatchesEl.innerHTML = "<p class=\"status\">No matches are live at the moment.</p>";
+    currentMatchesEl.innerHTML =
+      "<p class=\"status\">No matches are live at the moment.</p>";
     return;
   }
 
@@ -1043,16 +1083,16 @@ const renderCurrentMatches = () => {
       .filter(Boolean);
     const teamRows =
       matchTeams.length > 0
-        ? matchTeams
-            .map(
-              (team) => `
-                <div class="current-match-team">
-                  <span>${team.playerName} + ${team.partnerName}</span>
-                  ${renderFlagAvatar(team.country)}
-                </div>
-              `
-            )
-            .join("")
+            ? matchTeams
+                .map(
+                  (team) => `
+                    <div class="current-match-team">
+                      <span>${team.playerName} + ${team.partnerName}</span>
+                      ${renderFlagAvatar(team.country)}
+                    </div>
+                  `
+                )
+                .join("")
         : "<p class=\"status\">Teams syncing...</p>";
 
     card.innerHTML = `
@@ -1077,7 +1117,8 @@ const renderLeaderboard = () => {
   leaderboardEl.innerHTML = "";
 
   if (!standings.length) {
-    leaderboardEl.innerHTML = "<p class=\"status\">Waiting for squads to register.</p>";
+    leaderboardEl.innerHTML =
+      "<p class=\"status\">Waiting for squads to register.</p>";
     const root = document.documentElement;
     root.style.setProperty(
       "--leaderboard-accent-rgb",
@@ -1173,18 +1214,19 @@ const renderRoster = () => {
   const teams = getTeams();
   const activeTeamId = getActiveTeamId();
   const isEditingRoster = rosterForm.contains(document.activeElement);
-  const isAdminMode = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
+  const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
   rosterEl.innerHTML = "";
 
   if (!teams.length) {
-    rosterEl.innerHTML = "<p class=\"status\">No teams yet. Register to kick off the roster.</p>";
+    rosterEl.innerHTML =
+      "<p class=\"status\">No teams yet. Register to kick off the roster.</p>";
     rosterEdit.classList.add("hidden");
     return;
   }
 
   rosterEdit.classList.remove("hidden");
-  rosterEditTitle.textContent = isAdminMode ? "Edit roster entry" : "Your roster entry";
-  rosterEditDescription.textContent = isAdminMode
+  rosterEditTitle.textContent = isAdmin ? "Edit roster entry" : "Your roster entry";
+  rosterEditDescription.textContent = isAdmin
     ? "Admins can update any team entry from this device."
     : "Edit or remove only your own team details.";
   const grouped = teams.reduce((acc, team) => {
@@ -1202,7 +1244,7 @@ const renderRoster = () => {
       group.innerHTML = `<h3>${country}</h3>`;
       grouped[country].forEach((team) => {
         const row = document.createElement("div");
-        row.className = `roster-team${isAdminMode ? " admin" : ""}`;
+        row.className = `roster-team${isAdmin ? " admin" : ""}`;
         row.innerHTML = `
           <div>
             <strong>
@@ -1216,7 +1258,7 @@ const renderRoster = () => {
         if (team.id === activeTeamId) {
           row.style.borderColor = "rgba(91, 108, 255, 0.4)";
         }
-        if (isAdminMode) {
+        if (isAdmin) {
           const editButton = document.createElement("button");
           editButton.type = "button";
           editButton.className = "btn small ghost";
@@ -1236,8 +1278,10 @@ const renderRoster = () => {
     });
 
   const activeTeam = teams.find((team) => team.id === activeTeamId);
-  const adminTeam = adminEditingTeamId ? teams.find((team) => team.id === adminEditingTeamId) : null;
-  const selectedTeam = isAdminMode && adminTeam ? adminTeam : activeTeam;
+  const adminTeam = adminEditingTeamId
+    ? teams.find((team) => team.id === adminEditingTeamId)
+    : null;
+  const selectedTeam = isAdmin && adminTeam ? adminTeam : activeTeam;
 
   if (selectedTeam) {
     if (!isEditingRoster) {
@@ -1245,7 +1289,7 @@ const renderRoster = () => {
       rosterPartnerName.value = selectedTeam.partnerName;
       rosterCountry.value = selectedTeam.country;
     }
-    if (isAdminMode && adminTeam) {
+    if (isAdmin && adminTeam) {
       rosterStatus.textContent = `Editing ${selectedTeam.playerName} + ${selectedTeam.partnerName}.`;
     } else {
       rosterStatus.textContent = isEditingRoster
@@ -1290,7 +1334,9 @@ const renderMatch = () => {
     : null;
 
   if (!match) {
-    const hasPending = getMatches().some((entry) => entry.teamIds?.includes(activeTeamId));
+    const hasPending = getMatches().some((entry) =>
+      entry.teamIds?.includes(activeTeamId)
+    );
     nextGameCard.innerHTML = hasPending
       ? `
         <h3>Waiting on game stations ⏳</h3>
@@ -1487,7 +1533,9 @@ const computeFlipCupFinalWinners = (rounds, teamIds) => {
       winCounts[id] = (winCounts[id] || 0) + 1;
     });
   });
-  return [...teamIds].sort((a, b) => winCounts[b] - winCounts[a]).slice(0, 2);
+  return [...teamIds]
+    .sort((a, b) => winCounts[b] - winCounts[a])
+    .slice(0, 2);
 };
 
 async function recordResult(matchId, payload) {
@@ -1608,7 +1656,9 @@ async function recordResult(matchId, payload) {
       result: {
         rounds: updatedRounds,
         finalWinners:
-          roundIndex === 3 ? computeFlipCupFinalWinners(updatedRounds, match.teamIds) : null,
+          roundIndex === 3
+            ? computeFlipCupFinalWinners(updatedRounds, match.teamIds)
+            : null,
       },
       doubleDownCharged,
     };
@@ -1676,7 +1726,11 @@ const startNewGame = async () => {
   const newCode = generateGameCode();
   setGameCodes(newCode);
   clearActiveTeamId();
-  await withTimeout(createGame(newCode), 7000, "Timed out while creating the game.");
+  await withTimeout(
+    createGame(newCode),
+    7000,
+    "Timed out while creating the game."
+  );
   subscribeToGame(newCode);
   updateGameCodeDisplay();
   updateTabsVisibility();
@@ -1691,6 +1745,8 @@ const registerTeam = async ({ playerName, country, partnerName }) => {
   const activeGameCode = getActiveGameCode();
   if (!activeGameCode) return;
 
+  // Pull the latest teams from Firestore so matching works even before onSnapshot finishes.
+  // On some mobile networks/browsers, getDocs can fail intermittently; don't let that kill join.
   let teams = [];
   try {
     teams = await withTimeout(fetchTeamsOnce(activeGameCode), 7000, "Timed out loading teams.");
@@ -1721,7 +1777,8 @@ const registerTeam = async ({ playerName, country, partnerName }) => {
     await setDoc(doc(teamsCollection(activeGameCode), teamId), team, { merge: true });
   } catch (error) {
     console.error("Unable to sync team to cloud.", error);
-    saveStatus.textContent = "Saved locally, but we couldn't sync to the shared game yet.";
+    saveStatus.textContent =
+      "Saved locally, but we couldn't sync to the shared game yet.";
     showToast("Saved locally, but sync to the shared game failed.", "warning");
     return;
   }
@@ -1768,7 +1825,8 @@ form.addEventListener("submit", async (event) => {
   try {
     const game = await withTimeout(fetchGame(submittedCode), 7000, "Timed out joining the game.");
     if (!game) {
-      saveStatus.textContent = "No game found for that code. Ask the host to start one.";
+      saveStatus.textContent =
+        "No game found for that code. Ask the host to start one.";
       showToast("No game found for that code.", "warning");
       return;
     }
@@ -1783,6 +1841,7 @@ form.addEventListener("submit", async (event) => {
   } catch (error) {
     console.error("Join failed.", error);
     const message = error?.message || String(error);
+    // Surface permission issues explicitly (these look like "network hiccup" otherwise).
     if (/permission|insufficient permissions/i.test(message)) {
       showToast("Join blocked by Firestore rules (permissions).", "warning");
       saveStatus.textContent = `Join blocked: ${message}`;
@@ -1800,6 +1859,7 @@ if (mobileContinueButton) {
     if (mobileContinueButton.disabled) return;
     if (mobileRegisterPanel) {
       mobileRegisterPanel.classList.add("is-exiting");
+      // Allow the exit animation, then just change state (do NOT remove the panel).
       setTimeout(() => updateMobileState("access"), 280);
     } else {
       updateMobileState("access");
@@ -1871,32 +1931,11 @@ if (manualRefreshButton) {
   input.addEventListener("blur", validateTeamInputs);
 });
 
-if (mobileCountryInput) {
-  mobileCountryInput.addEventListener("input", () => {
-    const val = mobileCountryInput.value.trim();
-    if (!mobileOnboardingNote) return;
-
-    if (!val) {
-      mobileOnboardingNote.textContent = "Enter your 4-digit game code to continue.";
-      mobileOnboardingNote.classList.remove("success");
-      return;
-    }
-
-    if (getCountryIso2(val)) {
-      mobileOnboardingNote.textContent = "We have your flag ✅";
-      mobileOnboardingNote.classList.add("success");
-    } else {
-      mobileOnboardingNote.textContent = "We don’t have that flag yet, but we’ll try.";
-      mobileOnboardingNote.classList.remove("success");
-    }
-  });
-}
-
 rosterForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const isAdminMode = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
+  const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
   const activeTeamId = getActiveTeamId();
-  const targetTeamId = isAdminMode && adminEditingTeamId ? adminEditingTeamId : activeTeamId;
+  const targetTeamId = isAdmin && adminEditingTeamId ? adminEditingTeamId : activeTeamId;
   if (!targetTeamId) return;
   const teams = getTeams();
   const updatedTeams = teams.map((team) =>
@@ -1920,10 +1959,10 @@ rosterForm.addEventListener("submit", async (event) => {
       console.error("Unable to sync roster updates.", error);
     }
   }
-  rosterStatus.textContent = isAdminMode
+  rosterStatus.textContent = isAdmin
     ? "Roster entry updated."
     : "Roster entry updated for your team.";
-  if (isAdminMode) {
+  if (isAdmin) {
     adminEditingTeamId = null;
   }
   renderLeaderboard();
@@ -1932,13 +1971,15 @@ rosterForm.addEventListener("submit", async (event) => {
 });
 
 removeTeamButton.addEventListener("click", async () => {
-  const isAdminMode = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
+  const isAdmin = localStorage.getItem(STORAGE_KEYS.adminMode) === "true";
   const activeTeamId = getActiveTeamId();
-  const targetTeamId = isAdminMode && adminEditingTeamId ? adminEditingTeamId : activeTeamId;
+  const targetTeamId = isAdmin && adminEditingTeamId ? adminEditingTeamId : activeTeamId;
   if (!targetTeamId) return;
   if (!confirm("Remove your team from the roster and schedule?")) return;
   const activeGameCode = getActiveGameCode();
-  const impactedMatches = getMatches().filter((match) => match.teamIds?.includes(targetTeamId));
+  const impactedMatches = getMatches().filter((match) =>
+    match.teamIds?.includes(targetTeamId)
+  );
   if (activeGameCode) {
     for (const match of impactedMatches) {
       await closeMatchForRemoval(activeGameCode, match, targetTeamId);
@@ -1949,14 +1990,14 @@ removeTeamButton.addEventListener("click", async () => {
       console.error("Unable to remove team from cloud.", error);
     }
   }
-  if (!isAdminMode || targetTeamId === activeTeamId) {
+  if (!isAdmin || targetTeamId === activeTeamId) {
     clearActiveTeamId();
   }
-  rosterStatus.textContent = isAdminMode
+  rosterStatus.textContent = isAdmin
     ? "Team entry removed."
     : "Your team was removed. Rejoin anytime.";
   showToast("Team removed from the roster.", "info");
-  if (isAdminMode) {
+  if (isAdmin) {
     adminEditingTeamId = null;
   }
   renderLeaderboard();
@@ -1994,7 +2035,9 @@ mergeButton.addEventListener("click", async () => {
   if (!activeGameCode) return;
 
   mergeStatus.textContent = "Merging teams...";
-  const impactedMatches = getMatches().filter((match) => match.teamIds?.includes(sourceTeamId));
+  const impactedMatches = getMatches().filter((match) =>
+    match.teamIds?.includes(sourceTeamId)
+  );
   for (const match of impactedMatches) {
     await closeMatchForRemoval(activeGameCode, match, sourceTeamId);
   }
@@ -2146,9 +2189,7 @@ const updateGameCodeDisplay = () => {
   }
   if (joinQrEl) {
     if (joinUrl) {
-      joinQrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
-        joinUrl
-      )}`;
+      joinQrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(joinUrl)}`;
       joinQrEl.classList.remove("hidden");
     } else {
       joinQrEl.removeAttribute("src");
@@ -2258,6 +2299,7 @@ window.addEventListener("unhandledrejection", (event) => {
 });
 
 window.addEventListener("resize", () => updateMobileState());
+
 
 const enableDesktopPointerGlow = () => {
   if (window.matchMedia("(max-width: 1023px)").matches) return;
