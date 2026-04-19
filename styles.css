@@ -2048,3 +2048,70 @@ body.mobile-app #player-section,
 body.mobile-app .mobile-play-panel {
   background-color: transparent !important;
 }
+
+/* ===== FINAL MOBILE STRUCTURE FIX ===== */
+
+body.mobile-app main {
+  height: auto !important;
+  min-height: 100dvh !important;
+  min-height: 100svh !important;
+  overflow: visible !important;
+  padding:
+    calc(8px + env(safe-area-inset-top, 0px))
+    14px
+    calc(108px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+body.mobile-app[data-view="leaderboard"] #leaderboard-section,
+body.mobile-app[data-view="rules"] #rules-section {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)) !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.mobile-app #leaderboard-section {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.mobile-app[data-view="leaderboard"] #leaderboard-section::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
+  height: 110px !important;
+  pointer-events: none;
+  z-index: 1095;
+  background: linear-gradient(
+    to bottom,
+    rgba(4, 4, 4, 0) 0%,
+    rgba(4, 4, 4, 0.72) 48%,
+    rgba(4, 4, 4, 0.96) 78%,
+    rgba(4, 4, 4, 1) 100%
+  ) !important;
+}
+
+body.mobile-app #player-section {
+  padding-top: calc(4px + env(safe-area-inset-top, 0px)) !important;
+  min-height: auto !important;
+}
+
+body.mobile-app .mobile-dock {
+  margin: 0 auto -8px !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+body.mobile-app .mobile-dock-logo {
+  width: min(96vw, 440px) !important;
+  max-height: 132px !important;
+  display: block;
+  object-fit: contain;
+}
