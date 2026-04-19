@@ -209,6 +209,25 @@ let pendingMobileGameCode = "";
 let deferredInstallPrompt = null;
 const MOBILE_SPLASH_MS = 1500;
 let mobileSplashTimer = null;
+let mobileBootFinalized = false;
+
+const finalizeMobileBoot = () => {
+  if (!document.body) return;
+
+  mobileBootFinalized = true;
+
+  if (mobileSplashTimer) {
+    clearTimeout(mobileSplashTimer);
+    mobileSplashTimer = null;
+  }
+
+  document.body.classList.remove("is-splash-active", "pre-mobile-app");
+
+  if (isMobileLayout()) {
+    document.body.classList.add("mobile-app");
+    document.documentElement.classList.add("mobile-app-bg");
+  }
+};
 
 const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent || "");
 const isSafari = () => {
@@ -259,7 +278,9 @@ const closeInstallModal = () => {
 const registerServiceWorker = async () => {
   if (!("serviceWorker" in navigator)) return;
   try {
-    await navigator.serviceWorker.register("./service-worker.js");
+    await navigator.serviceWorker.register("./service-worker.js", {
+      updateViaCache: "none",
+    });
   } catch (error) {
     console.warn("Service worker registration failed.", error);
   }
@@ -404,16 +425,23 @@ const scheduleManualRefreshPrompt = (state) => {
 
 const updateMobileState = (forcedState) => {
   const isMobile = isMobileLayout();
+
   document.body.classList.toggle("mobile-app", isMobile);
   document.documentElement.classList.toggle("mobile-app-bg", isMobile);
+
   if (!isMobile) {
     document.body.dataset.mobileState = "desktop";
-    document.body.classList.remove("is-splash-active");
+    finalizeMobileBoot();
     return;
   }
+
   const nextState = forcedState || computeMobileState();
   setMobileState(nextState);
   scheduleManualRefreshPrompt(nextState);
+
+  if (nextState === "playing") {
+    finalizeMobileBoot();
+  }
 };
 
 const runMobileWelcome = () => {
@@ -425,20 +453,32 @@ const runMobileWelcome = () => {
 };
 
 const runMobileSplash = () => {
-  if (!mobileSplash || !isMobileLayout()) return;
-  if (isStandaloneMode() && sessionStorage.getItem("beerlympics_mobile_splash_seen") === "1") {
-    document.body.classList.remove("is-splash-active");
+  if (!mobileSplash || !isMobileLayout()) {
+    finalizeMobileBoot();
     return;
   }
+
+  mobileBootFinalized = false;
+
+  if (
+    isStandaloneMode() &&
+    sessionStorage.getItem("beerlympics_mobile_splash_seen") === "1"
+  ) {
+    finalizeMobileBoot();
+    return;
+  }
+
   document.body.classList.add("is-splash-active");
+
   if (mobileSplashTimer) {
     clearTimeout(mobileSplashTimer);
   }
+
   mobileSplashTimer = setTimeout(() => {
-    document.body.classList.remove("is-splash-active");
     if (isStandaloneMode()) {
       sessionStorage.setItem("beerlympics_mobile_splash_seen", "1");
     }
+    finalizeMobileBoot();
   }, MOBILE_SPLASH_MS);
 };
 
@@ -1963,6 +2003,7 @@ const registerTeam = async ({ playerName, country, partnerName }) => {
   document.body.classList.add("has-active-team");
   setView("player");
   setMobileState("playing");
+  finalizeMobileBoot();
   renderMatch();
   renderLeaderboard();
   renderRoster();
@@ -2395,13 +2436,21 @@ const refreshState = () => {
 };
 
 window.addEventListener("storage", refreshState);
+
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
+    finalizeMobileBoot();
     refreshState();
   }
 });
+
 window.addEventListener("pageshow", () => {
+  finalizeMobileBoot();
   refreshState();
+});
+
+window.addEventListener("load", () => {
+  finalizeMobileBoot();
 });
 
 const init = async () => {
@@ -2409,7 +2458,11 @@ const init = async () => {
   void registerServiceWorker();
   runMobileWelcome();
   runMobileSplash();
-  document.body.classList.remove("pre-mobile-app");
+
+  setTimeout(() => {
+    finalizeMobileBoot();
+  }, MOBILE_SPLASH_MS + 250);
+
   resetMobileOnboardingMessage();
   if (mobileGameCodeInput) {
     mobileGameCodeInput.value = "";
