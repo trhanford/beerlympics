@@ -1599,6 +1599,34 @@ body.mobile-app[data-mobile-state="onboarding-team"] .mobile-dock {
   margin: 8px 0 0;
 }
 
+
+body.mobile-app .install-modal-sheet {
+  color: var(--text);
+}
+
+body.mobile-app .install-modal-sheet h2,
+body.mobile-app .install-modal-sheet .install-kicker {
+  color: var(--text);
+}
+
+body.mobile-app .install-modal-sheet .status {
+  color: var(--muted);
+}
+
+body.mobile-app .install-modal-sheet .btn.secondary {
+  background: linear-gradient(120deg, var(--secondary), #ff78b3);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 8px 18px rgba(255, 79, 149, 0.22);
+}
+
+body.mobile-app .install-modal-sheet .btn.ghost {
+  background: #edf3ff;
+  color: #2e4bb1;
+  border-color: rgba(47, 89, 255, 0.18);
+  box-shadow: none;
+}
+
 .exit-options {
   margin-top: 14px;
   display: grid;
