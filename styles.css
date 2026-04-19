@@ -1353,12 +1353,26 @@ body.mobile-app .mobile-splash-logo {
   animation: splashPulse 1300ms ease-in-out infinite alternate;
 }
 
+body.mobile-app.is-splash-exiting .mobile-splash-screen {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.mobile-app.is-splash-exiting .mobile-splash-logo {
+  animation:
+    splashPulse 420ms ease-in-out 1 alternate,
+    splashFlyOut 560ms cubic-bezier(0.21, 0.83, 0.2, 1) forwards;
+}
+
 /* Keep the app content mounted under the splash overlay.
    Hiding main caused a blank gameplay screen if the splash/preload class stuck. */
 body.mobile-app.pre-mobile-app main,
 body.mobile-app.pre-mobile-app .mobile-welcome-screen,
 body.mobile-app.is-splash-active main,
-body.mobile-app.is-splash-active .mobile-welcome-screen {
+body.mobile-app.is-splash-active .mobile-welcome-screen,
+body.mobile-app.is-splash-exiting main,
+body.mobile-app.is-splash-exiting .mobile-welcome-screen {
   opacity: 1;
   pointer-events: auto;
 }
@@ -1561,6 +1575,17 @@ body.mobile-app[data-mobile-state="onboarding-team"] .mobile-dock {
 @keyframes splashPulse {
   from { transform: scale(0.98); opacity: 0.88; }
   to { transform: scale(1.02); opacity: 1; }
+}
+
+@keyframes splashFlyOut {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(0, -34vh, 0) scale(0.34);
+    opacity: 0;
+  }
 }
 
 .install-app-btn {
