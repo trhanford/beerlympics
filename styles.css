@@ -1205,11 +1205,11 @@ html, body {
 
 body.mobile-app {
   color: #fff;
-  background:
-    radial-gradient(circle at 50% -10%, rgba(255,255,255,0.10), transparent 34%),
-    radial-gradient(circle at 10% 92%, rgba(206, 184, 143, 0.16), transparent 34%),
-    linear-gradient(180deg, #040404 0%, #17120b 42%, #5b4a2d 78%, #f4efe6 100%) !important;
+  background: transparent !important;
   background-color: #040404 !important;
+  min-height: 100dvh;
+  min-height: 100svh;
+  overflow: hidden;
   overflow-x: hidden;
 }
 
@@ -1238,7 +1238,7 @@ body.mobile-app::after {
   left: 0;
   z-index: -1;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.04) 24%, rgba(255,255,255,0.06) 100%);
+  background: transparent;
 }
 
 body.mobile-app header,
@@ -1256,12 +1256,13 @@ body.mobile-app .top-header {
 body.mobile-app main {
   width: 100%;
   max-width: none;
-  min-height: 100dvh;
-  min-height: 100svh;
-  padding: max(18px, env(safe-area-inset-top, 0px)) 16px calc(98px + env(safe-area-inset-bottom, 0px));
+  height: 100dvh;
+  height: 100svh;
+  padding: max(10px, env(safe-area-inset-top, 0px)) 14px calc(92px + env(safe-area-inset-bottom, 0px));
   display: block;
   position: relative;
   z-index: 1;
+  overflow: hidden;
 }
 
 body.mobile-app #player-section,
@@ -1274,8 +1275,9 @@ body.mobile-app .mobile-play-panel {
 }
 
 body.mobile-app #player-section {
-  min-height: calc(100dvh - max(18px, env(safe-area-inset-top, 0px)) - max(28px, env(safe-area-inset-bottom, 0px)));
-  padding-top: calc(118px + env(safe-area-inset-top, 0px));
+  min-height: calc(100dvh - max(10px, env(safe-area-inset-top, 0px)) - max(22px, env(safe-area-inset-bottom, 0px)));
+  padding-top: calc(88px + env(safe-area-inset-top, 0px));
+  overflow: hidden;
 }
 
 body.mobile-app[data-view="leaderboard"] #player-section {
@@ -1290,7 +1292,11 @@ body.mobile-app #leaderboard-section {
 
 body.mobile-app[data-view="leaderboard"] #leaderboard-section {
   display: block !important;
-  min-height: calc(100dvh - 136px - env(safe-area-inset-bottom, 0px));
+  height: calc(100dvh - max(10px, env(safe-area-inset-top, 0px)) - 84px - env(safe-area-inset-bottom, 0px));
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  position: relative;
 }
 
 body.mobile-app[data-view="leaderboard"] #leaderboard-section::after {
@@ -1299,10 +1305,10 @@ body.mobile-app[data-view="leaderboard"] #leaderboard-section::after {
   left: 0;
   right: 0;
   bottom: calc(72px + env(safe-area-inset-bottom, 0px));
-  height: 68px;
+  height: 62px;
   pointer-events: none;
   z-index: 1090;
-  background: linear-gradient(to bottom, rgba(4, 4, 4, 0), rgba(4, 4, 4, 0.94));
+  background: linear-gradient(to bottom, rgba(4, 4, 4, 0), rgba(4, 4, 4, 0.98) 76%, rgba(4, 4, 4, 1));
 }
 
 body.mobile-app .mobile-play-panel {
@@ -1318,7 +1324,7 @@ body.mobile-app[data-mobile-state="playing"] .mobile-play-panel {
 body.mobile-app .mobile-dock {
   display: flex !important;
   justify-content: center;
-  margin: 0 auto 8px;
+  margin: 0 auto 2px;
   width: 100%;
   background: transparent;
   border: 0;
@@ -1336,7 +1342,7 @@ body.mobile-app .hint {
 
 body.mobile-app .mobile-dock-logo {
   width: min(86vw, 360px);
-  max-height: 142px;
+  max-height: 114px;
   object-fit: contain;
 }
 
@@ -1744,12 +1750,13 @@ body.mobile-app .exit-modal-sheet .btn.ghost {
 
 .mobile-bottom-nav {
   position: fixed;
-  left: 12px;
-  right: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100% - 24px));
   bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   z-index: 1100;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
   gap: 10px;
   padding: 8px;
@@ -1762,7 +1769,7 @@ body.mobile-app .exit-modal-sheet .btn.ghost {
 
 .mobile-bottom-nav__tab {
   appearance: none;
-  flex: 1 1 0;
+  width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
