@@ -62,15 +62,14 @@ body {
 body.mobile-app {
   min-height: 100dvh;
   min-height: 100svh;
-  background:
-    radial-gradient(circle at 50% -10%, rgba(255,255,255,0.10), transparent 34%),
-    radial-gradient(circle at 10% 92%, rgba(206, 184, 143, 0.16), transparent 34%),
-    linear-gradient(180deg, #040404 0%, #17120b 42%, #5b4a2d 78%, #f4efe6 100%);
+  background: transparent;
   background-attachment: fixed;
   background-repeat: no-repeat;
   background-size: cover;
   background-color: #040404;
   overscroll-behavior-y: none;
+  position: relative;
+  isolation: isolate;
 }
 
 
@@ -1217,6 +1216,7 @@ body.mobile-app .mobile-play-panel {
   display: none;
 }
 
+body.mobile-app.has-active-team .mobile-play-panel,
 body.mobile-app[data-mobile-state="playing"] .mobile-play-panel {
   display: grid !important;
   gap: 14px;
@@ -1273,7 +1273,7 @@ body.mobile-app .mobile-splash-logo {
   max-height: 36vh;
   object-fit: contain;
   filter: drop-shadow(0 14px 38px rgba(0, 0, 0, 0.35));
-  animation: splashPulse 900ms ease-in-out infinite alternate;
+  animation: splashPulse 1300ms ease-in-out infinite alternate;
 }
 
 body.mobile-app.pre-mobile-app main,
