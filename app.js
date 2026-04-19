@@ -282,6 +282,9 @@ const finalizeMobileBoot = () => {
     if (isMobileLayout()) {
       document.body.classList.add("mobile-app");
       document.documentElement.classList.add("mobile-app-bg");
+      document.documentElement.classList.remove("mobile-preload");
+    } else {
+      document.documentElement.classList.remove("mobile-preload");
     }
   };
 
@@ -460,6 +463,7 @@ const initInstallFlow = () => {
 };
 
 const isProbablyPhone = () => {
+  if (window.__BEERLYMPICS_EARLY_MOBILE__ === true) return true;
   const ua = navigator.userAgent || "";
   const mobileUaPattern = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i;
   if (mobileUaPattern.test(ua)) return true;
@@ -558,6 +562,7 @@ const updateMobileState = (forcedState) => {
 
   if (!isMobile) {
     document.body.dataset.mobileState = "desktop";
+    document.documentElement.classList.remove("mobile-preload");
     finalizeMobileBoot();
     return;
   }
