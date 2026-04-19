@@ -32,6 +32,18 @@ html {
   background: linear-gradient(160deg, #000000 0%, #221c12 48%, #ceb88f 76%, #f4efe6 100%);
   background-repeat: no-repeat;
   background-size: cover;
+  background-color: #040404;
+  min-height: 100%;
+}
+
+html.mobile-app-bg {
+  background:
+    radial-gradient(circle at 50% -10%, rgba(255,255,255,0.10), transparent 34%),
+    radial-gradient(circle at 10% 92%, rgba(206, 184, 143, 0.16), transparent 34%),
+    linear-gradient(180deg, #040404 0%, #17120b 42%, #5b4a2d 78%, #f4efe6 100%);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-color: #040404;
 }
 
 body {
@@ -50,10 +62,15 @@ body {
 body.mobile-app {
   min-height: 100dvh;
   min-height: 100svh;
-  background: linear-gradient(160deg, #000000 0%, #221c12 48%, #ceb88f 76%, #ffffff 100%);
+  background:
+    radial-gradient(circle at 50% -10%, rgba(255,255,255,0.10), transparent 34%),
+    radial-gradient(circle at 10% 92%, rgba(206, 184, 143, 0.16), transparent 34%),
+    linear-gradient(180deg, #040404 0%, #17120b 42%, #5b4a2d 78%, #f4efe6 100%);
   background-attachment: fixed;
   background-repeat: no-repeat;
   background-size: cover;
+  background-color: #040404;
+  overscroll-behavior-y: none;
 }
 
 
@@ -1130,7 +1147,11 @@ html, body {
 
 body.mobile-app {
   color: #fff;
-  background: transparent !important;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(255,255,255,0.10), transparent 34%),
+    radial-gradient(circle at 10% 92%, rgba(206, 184, 143, 0.16), transparent 34%),
+    linear-gradient(180deg, #040404 0%, #17120b 42%, #5b4a2d 78%, #f4efe6 100%) !important;
+  background-color: #040404 !important;
   overflow-x: hidden;
 }
 
@@ -1203,6 +1224,7 @@ body.mobile-app[data-mobile-state="playing"] .mobile-play-panel {
 
 body.mobile-app .mobile-dock {
   display: flex !important;
+  justify-content: center;
   margin-bottom: 16px;
   background: rgba(8, 8, 8, 0.46);
   border: 1px solid rgba(255,255,255,0.14);
@@ -1211,18 +1233,58 @@ body.mobile-app .mobile-dock {
   color: #fff;
 }
 
-body.mobile-app .mobile-dock-icon {
-  background: linear-gradient(145deg, rgba(212, 187, 127, 0.22), rgba(255,255,255,0.08));
-}
-
-body.mobile-app .mobile-dock-title {
-  color: #fff;
-}
-
 body.mobile-app .mobile-dock-subtitle,
 body.mobile-app .status,
 body.mobile-app .hint {
   color: rgba(255,255,255,0.78);
+}
+
+body.mobile-app .mobile-dock-logo {
+  width: min(58vw, 220px);
+  max-height: 72px;
+  object-fit: contain;
+}
+
+body.mobile-app .mobile-splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: grid;
+  place-items: center;
+  padding: max(20px, env(safe-area-inset-top, 0px)) 24px max(20px, env(safe-area-inset-bottom, 0px));
+  background:
+    radial-gradient(circle at 50% -10%, rgba(255,255,255,0.10), transparent 34%),
+    radial-gradient(circle at 10% 92%, rgba(206, 184, 143, 0.16), transparent 34%),
+    linear-gradient(180deg, #040404 0%, #17120b 42%, #5b4a2d 78%, #f4efe6 100%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 340ms ease, visibility 340ms ease;
+}
+
+body.mobile-app.is-splash-active .mobile-splash-screen {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+body.mobile-app .mobile-splash-logo {
+  width: min(64vw, 260px);
+  max-height: 36vh;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 38px rgba(0, 0, 0, 0.35));
+  animation: splashPulse 900ms ease-in-out infinite alternate;
+}
+
+body.mobile-app.pre-mobile-app main,
+body.mobile-app.pre-mobile-app .mobile-welcome-screen {
+  opacity: 0;
+}
+
+body.mobile-app.is-splash-active main,
+body.mobile-app.is-splash-active .mobile-welcome-screen {
+  opacity: 0;
+  pointer-events: none;
 }
 
 body.mobile-app .mobile-welcome-screen {
@@ -1418,6 +1480,11 @@ body.mobile-app #manual-refresh {
 body.mobile-app[data-mobile-state="onboarding-code"] .mobile-dock,
 body.mobile-app[data-mobile-state="onboarding-team"] .mobile-dock {
   display: none !important;
+}
+
+@keyframes splashPulse {
+  from { transform: scale(0.98); opacity: 0.88; }
+  to { transform: scale(1.02); opacity: 1; }
 }
 
 .install-app-btn {
