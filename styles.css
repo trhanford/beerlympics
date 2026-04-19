@@ -1202,14 +1202,21 @@ body.mobile-app main {
   min-height: 100svh;
   padding: max(18px, env(safe-area-inset-top, 0px)) 16px max(28px, env(safe-area-inset-bottom, 0px));
   display: block;
+  position: relative;
+  z-index: 1;
 }
 
 body.mobile-app #player-section,
 body.mobile-app .mobile-play-panel {
+  display: block;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
   padding: 0 !important;
+}
+
+body.mobile-app #player-section {
+  min-height: calc(100dvh - max(18px, env(safe-area-inset-top, 0px)) - max(28px, env(safe-area-inset-bottom, 0px)));
 }
 
 body.mobile-app .mobile-play-panel {
@@ -1276,15 +1283,14 @@ body.mobile-app .mobile-splash-logo {
   animation: splashPulse 1300ms ease-in-out infinite alternate;
 }
 
+/* Keep the app content mounted under the splash overlay.
+   Hiding main caused a blank gameplay screen if the splash/preload class stuck. */
 body.mobile-app.pre-mobile-app main,
-body.mobile-app.pre-mobile-app .mobile-welcome-screen {
-  opacity: 0;
-}
-
+body.mobile-app.pre-mobile-app .mobile-welcome-screen,
 body.mobile-app.is-splash-active main,
 body.mobile-app.is-splash-active .mobile-welcome-screen {
-  opacity: 0;
-  pointer-events: none;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 body.mobile-app .mobile-welcome-screen {
