@@ -97,6 +97,7 @@ const partnerNameHint = document.getElementById("partnerName-hint");
 const countryHint = document.getElementById("country-hint");
 const gameCodeHint = document.getElementById("gameCode-hint");
 const mobileWelcome = document.getElementById("mobile-welcome");
+const mobileSplash = document.getElementById("mobile-splash");
 const mobileDock = document.getElementById("mobile-dock");
 const mobileContinueButton = document.getElementById("mobile-continue");
 const mobileCodeContinueButton = document.getElementById("mobileCodeContinueBtn");
@@ -181,6 +182,8 @@ const setButtonLoading = (button, isLoading, label) => {
 
 let pendingMobileGameCode = "";
 let deferredInstallPrompt = null;
+const MOBILE_SPLASH_MS = 1100;
+let mobileSplashTimer = null;
 
 const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent || "");
 const isSafari = () => {
@@ -377,8 +380,10 @@ const scheduleManualRefreshPrompt = (state) => {
 const updateMobileState = (forcedState) => {
   const isMobile = isMobileLayout();
   document.body.classList.toggle("mobile-app", isMobile);
+  document.documentElement.classList.toggle("mobile-app-bg", isMobile);
   if (!isMobile) {
     document.body.dataset.mobileState = "desktop";
+    document.body.classList.remove("is-splash-active");
     return;
   }
   const nextState = forcedState || computeMobileState();
@@ -389,8 +394,27 @@ const updateMobileState = (forcedState) => {
 const runMobileWelcome = () => {
   if (!isMobileLayout()) return;
   document.body.classList.add("mobile-app");
+  document.documentElement.classList.add("mobile-app-bg");
   const state = computeMobileState();
   setMobileState(state);
+};
+
+const runMobileSplash = () => {
+  if (!mobileSplash || !isMobileLayout()) return;
+  if (isStandaloneMode() && sessionStorage.getItem("beerlympics_mobile_splash_seen") === "1") {
+    document.body.classList.remove("is-splash-active");
+    return;
+  }
+  document.body.classList.add("is-splash-active");
+  if (mobileSplashTimer) {
+    clearTimeout(mobileSplashTimer);
+  }
+  mobileSplashTimer = setTimeout(() => {
+    document.body.classList.remove("is-splash-active");
+    if (isStandaloneMode()) {
+      sessionStorage.setItem("beerlympics_mobile_splash_seen", "1");
+    }
+  }, MOBILE_SPLASH_MS);
 };
 
 const dismissMobileKeyboard = () => {
@@ -2347,6 +2371,8 @@ const init = async () => {
   initInstallFlow();
   void registerServiceWorker();
   runMobileWelcome();
+  runMobileSplash();
+  document.body.classList.remove("pre-mobile-app");
   resetMobileOnboardingMessage();
   if (mobileGameCodeInput) {
     mobileGameCodeInput.value = "";

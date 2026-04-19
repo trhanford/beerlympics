@@ -17,9 +17,28 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <script>
+      (function () {
+        var ua = navigator.userAgent || "";
+        var mobileUaPattern = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i;
+        var smallestViewportSide = Math.min(window.innerWidth || 0, window.innerHeight || 0);
+        var hasTouch = navigator.maxTouchPoints > 0;
+        var isPhoneLike = mobileUaPattern.test(ua) || (hasTouch && smallestViewportSide > 0 && smallestViewportSide <= 900);
+        if (isPhoneLike) {
+          document.documentElement.classList.add("mobile-app-bg");
+          document.addEventListener("DOMContentLoaded", function () {
+            document.body.classList.add("mobile-app", "pre-mobile-app");
+            document.body.dataset.mobileState = "onboarding-code";
+          });
+        }
+      })();
+    </script>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div class="mobile-splash-screen mobile-only" id="mobile-splash" aria-hidden="true">
+      <img class="mobile-splash-logo" src="assets/icons/apple-touch-icon-180.png" alt="Beerlympics logo" />
+    </div>
     <div class="mobile-welcome-screen mobile-only" id="mobile-welcome">
       <div class="mobile-welcome-card is-visible" id="mobile-onboarding-code">
         <h1>Welcome to the Beerlympics</h1>
@@ -104,11 +123,7 @@
 
       <section class="card" id="player-section">
         <div class="mobile-dock mobile-only" id="mobile-dock">
-          <div class="mobile-dock-icon">🍻</div>
-          <div class="mobile-dock-text">
-            <span class="mobile-dock-title">Beerlympics 2026</span>
-            <span class="mobile-dock-subtitle">Annual Beerlympics</span>
-          </div>
+          <img class="mobile-dock-logo" src="assets/icons/apple-touch-icon-180.png" alt="Beerlympics logo" />
         </div>
         <div class="stepper" id="stepper">
           <div class="step active" data-step="1">
