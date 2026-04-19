@@ -130,13 +130,38 @@ const normalizeGameCode = (value) => value.trim().replace(/\s+/g, "");
 const generateGameCode = () =>
   String(Math.floor(1000 + Math.random() * 9000));
 
-const getCurrentGameCode = () => localStorage.getItem(STORAGE_KEYS.currentGameCode);
-const getActiveGameCode = () => localStorage.getItem(STORAGE_KEYS.activeGameCode);
+// Session-scoped game/join state is intentionally stored in sessionStorage so a
+// normal app switch can resume, but a fresh browser/PWA session starts at Step 1.
+// PWAs cannot reliably detect iOS "force close", so session scope is the safest
+// practical approximation of "current run only" behavior.
+const getSessionValue = (key) => {
+  const current = sessionStorage.getItem(key);
+  if (current !== null) return current;
+  const legacy = localStorage.getItem(key);
+  if (legacy !== null) {
+    sessionStorage.setItem(key, legacy);
+    localStorage.removeItem(key);
+  }
+  return legacy;
+};
+
+const setSessionValue = (key, value) => {
+  sessionStorage.setItem(key, value);
+  localStorage.removeItem(key);
+};
+
+const clearSessionValue = (key) => {
+  sessionStorage.removeItem(key);
+  localStorage.removeItem(key);
+};
+
+const getCurrentGameCode = () => getSessionValue(STORAGE_KEYS.currentGameCode);
+const getActiveGameCode = () => getSessionValue(STORAGE_KEYS.activeGameCode);
 const setActiveGameCode = (code) =>
-  localStorage.setItem(STORAGE_KEYS.activeGameCode, code);
+  setSessionValue(STORAGE_KEYS.activeGameCode, code);
 
 const setCurrentGameCode = (code) =>
-  localStorage.setItem(STORAGE_KEYS.currentGameCode, code);
+  setSessionValue(STORAGE_KEYS.currentGameCode, code);
 
 const setGameCodes = (code) => {
   setCurrentGameCode(code);
@@ -565,13 +590,13 @@ const activeTeamStorageKey = (code = getActiveGameCode()) =>
   code ? `${STORAGE_KEYS.activeTeamId}:${code}` : STORAGE_KEYS.activeTeamId;
 
 const getActiveTeamId = () =>
-  localStorage.getItem(activeTeamStorageKey()) || null;
+  getSessionValue(activeTeamStorageKey()) || null;
 
 const setActiveTeamId = (id) =>
-  localStorage.setItem(activeTeamStorageKey(), id);
+  setSessionValue(activeTeamStorageKey(), id);
 
 const clearActiveTeamId = (code = getActiveGameCode()) =>
-  localStorage.removeItem(activeTeamStorageKey(code));
+  clearSessionValue(activeTeamStorageKey(code));
 
 const initials = (value) =>
   (value || "?")
@@ -2366,6 +2391,14 @@ const refreshState = () => {
 };
 
 window.addEventListener("storage", refreshState);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    refreshState();
+  }
+});
+window.addEventListener("pageshow", () => {
+  refreshState();
+});
 
 const init = async () => {
   initInstallFlow();
@@ -2389,8 +2422,8 @@ const init = async () => {
     setGameCodes(code);
     const game = await fetchGame(code);
     if (!game) {
-      localStorage.removeItem(STORAGE_KEYS.activeGameCode);
-      localStorage.removeItem(STORAGE_KEYS.currentGameCode);
+      clearSessionValue(STORAGE_KEYS.activeGameCode);
+      clearSessionValue(STORAGE_KEYS.currentGameCode);
       state.teams = [];
       state.matches = [];
     } else {
