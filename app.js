@@ -49,6 +49,7 @@ const nextGameCard = document.getElementById("next-game");
 const scoreActions = document.getElementById("score-actions");
 const leaderboardSection = document.getElementById("leaderboard-section");
 const playerSection = document.getElementById("player-section");
+const rulesSection = document.getElementById("rules-section");
 const rosterSection = document.getElementById("roster-section");
 const controlSection = document.getElementById("control-section");
 const leaderboardEl = document.getElementById("leaderboard");
@@ -2133,6 +2134,7 @@ async function recordResult(matchId, payload) {
 const setView = (view) => {
   const sections = {
     player: playerSection,
+    rules: rulesSection,
     leaderboard: leaderboardSection,
     roster: rosterSection,
     control: controlSection,

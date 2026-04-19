@@ -1735,8 +1735,9 @@ body.mobile-app .exit-modal-sheet .btn.ghost {
   right: 12px;
   bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   z-index: 1100;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 10px;
   padding: 8px;
   border-radius: 16px;
@@ -1748,18 +1749,63 @@ body.mobile-app .exit-modal-sheet .btn.ghost {
 
 .mobile-bottom-nav__tab {
   appearance: none;
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   border: 1px solid rgba(255,255,255,0.18);
   background: rgba(255,255,255,0.08);
   color: rgba(255,255,255,0.88);
   border-radius: 12px;
   min-height: 44px;
   font-weight: 600;
+  text-align: center;
 }
 
 .mobile-bottom-nav__tab.is-active {
   color: #111a2c;
   border-color: rgba(255,255,255,0.35);
   background: linear-gradient(120deg, #ffe4aa, #ffffff);
+}
+
+#rules-section h2 {
+  margin-bottom: 4px;
+}
+
+.rules-accordion {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.rules-item {
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  overflow: hidden;
+}
+
+.rules-item summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 12px 14px;
+  font-weight: 700;
+}
+
+.rules-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.rules-item[open] summary {
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+
+.rules-item ul {
+  margin: 0;
+  padding: 10px 18px 14px 30px;
+  display: grid;
+  gap: 8px;
 }
 
 @keyframes modalFadeIn {

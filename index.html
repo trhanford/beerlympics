@@ -284,6 +284,66 @@
         </div>
       </section>
 
+      <section class="card hidden" id="rules-section">
+        <div class="section-title">
+          <span>📜</span>
+          <h2>Game Rules</h2>
+        </div>
+        <p class="status">Tap each game to expand the rules.</p>
+        <div class="rules-accordion" id="rules-accordion">
+          <details class="rules-item">
+            <summary>Beer Pong</summary>
+            <ul>
+              <li>Set up 10 cups in a triangle for each team.</li>
+              <li>Teams alternate tosses; one player shoots at a time.</li>
+              <li>A made shot removes one cup and that cup must be consumed.</li>
+              <li>Both teammates make in one turn = balls back for another turn.</li>
+              <li>When all cups are gone, the losing team gets one redemption turn.</li>
+            </ul>
+          </details>
+          <details class="rules-item">
+            <summary>Flip Cup</summary>
+            <ul>
+              <li>Teams line up shoulder-to-shoulder on opposite sides of the table.</li>
+              <li>First player drinks, sets cup on edge, and flips until it lands upside down.</li>
+              <li>Next teammate starts only after the previous flip is completed.</li>
+              <li>First team to have every player complete their flip wins the round.</li>
+              <li>No hand-switching mid-flip and no touching a teammate’s cup.</li>
+            </ul>
+          </details>
+          <details class="rules-item">
+            <summary>Beerio Kart</summary>
+            <ul>
+              <li>Each player starts a Mario Kart race with one unopened beer.</li>
+              <li>You must finish your drink before crossing the finish line.</li>
+              <li>No drinking while your kart is moving; pull over to drink.</li>
+              <li>If you cross before finishing, that race score does not count.</li>
+              <li>Fastest valid combined team finish wins.</li>
+            </ul>
+          </details>
+          <details class="rules-item">
+            <summary>Die</summary>
+            <ul>
+              <li>Two teams face each other with drinks at table corners.</li>
+              <li>Players toss a die aiming for a clean hit on the table and high bounce.</li>
+              <li>Catches with one hand negate points; missed catches score for offense.</li>
+              <li>Standard scoring: 1 point for a miss, 2 if the die hits floor untouched.</li>
+              <li>Play to the target score set by the host (commonly 9 or 11).</li>
+            </ul>
+          </details>
+          <details class="rules-item">
+            <summary>Drinkball</summary>
+            <ul>
+              <li>Place one cup in front of each player and one ball in play.</li>
+              <li>Teams pass and shoot trying to land the ball in an opponent cup.</li>
+              <li>Made shot = opposing player drinks and that cup resets.</li>
+              <li>No goaltending, blocking with cup hand, or body contact.</li>
+              <li>First team to the agreed score wins.</li>
+            </ul>
+          </details>
+        </div>
+      </section>
+
       <section class="card hidden leaderboard-section" id="leaderboard-section">
         <div class="leaderboard-stage">
           <p class="stage-kicker">Join at <span id="join-domain">your link</span></p>
@@ -388,6 +448,10 @@
       <button class="mobile-bottom-nav__tab is-active" id="mobile-nav-game" type="button" data-view="player">
         <span aria-hidden="true">🎮</span>
         <span>Game</span>
+      </button>
+      <button class="mobile-bottom-nav__tab" id="mobile-nav-rules" type="button" data-view="rules">
+        <span aria-hidden="true">📜</span>
+        <span>Rules</span>
       </button>
       <button class="mobile-bottom-nav__tab" id="mobile-nav-leaderboard" type="button" data-view="leaderboard">
         <span aria-hidden="true">🏆</span>
