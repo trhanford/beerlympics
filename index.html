@@ -2,7 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#2f59ff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Beerlympics" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png" />
     <title>Beerlympics</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -62,6 +69,7 @@
           <div class="mode-pill" id="mode-pill">🎈 Player Mode</div>
           <div class="mode-pill host hidden" id="host-pill">🎬 Host Mode</div>
         </div>
+        <button id="install-app-btn" class="btn ghost install-app-btn hidden" type="button">Install App</button>
       </div>
       <nav class="tabs" aria-label="Main navigation">
         <button class="tab active" data-view="player">Play</button>
@@ -323,6 +331,21 @@
         </div>
       </section>
     </main>
+    <div class="install-modal hidden" id="install-modal" aria-hidden="true">
+      <div class="install-modal-backdrop" id="install-modal-backdrop"></div>
+      <div class="install-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="install-modal-title">
+        <button class="install-modal-close" id="install-modal-close" type="button" aria-label="Close install instructions">×</button>
+        <p class="install-kicker">Install Beerlympics</p>
+        <h2 id="install-modal-title">Add to your Home Screen</h2>
+        <ol class="install-steps" id="install-steps">
+          <li>Open this page in Safari.</li>
+          <li>Tap the Share button.</li>
+          <li>Tap <strong>Add to Home Screen</strong>.</li>
+        </ol>
+        <p class="status" id="install-modal-note">You can keep using the website normally too.</p>
+      </div>
+    </div>
+    
     <div class="toast-container" id="toast-container"></div>
 
     <script type="module" src="app.js"></script>
