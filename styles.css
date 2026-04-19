@@ -1292,6 +1292,18 @@ body.mobile-app[data-view="leaderboard"] #leaderboard-section {
   min-height: calc(100dvh - 136px - env(safe-area-inset-bottom, 0px));
 }
 
+body.mobile-app[data-view="leaderboard"] #leaderboard-section::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  height: 68px;
+  pointer-events: none;
+  z-index: 1090;
+  background: linear-gradient(to bottom, rgba(4, 4, 4, 0), rgba(4, 4, 4, 0.94));
+}
+
 body.mobile-app .mobile-play-panel {
   display: none;
 }
@@ -1305,7 +1317,7 @@ body.mobile-app[data-mobile-state="playing"] .mobile-play-panel {
 body.mobile-app .mobile-dock {
   display: flex !important;
   justify-content: center;
-  margin: 0 auto 18px;
+  margin: 0 auto 8px;
   width: 100%;
   background: transparent;
   border: 0;
@@ -1322,8 +1334,8 @@ body.mobile-app .hint {
 }
 
 body.mobile-app .mobile-dock-logo {
-  width: min(76vw, 320px);
-  max-height: 110px;
+  width: min(86vw, 360px);
+  max-height: 142px;
   object-fit: contain;
 }
 
