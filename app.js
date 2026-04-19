@@ -133,6 +133,8 @@ const exitPauseButton = document.getElementById("exit-pause-btn");
 const ADMIN_PASSCODE = "3241";
 
 const MANUAL_REFRESH_DELAY_MS = 2 * 60 * 1000;
+const TOAST_DISPLAY_MS = 4200;
+const TOAST_EXIT_MS = 260;
 let manualRefreshTimeout;
 
 const normalizeGameCode = (value) => value.trim().replace(/\s+/g, "");
@@ -224,8 +226,11 @@ const showToast = (message, type = "info") => {
   toast.textContent = message;
   toastContainer.appendChild(toast);
   setTimeout(() => {
-    toast.remove();
-  }, 3200);
+    toast.classList.add("is-leaving");
+    setTimeout(() => {
+      toast.remove();
+    }, TOAST_EXIT_MS);
+  }, TOAST_DISPLAY_MS);
 };
 
 const setButtonLoading = (button, isLoading, label) => {
