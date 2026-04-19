@@ -245,8 +245,8 @@ const setButtonLoading = (button, isLoading, label) => {
 
 let pendingMobileGameCode = "";
 let deferredInstallPrompt = null;
-const MOBILE_SPLASH_MS = 1500;
-const MOBILE_SPLASH_EXIT_MS = 560;
+const MOBILE_SPLASH_MS = 2100;
+const MOBILE_SPLASH_EXIT_MS = 320;
 let mobileSplashTimer = null;
 let mobileBootFinalized = false;
 let mobileSplashExitTimer = null;
@@ -2353,6 +2353,18 @@ if (mobileCodeContinueButton) {
       showToast("Could not check that game code right now.", "warning");
     } finally {
       setButtonLoading(mobileCodeContinueButton, false);
+    }
+  });
+}
+
+if (mobileGameCodeInput) {
+  mobileGameCodeInput.addEventListener("focus", () => {
+    setButtonLoading(mobileCodeContinueButton, false);
+  });
+  mobileGameCodeInput.addEventListener("input", () => {
+    setButtonLoading(mobileCodeContinueButton, false);
+    if (mobileOnboardingNote?.classList.contains("success")) {
+      resetMobileOnboardingMessage();
     }
   });
 }
