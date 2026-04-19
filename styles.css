@@ -29,9 +29,9 @@ body {
 }
 
 html {
-  background: linear-gradient(160deg, #000000 0%, #221c12 48%, #ceb88f 76%, #ffffff 100%);
+  background: linear-gradient(160deg, #000000 0%, #221c12 48%, #ceb88f 76%, #f4efe6 100%);
   background-repeat: no-repeat;
-  background-size: 100% 100%;
+  background-size: cover;
 }
 
 body {
@@ -1137,7 +1137,10 @@ body.mobile-app {
 body.mobile-app::before {
   content: "";
   position: fixed;
-  inset: 0;
+  top: calc(-1 * env(safe-area-inset-top, 0px));
+  right: 0;
+  bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+  left: 0;
   z-index: -2;
   background:
     radial-gradient(circle at 50% -10%, rgba(255,255,255,0.10), transparent 34%),
@@ -1150,7 +1153,10 @@ body.mobile-app::before {
 body.mobile-app::after {
   content: "";
   position: fixed;
-  inset: 0;
+  top: calc(-1 * env(safe-area-inset-top, 0px));
+  right: 0;
+  bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+  left: 0;
   z-index: -1;
   pointer-events: none;
   background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.04) 24%, rgba(255,255,255,0.06) 100%);
@@ -1173,6 +1179,7 @@ body.mobile-app main {
   width: 100%;
   max-width: none;
   min-height: 100dvh;
+  min-height: 100svh;
   padding: max(18px, env(safe-area-inset-top, 0px)) 16px max(28px, env(safe-area-inset-bottom, 0px));
   display: block;
 }
@@ -1225,6 +1232,9 @@ body.mobile-app .mobile-welcome-screen {
   padding: max(20px, env(safe-area-inset-top, 0px)) 18px max(20px, env(safe-area-inset-bottom, 0px));
   display: grid;
   place-items: center;
+  align-content: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -1245,6 +1255,9 @@ body.mobile-app .mobile-welcome-card {
   transform: translateY(18px) scale(0.985);
   width: min(100%, 420px);
   max-width: 420px;
+  margin: auto;
+  max-height: min(82dvh, 760px);
+  overflow-y: auto;
   border-radius: 28px;
   padding: 26px 22px 22px;
   background: rgba(7, 7, 7, 0.72);
@@ -1304,6 +1317,10 @@ body.mobile-app .mobile-onboarding-note {
 
 body.mobile-app .mobile-onboarding-note.success {
   color: #c8ffd8;
+}
+
+body.mobile-app .welcome-download {
+  margin-top: 2px;
 }
 
 body.mobile-app .welcome-continue,
@@ -1388,6 +1405,11 @@ body.mobile-app .reward-banner {
 
 body.mobile-app #manual-refresh {
   margin-top: 4px;
+}
+
+body.mobile-app[data-mobile-state="onboarding-code"] .mobile-dock,
+body.mobile-app[data-mobile-state="onboarding-team"] .mobile-dock {
+  display: none !important;
 }
 
 .install-app-btn {
