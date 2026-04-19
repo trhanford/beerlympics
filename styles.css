@@ -1185,7 +1185,6 @@ body.mobile-app::after {
 body.mobile-app header,
 body.mobile-app #roster-section,
 body.mobile-app #control-section,
-body.mobile-app #leaderboard-section,
 body.mobile-app .hero,
 body.mobile-app .stepper,
 body.mobile-app .team-setup-column,
@@ -1200,7 +1199,7 @@ body.mobile-app main {
   max-width: none;
   min-height: 100dvh;
   min-height: 100svh;
-  padding: max(18px, env(safe-area-inset-top, 0px)) 16px max(28px, env(safe-area-inset-bottom, 0px));
+  padding: max(18px, env(safe-area-inset-top, 0px)) 16px calc(98px + env(safe-area-inset-bottom, 0px));
   display: block;
   position: relative;
   z-index: 1;
@@ -1217,6 +1216,21 @@ body.mobile-app .mobile-play-panel {
 
 body.mobile-app #player-section {
   min-height: calc(100dvh - max(18px, env(safe-area-inset-top, 0px)) - max(28px, env(safe-area-inset-bottom, 0px)));
+}
+
+body.mobile-app[data-view="leaderboard"] #player-section {
+  display: none !important;
+}
+
+body.mobile-app #leaderboard-section {
+  display: none !important;
+  background: rgba(13, 13, 13, 0.34);
+  border-color: rgba(255,255,255,0.14);
+}
+
+body.mobile-app[data-view="leaderboard"] #leaderboard-section {
+  display: block !important;
+  min-height: calc(100dvh - 136px - env(safe-area-inset-bottom, 0px));
 }
 
 body.mobile-app .mobile-play-panel {
@@ -1504,6 +1518,7 @@ body.mobile-app[data-mobile-state="onboarding-team"] .mobile-dock {
   z-index: 1200;
   display: grid;
   align-items: end;
+  animation: modalFadeIn 180ms ease;
 }
 
 .install-modal.hidden {
@@ -1526,6 +1541,7 @@ body.mobile-app[data-mobile-state="onboarding-team"] .mobile-dock {
   padding: max(20px, env(safe-area-inset-top)) 20px calc(22px + env(safe-area-inset-bottom));
   box-shadow: 0 -18px 44px rgba(0, 0, 0, 0.22);
   border: 1px solid rgba(19, 33, 68, 0.12);
+  animation: modalSlideIn 220ms ease;
 }
 
 .install-modal-close {
@@ -1552,14 +1568,84 @@ body.mobile-app[data-mobile-state="onboarding-team"] .mobile-dock {
 }
 
 .install-steps {
-  margin: 12px 0;
-  padding-left: 20px;
+  margin: 14px 0;
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
-.install-steps li {
-  line-height: 1.4;
+.install-step-card {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid rgba(47, 89, 255, 0.14);
+  background: rgba(246, 248, 255, 0.9);
+  border-radius: 12px;
+  padding: 11px 12px;
+}
+
+.install-step-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 1px solid rgba(47, 89, 255, 0.14);
+  font-size: 1rem;
+}
+
+.exit-modal-sheet .status {
+  margin: 8px 0 0;
+}
+
+.exit-options {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-bottom-nav {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  z-index: 1100;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(9, 9, 9, 0.78);
+  border: 1px solid rgba(255,255,255,0.2);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.mobile-bottom-nav__tab {
+  appearance: none;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.88);
+  border-radius: 12px;
+  min-height: 44px;
+  font-weight: 600;
+}
+
+.mobile-bottom-nav__tab.is-active {
+  color: #111a2c;
+  border-color: rgba(255,255,255,0.35);
+  background: linear-gradient(120deg, #ffe4aa, #ffffff);
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideIn {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 @media (max-width: 767px) {

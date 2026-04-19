@@ -114,12 +114,20 @@ const mobileRegisterPanel = document.getElementById("mobile-register-panel");
 const mobileAccessPanel = document.getElementById("mobile-access-panel");
 const mobilePlayPanel = document.getElementById("mobile-play-panel");
 const manualRefreshButton = document.getElementById("manual-refresh");
+const mobileExitGameButton = document.getElementById("mobile-exit-game-btn");
+const mobileBottomNav = document.getElementById("mobile-bottom-nav");
+const mobileNavTabs = document.querySelectorAll(".mobile-bottom-nav__tab");
 const installAppButton = document.getElementById("install-app-btn");
 const installModal = document.getElementById("install-modal");
 const installModalBackdrop = document.getElementById("install-modal-backdrop");
 const installModalClose = document.getElementById("install-modal-close");
 const installModalNote = document.getElementById("install-modal-note");
 const installSteps = document.getElementById("install-steps");
+const exitModal = document.getElementById("exit-modal");
+const exitModalBackdrop = document.getElementById("exit-modal-backdrop");
+const exitModalClose = document.getElementById("exit-modal-close");
+const exitRemoveButton = document.getElementById("exit-remove-btn");
+const exitPauseButton = document.getElementById("exit-pause-btn");
 
 const ADMIN_PASSCODE = "3241";
 
@@ -230,6 +238,7 @@ const finalizeMobileBoot = () => {
 };
 
 const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent || "");
+const isAndroid = () => /Android/i.test(navigator.userAgent || "");
 const isSafari = () => {
   const ua = navigator.userAgent || "";
   return /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|OPT/i.test(ua);
@@ -270,9 +279,37 @@ const openInstallModal = (note) => {
     installModalNote.textContent = note || "You can keep using the website normally too.";
   }
   if (installSteps) {
-    installSteps.innerHTML = isSafari()
-      ? "<li>Tap the Share button in Safari.</li><li>Choose <strong>Add to Home Screen</strong>.</li><li>Tap <strong>Add</strong> to finish.</li>"
-      : "<li>Open this page in Safari.</li><li>Tap the Share button.</li><li>Tap <strong>Add to Home Screen</strong>.</li>";
+    if (isIos() && isSafari()) {
+      installSteps.innerHTML = `
+        <article class="install-step-card">
+          <span class="install-step-icon" aria-hidden="true">1️⃣</span>
+          <div><strong>Tap Share</strong><br /><small>Use the square with the arrow ⬆️ in Safari.</small></div>
+        </article>
+        <article class="install-step-card">
+          <span class="install-step-icon" aria-hidden="true">2️⃣</span>
+          <div><strong>Scroll down</strong><br /><small>Look through the action list.</small></div>
+        </article>
+        <article class="install-step-card">
+          <span class="install-step-icon" aria-hidden="true">3️⃣</span>
+          <div><strong>Tap “Add to Home Screen”</strong><br /><small>📲 It pins Beerlympics like an app.</small></div>
+        </article>
+        <article class="install-step-card">
+          <span class="install-step-icon" aria-hidden="true">4️⃣</span>
+          <div><strong>Tap Add</strong><br /><small>You’re ready to launch from your Home Screen.</small></div>
+        </article>
+      `;
+    } else {
+      installSteps.innerHTML = `
+        <article class="install-step-card">
+          <span class="install-step-icon" aria-hidden="true">⋮</span>
+          <div><strong>Open browser menu</strong><br /><small>Tap the three-dot menu in your browser.</small></div>
+        </article>
+        <article class="install-step-card">
+          <span class="install-step-icon" aria-hidden="true">📲</span>
+          <div><strong>Tap “Add to Home screen”</strong><br /><small>Then confirm to install.</small></div>
+        </article>
+      `;
+    }
   }
   installModal.classList.remove("hidden");
   installModal.setAttribute("aria-hidden", "false");
@@ -298,7 +335,7 @@ const registerServiceWorker = async () => {
 const initInstallFlow = () => {
   const triggerInstallFlow = async () => {
     if (isStandaloneMode()) return;
-    if (deferredInstallPrompt) {
+    if (isAndroid() && deferredInstallPrompt) {
       deferredInstallPrompt.prompt();
       const choice = await deferredInstallPrompt.userChoice;
       if (choice.outcome === "accepted") {
@@ -314,6 +351,17 @@ const initInstallFlow = () => {
           ? "Safari supports Add to Home Screen from the Share menu."
           : "Open in Safari to add Beerlympics to your Home Screen."
       );
+      return;
+    }
+    if (isAndroid()) {
+      openInstallModal("Install prompt unavailable. Use your browser menu to add this app.");
+      return;
+    }
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      setInstallButtonState();
       return;
     }
     openInstallModal("Use your browser menu and choose Install App.");
@@ -647,6 +695,12 @@ const setActiveTeamId = (id) =>
 const clearActiveTeamId = (code = getActiveGameCode()) =>
   clearSessionValue(activeTeamStorageKey(code));
 
+const clearActiveSession = (code = getActiveGameCode()) => {
+  clearActiveTeamId(code);
+  clearSessionValue(STORAGE_KEYS.activeGameCode);
+  clearSessionValue(STORAGE_KEYS.currentGameCode);
+};
+
 const initials = (value) =>
   (value || "?")
     .split(/\s+/)
@@ -919,6 +973,15 @@ async function deleteTeamFromCloud(code, teamId) {
   await deleteDoc(doc(teamsCollection(code), teamId));
 }
 
+async function clearTeamFromMatches(code, teamId) {
+  const impactedMatches = getMatches().filter((match) =>
+    match.teamIds?.includes(teamId)
+  );
+  for (const match of impactedMatches) {
+    await closeMatchForRemoval(code, match, teamId);
+  }
+}
+
 const formatTeamLabel = (team) =>
   `${team.playerName} + ${team.partnerName} (${team.country || "Unknown"})`;
 
@@ -1026,7 +1089,7 @@ const pickPair = (teams, gameTypeId) => {
     immediateOpponentId(a) === b.id || immediateOpponentId(b) === a.id;
 
   // Hard filter: no one repeating this game type.
-  const eligible = teams.filter((t) => t.lastGameType !== gameTypeId);
+  const eligible = teams.filter((t) => !t.paused && t.lastGameType !== gameTypeId);
   if (eligible.length < 2) return null;
 
   const pool = sortTeamsForMatch(eligible);
@@ -1048,9 +1111,10 @@ const pickPair = (teams, gameTypeId) => {
 };
 
 const pickFlipCupGroup = (teams) => {
+  const unpausedTeams = teams.filter((t) => !t.paused);
   // Hard block: nobody can exceed a streak of 2
-  const hardAllowed = teams.filter((t) => (t.flipCupStreak || 0) < 2);
-  const working = hardAllowed.length >= 4 ? hardAllowed : teams;
+  const hardAllowed = unpausedTeams.filter((t) => (t.flipCupStreak || 0) < 2);
+  const working = hardAllowed.length >= 4 ? hardAllowed : unpausedTeams;
 
   const nonRepeat = working.filter((t) => t.lastGameType !== "flip_cup");
   const repeatOk = working.filter(
@@ -1139,7 +1203,7 @@ async function fillMatches(gameCode) {
   );
   const activeByType = new Set(activeMatches.map((match) => match.gameType));
   let availableTeams = sortTeamsForMatch(
-    getTeams().filter((team) => !team.currentMatchId)
+    getTeams().filter((team) => !team.currentMatchId && !team.paused)
   );
 
   // 2) Flip Cup first (optional, but keeps everyone playing)
@@ -1551,6 +1615,28 @@ const renderMatch = () => {
     : null;
 
   if (!match) {
+    if (activeTeam.paused) {
+      nextGameCard.innerHTML = `
+        <h3>You are currently paused ⏸️</h3>
+        <p class="status">You’ll stay on the leaderboard, but matchmaking is paused until you resume.</p>
+      `;
+      scoreActions.innerHTML = "";
+      const resumeButton = document.createElement("button");
+      resumeButton.type = "button";
+      resumeButton.className = "btn";
+      resumeButton.textContent = "Resume Playing";
+      resumeButton.addEventListener("click", async () => {
+        const activeGameCode = getActiveGameCode();
+        if (!activeGameCode || !activeTeamId) return;
+        await updateDoc(doc(teamsCollection(activeGameCode), activeTeamId), { paused: false });
+        showToast("You’re back in the game.", "success");
+        scheduleFillMatches(activeGameCode);
+      });
+      scoreActions.appendChild(resumeButton);
+      updateStepIndicator({ hasCoreInfo: true, hasCode: true });
+      return;
+    }
+
     const hasPending = getMatches().some((entry) =>
       entry.teamIds?.includes(activeTeamId)
     );
@@ -1915,6 +2001,9 @@ const setView = (view) => {
   tabs.forEach((tab) => {
     tab.classList.toggle("active", tab.dataset.view === view);
   });
+  mobileNavTabs.forEach((tab) => {
+    tab.classList.toggle("is-active", tab.dataset.view === view);
+  });
   renderLeaderboard();
   renderRoster();
   renderMatch();
@@ -1937,6 +2026,8 @@ const updateTabsVisibility = () => {
   if (!hasGame) {
     setView("player");
   }
+  const showMobileNav = isMobileLayout() && hasGame && Boolean(getActiveTeamId());
+  mobileBottomNav?.classList.toggle("hidden", !showMobileNav);
 };
 
 const startNewGame = async () => {
@@ -1987,6 +2078,7 @@ const registerTeam = async ({ playerName, country, partnerName }) => {
     currentMatchId: existing?.currentMatchId || null,
     lastOpponents: existing?.lastOpponents || [],
     lastGameType: existing?.lastGameType || null,
+    paused: false,
     createdAt: existing?.createdAt || new Date().toISOString(),
   };
 
@@ -2147,6 +2239,48 @@ if (manualRefreshButton) {
   });
 }
 
+const openExitModal = () => {
+  if (!exitModal) return;
+  exitModal.classList.remove("hidden");
+  exitModal.setAttribute("aria-hidden", "false");
+};
+
+const closeExitModal = () => {
+  if (!exitModal) return;
+  exitModal.classList.add("hidden");
+  exitModal.setAttribute("aria-hidden", "true");
+};
+
+mobileExitGameButton?.addEventListener("click", openExitModal);
+exitModalBackdrop?.addEventListener("click", closeExitModal);
+exitModalClose?.addEventListener("click", closeExitModal);
+
+exitRemoveButton?.addEventListener("click", async () => {
+  const activeGameCode = getActiveGameCode();
+  const activeTeamId = getActiveTeamId();
+  if (!activeGameCode || !activeTeamId) return;
+  await clearTeamFromMatches(activeGameCode, activeTeamId);
+  await deleteTeamFromCloud(activeGameCode, activeTeamId);
+  clearActiveSession(activeGameCode);
+  closeExitModal();
+  setView("player");
+  setMobileState("onboarding-code");
+  showToast("Team removed. You can rejoin anytime.", "info");
+  refreshState();
+});
+
+exitPauseButton?.addEventListener("click", async () => {
+  const activeGameCode = getActiveGameCode();
+  const activeTeamId = getActiveTeamId();
+  if (!activeGameCode || !activeTeamId) return;
+  await clearTeamFromMatches(activeGameCode, activeTeamId);
+  await updateDoc(doc(teamsCollection(activeGameCode), activeTeamId), { paused: true });
+  closeExitModal();
+  showToast("Paused. Your team stays on the leaderboard.", "success");
+  renderMatch();
+  scheduleFillMatches(activeGameCode);
+});
+
 [playerNameInput, partnerNameInput, countryInput, gameCodeInput].forEach((input) => {
   input.addEventListener("input", validateTeamInputs);
   input.addEventListener("blur", validateTeamInputs);
@@ -2198,13 +2332,8 @@ removeTeamButton.addEventListener("click", async () => {
   if (!targetTeamId) return;
   if (!confirm("Remove your team from the roster and schedule?")) return;
   const activeGameCode = getActiveGameCode();
-  const impactedMatches = getMatches().filter((match) =>
-    match.teamIds?.includes(targetTeamId)
-  );
   if (activeGameCode) {
-    for (const match of impactedMatches) {
-      await closeMatchForRemoval(activeGameCode, match, targetTeamId);
-    }
+    await clearTeamFromMatches(activeGameCode, targetTeamId);
     try {
       await deleteTeamFromCloud(activeGameCode, targetTeamId);
     } catch (error) {
@@ -2387,6 +2516,12 @@ if (copyJoinLinkButton) {
 }
 
 tabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    setView(tab.dataset.view);
+  });
+});
+
+mobileNavTabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     setView(tab.dataset.view);
   });
