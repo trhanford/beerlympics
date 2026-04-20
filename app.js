@@ -2985,6 +2985,12 @@ const askTheRef = async () => {
   const question = (askRefInput?.value || "").trim();
   if (!question) return;
 
+  // Guard: placeholder key
+  if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === "YOUR_ANTHROPIC_API_KEY_HERE") {
+    appendMsg("⚠️ API key not set. Open app.js and replace YOUR_ANTHROPIC_API_KEY_HERE with your real Anthropic key.", "ref");
+    return;
+  }
+
   askRefInput.value = "";
   appendMsg(question, "user");
 
@@ -3011,6 +3017,16 @@ const askTheRef = async () => {
     });
 
     const data = await res.json();
+
+    // Surface the real API error message instead of falling through to the generic fallback
+    if (!res.ok || data.error) {
+      const errMsg = data?.error?.message || `HTTP ${res.status}`;
+      thinkBubble.closest(".ask-ref-message").classList.remove("thinking");
+      thinkBubble.textContent = `Ref error: ${errMsg}`;
+      console.warn("Ask the Ref API error:", data);
+      return;
+    }
+
     const answer = data?.content?.[0]?.text?.trim()
       || "The Ref couldn't make a call on that one. Try rephrasing!";
 
@@ -3018,8 +3034,8 @@ const askTheRef = async () => {
     thinkBubble.textContent = answer;
   } catch (err) {
     thinkBubble.closest(".ask-ref-message").classList.remove("thinking");
-    thinkBubble.textContent = "The Ref's mic cut out. Check your API key or try again.";
-    console.warn("Ask the Ref error:", err);
+    thinkBubble.textContent = "The Ref's mic cut out. Check your connection and try again.";
+    console.warn("Ask the Ref fetch error:", err);
   } finally {
     setButtonLoading(askRefSend, false);
     if (askRefMsgs) askRefMsgs.scrollTop = askRefMsgs.scrollHeight;
