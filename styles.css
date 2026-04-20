@@ -1315,17 +1315,17 @@ body.mobile-app #leaderboard-section {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;                 /* extend to viewport bottom — zero gap with the nav */
+  bottom: 0;
   height: 200px;
   pointer-events: none;
-  z-index: 1099;             /* one tick below the navbar (1100) */
+  z-index: 1099;
   background: linear-gradient(
     to bottom,
-    transparent            0%,
-    rgba(4, 4, 4, 0.55)   28%,
-    rgba(4, 4, 4, 0.90)   52%,
-    rgba(4, 4, 4, 1)       68%,
-    rgba(4, 4, 4, 1)      100%
+    transparent                    0%,
+    rgba(244, 239, 230, 0.55)     28%,
+    rgba(244, 239, 230, 0.90)     52%,
+    rgba(244, 239, 230, 1)         68%,
+    rgba(244, 239, 230, 1)        100%
   );
 }
 
@@ -1908,4 +1908,12 @@ body.mobile-app #ref-section {
 
 body.mobile-app #ref-section .ask-ref-wrap {
   margin-top: 0;
+}
+
+/* ── 36. JOIN LINK BUTTON ROW ───────────────────────────────── */
+.join-link-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px;
 }
