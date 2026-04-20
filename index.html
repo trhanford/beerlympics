@@ -382,7 +382,10 @@
             <div>
               <p class="status">Scan to join on your phone</p>
               <p class="join-link" id="join-link">--</p>
-              <button class="btn ghost small" type="button" id="copy-join-link">Copy join link</button>
+              <div class="join-link-buttons">
+                <button class="btn ghost small" type="button" id="copy-join-link">Copy join link</button>
+                <button class="btn ghost small" type="button" id="share-join-link">Share 📤</button>
+              </div>
             </div>
           </div>
         </div>
@@ -480,10 +483,6 @@
         <span aria-hidden="true">🎮</span>
         <span>Game</span>
       </button>
-      <button class="mobile-bottom-nav__tab" id="mobile-nav-rules" type="button" data-view="rules">
-        <span aria-hidden="true">📜</span>
-        <span>Rules</span>
-      </button>
       <button class="mobile-bottom-nav__tab" id="mobile-nav-ref" type="button" data-view="ref">
         <span aria-hidden="true">🏛️</span>
         <span>The Ref</span>
@@ -491,6 +490,10 @@
       <button class="mobile-bottom-nav__tab" id="mobile-nav-leaderboard" type="button" data-view="leaderboard">
         <span aria-hidden="true">🏆</span>
         <span>Scores</span>
+      </button>
+      <button class="mobile-bottom-nav__tab" id="mobile-nav-rules" type="button" data-view="rules">
+        <span aria-hidden="true">📜</span>
+        <span>Rules</span>
       </button>
     </nav>
     <div class="install-modal hidden" id="install-modal" aria-hidden="true">
