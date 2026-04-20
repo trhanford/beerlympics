@@ -3030,9 +3030,6 @@ const askTheRef = async () => {
     if (askRefMsgs) askRefMsgs.scrollTop = askRefMsgs.scrollHeight;
   }
 };
-    if (askRefMsgs) askRefMsgs.scrollTop = askRefMsgs.scrollHeight;
-  }
-};
 
 askRefSend?.addEventListener("click", askTheRef);
 askRefInput?.addEventListener("keydown", (e) => {
