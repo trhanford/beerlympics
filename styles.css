@@ -371,6 +371,17 @@ input.small {
   box-shadow: none;
 }
 
+#mobile-exit-game-btn {
+  background: linear-gradient(135deg, #d63a3a 0%, #b61f1f 100%);
+  border-color: rgba(128, 15, 15, 0.6);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(158, 25, 25, 0.35);
+}
+
+#mobile-exit-game-btn:hover {
+  border-color: rgba(98, 10, 10, 0.75);
+}
+
 #exit-pause-btn {
   color: #163067;
   background: #e9f0ff;
