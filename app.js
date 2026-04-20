@@ -2922,7 +2922,7 @@ init();
 // Paste your Anthropic API key below. The key is client-visible (same pattern
 // as the Firebase key above) — keep this app on a private/trusted network.
 //
-const ANTHROPIC_API_KEY = "YOUR_ANTHROPIC_API_KEY_HERE";
+const ANTHROPIC_API_KEY = "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";
 
 const REF_SYSTEM_PROMPT = `You are "The Ref" — the official, no-nonsense judge for Beerlympics 2026, a backyard beer Olympics competition between teams of two. Your job is to settle rules disputes quickly and with authority. Keep every answer to 2–4 sentences max. Be fun, confident, and final — like a real sports ref making a judgment call on the fly. If a situation is truly ambiguous, pick the fairest interpretation and commit to it.
 
