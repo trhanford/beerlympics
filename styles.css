@@ -1305,26 +1305,33 @@ body.mobile-app #leaderboard-section {
   padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
 }
 
-/* Fade curtain above the navbar when leaderboard is active.
-   Items scroll off-screen behind this gradient, never behind the raw nav bar. */
-body.mobile-app[data-view="leaderboard"] #leaderboard-section::after {
-  content: "";
+/* Leaderboard fade curtain — standalone <div> directly in <body>.
+   A ::after on #leaderboard-section can NEVER work here because .card applies
+   backdrop-filter: blur(8px), which creates a new stacking context. Any fixed
+   child inside that context gets a local z-index, so the global navbar (1100)
+   always paints over it no matter what value we set.
+   Solution: a real element that is a direct body child — no stacking context. */
+.leaderboard-fade-curtain {
+  display: none;
   position: fixed;
   left: 0;
   right: 0;
-  /* Sit flush at the top edge of the bottom nav so nothing bleeds through */
-  bottom: calc(74px + env(safe-area-inset-bottom, 0px));
-  height: 130px;
+  bottom: 0;                 /* extend to viewport bottom — zero gap with the nav */
+  height: 200px;
   pointer-events: none;
-  z-index: 1095;
+  z-index: 1099;             /* one tick below the navbar (1100) */
   background: linear-gradient(
     to bottom,
-    transparent 0%,
-    rgba(4, 4, 4, 0.45) 32%,
-    rgba(4, 4, 4, 0.82) 62%,
-    rgba(4, 4, 4, 0.97) 84%,
-    rgba(4, 4, 4, 1) 100%
+    transparent            0%,
+    rgba(4, 4, 4, 0.55)   28%,
+    rgba(4, 4, 4, 0.90)   52%,
+    rgba(4, 4, 4, 1)       68%,
+    rgba(4, 4, 4, 1)      100%
   );
+}
+
+body.mobile-app[data-view="leaderboard"] .leaderboard-fade-curtain {
+  display: block;
 }
 
 body.mobile-app .leaderboard-stage { margin-bottom: 14px; }
