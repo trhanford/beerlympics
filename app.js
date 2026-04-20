@@ -770,8 +770,9 @@ let unsubscribeMatches = null;
 let adminEditingTeamId = null;
 let pendingTeamActionInFlight = false;
 
-// Tracks which matchIds have had their pre-game powerup decision made this session
+// Tracks match IDs where the pre-game powerup decision has been made this session
 const preGameDecided = new Set();
+let preGameTimerInterval = null; // active countdown interval
 
 const activeTeamStorageKey = (code = getActiveGameCode()) =>
   code ? `${STORAGE_KEYS.activeTeamId}:${code}` : STORAGE_KEYS.activeTeamId;
@@ -1847,9 +1848,13 @@ const renderMatch = () => {
 
   scoreActions.innerHTML = "";
 
+  // Clear any running timer from a previous render
+  if (preGameTimerInterval) {
+    clearInterval(preGameTimerInterval);
+    preGameTimerInterval = null;
+  }
+
   // ── PRE-GAME POWERUP DECISION ──────────────────────────────────────────────
-  // Show the decision screen until the player commits, UNLESS they already have
-  // double-down active (set in a previous session) or the match is complete.
   const alreadyDoubledDown = Boolean(match.doubleDown?.[activeTeamId]);
   const needsPreGameDecision =
     match.status !== "complete" &&
@@ -1858,28 +1863,41 @@ const renderMatch = () => {
 
   if (needsPreGameDecision) {
     const powerupsRemaining = activeTeam.powerupsRemaining ?? 0;
-    const powerupDisplay = powerupsRemaining > 0
-      ? "⚡".repeat(powerupsRemaining)
-      : "none";
+    const hasPowerup = powerupsRemaining > 0;
+    const TIMER_SECS = 30;
+    const circumference = 163; // 2π × 26
 
+    // Build the distinct pre-game card
     const preCard = document.createElement("div");
-    preCard.className = "game-card";
+    preCard.className = "pre-game-card";
     preCard.innerHTML = `
-      <h3>Ready to play? 🎯</h3>
-      <p class="status">
-        You have <strong>${powerupDisplay}</strong> powerup${powerupsRemaining !== 1 ? "s" : ""} remaining.
-        Lock in your strategy <em>before</em> the game starts.
-      </p>
+      <p class="pre-game-kicker">Up next</p>
+      <p class="pre-game-title">You're playing<br><strong>${gameType?.name || match.gameType}</strong>!</p>
+      <p class="pre-game-question">${
+        hasPowerup
+          ? `You have ${"⚡".repeat(powerupsRemaining)} powerup${powerupsRemaining !== 1 ? "s" : ""} left.<br>Think you'll win? Double your points!`
+          : "No powerups remaining — give it your all!"
+      }</p>
+      <div class="pre-game-timer-ring" id="pre-game-ring">
+        <svg width="62" height="62" viewBox="0 0 62 62">
+          <circle class="ring-bg" cx="31" cy="31" r="26"/>
+          <circle class="ring-fill" id="pre-game-ring-fill" cx="31" cy="31" r="26"
+            stroke-dasharray="${circumference}" stroke-dashoffset="0"/>
+        </svg>
+        <div class="pre-game-timer-label" id="pre-game-timer-label">${TIMER_SECS}</div>
+      </div>
     `;
     scoreActions.appendChild(preCard);
 
-    if (powerupsRemaining > 0) {
+    if (hasPowerup) {
       const useBtn = document.createElement("button");
       useBtn.type = "button";
       useBtn.className = "btn";
-      useBtn.textContent = "Use Double Points 💥";
+      useBtn.textContent = "💥 Double my points!";
       useBtn.addEventListener("click", async () => {
         dismissMobileKeyboard();
+        clearInterval(preGameTimerInterval);
+        preGameTimerInterval = null;
         preGameDecided.add(match.id);
         await toggleDoubleDown(activeTeamId, match.id);
         renderMatch();
@@ -1890,21 +1908,44 @@ const renderMatch = () => {
     const skipBtn = document.createElement("button");
     skipBtn.type = "button";
     skipBtn.className = "btn ghost";
-    skipBtn.textContent = powerupsRemaining > 0 ? "Nope, just play" : "Let's go! 🏃";
-    skipBtn.addEventListener("click", () => {
+    skipBtn.textContent = hasPowerup ? "Nah, just play" : "Let's go! 🏃";
+    const commitSkip = () => {
       dismissMobileKeyboard();
+      clearInterval(preGameTimerInterval);
+      preGameTimerInterval = null;
       preGameDecided.add(match.id);
       renderMatch();
-    });
+    };
+    skipBtn.addEventListener("click", commitSkip);
     scoreActions.appendChild(skipBtn);
+
+    // 30-second countdown — auto-skips if they don't decide
+    let secsLeft = TIMER_SECS;
+    const ringFill = document.getElementById("pre-game-ring-fill");
+    const timerLabel = document.getElementById("pre-game-timer-label");
+
+    preGameTimerInterval = setInterval(() => {
+      secsLeft -= 1;
+      if (timerLabel) timerLabel.textContent = secsLeft;
+      if (ringFill) {
+        const offset = circumference * (1 - secsLeft / TIMER_SECS);
+        ringFill.style.strokeDashoffset = offset;
+        if (secsLeft <= 10) ringFill.classList.add("urgent");
+      }
+      if (secsLeft <= 0) {
+        clearInterval(preGameTimerInterval);
+        preGameTimerInterval = null;
+        preGameDecided.add(match.id);
+        renderMatch();
+      }
+    }, 1000);
+
     updateStepIndicator({ hasCoreInfo: true, hasCode: true });
     return;
   }
   // ── END PRE-GAME ───────────────────────────────────────────────────────────
 
   if (match.status !== "complete") {
-    // Show powerup status (pulsing if double-down is active) but no button —
-    // the player already committed at the pre-game screen.
     const powerupsRemaining = activeTeam.powerupsRemaining ?? 0;
     const powerupStatus = document.createElement("div");
     powerupStatus.className = `powerups${alreadyDoubledDown ? " active" : ""}`;
@@ -1912,14 +1953,14 @@ const renderMatch = () => {
       <span>Powerups remaining:</span>
       <span class="charges">${"⚡".repeat(Math.max(powerupsRemaining, 0)) || "—"}</span>
     `;
+    scoreActions.appendChild(powerupStatus);
     if (alreadyDoubledDown) {
-      const ddBadge = document.createElement("span");
+      const ddBadge = document.createElement("div");
       ddBadge.className = "stat-pill";
+      ddBadge.style.cssText = "margin-top:4px;display:inline-flex;padding:6px 12px;font-size:0.85rem;";
       ddBadge.textContent = "Double Points active 💥";
-      ddBadge.style.marginTop = "4px";
       scoreActions.appendChild(ddBadge);
     }
-    scoreActions.appendChild(powerupStatus);
   }
 
   if (match.gameType !== "flip_cup") {
@@ -2799,18 +2840,13 @@ if (shareJoinLinkButton) {
     }
     const joinUrl = getJoinUrl(code);
     const shareText = `🍻 Join our Beerlympics game! Use code ${code} or tap the link to jump straight in: ${joinUrl}`;
-
-    // Use the native share sheet if available (iOS/Android), else fall back to SMS
     if (navigator.share) {
       try {
         await navigator.share({ text: shareText });
       } catch (err) {
-        if (err.name !== "AbortError") {
-          showToast("Could not open share sheet.", "warning");
-        }
+        if (err.name !== "AbortError") showToast("Could not open share sheet.", "warning");
       }
     } else {
-      // Fallback: open SMS with pre-filled body
       window.open(`sms:?body=${encodeURIComponent(shareText)}`, "_blank");
     }
   });
