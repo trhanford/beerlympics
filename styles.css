@@ -721,7 +721,7 @@ input.small {
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.05rem;
-  color: #7d4f0e;
+  color: #c9a860;
   font-weight: 700;
 }
 
@@ -1249,8 +1249,7 @@ body.mobile-app .mobile-dock {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   color: #fff;
-  /* Tighter vertical rhythm — just enough breathing room */
-  padding: 2px 0 8px;
+  padding: 0;
   margin: 0 auto;
   width: 100%;
 }
@@ -1330,7 +1329,10 @@ body.mobile-app #leaderboard-section {
   );
 }
 
-body.mobile-app[data-view="leaderboard"] .leaderboard-fade-curtain {
+body.mobile-app[data-view="leaderboard"] .leaderboard-fade-curtain,
+body.mobile-app[data-view="player"] .leaderboard-fade-curtain,
+body.mobile-app[data-view="rules"] .leaderboard-fade-curtain,
+body.mobile-app[data-view="ref"] .leaderboard-fade-curtain {
   display: block;
 }
 
@@ -1427,7 +1429,7 @@ body.mobile-app .mobile-play-panel .game-card { color: #1b2340; }
 body.mobile-app .mobile-play-panel .game-card .status { color: #566180; }
 
 body.mobile-app .mobile-play-panel .matchup-subtitle {
-  color: #7d4f0e;
+  color: #f7f1de;
   font-size: 1.25rem;
   font-weight: 700;
 }
@@ -1435,12 +1437,12 @@ body.mobile-app .mobile-play-panel .matchup-subtitle {
 }
 
 body.mobile-app .mobile-play-panel .opponent-country {
-  color: #7d4f0e;
+  color: #c9a860;
   font-size: 0.82rem;
 }
 
 body.mobile-app .mobile-play-panel .opponent-members {
-  color: #2a1600;
+  color: #f5efe0;
   font-size: 1.2rem;
   line-height: 1.2;
 }
@@ -1488,12 +1490,11 @@ body.mobile-app .btn.ghost {
   width: min(560px, calc(100% - 24px));
   bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   z-index: 1100;
-  /* Grid: always 3 equal columns, never stacks */
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: stretch;
-  gap: 8px;
-  padding: 8px;
+  gap: 6px;
+  padding: 7px;
   border-radius: 18px;
   background: rgba(9, 9, 9, 0.82);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -1507,7 +1508,7 @@ body.mobile-app .btn.ghost {
  */
 body.mobile-app .mobile-bottom-nav.mobile-only {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .mobile-bottom-nav__tab {
@@ -1516,20 +1517,19 @@ body.mobile-app .mobile-bottom-nav.mobile-only {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.88);
   border-radius: 12px;
-  min-height: 50px;
+  min-height: 48px;
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: 0.75rem;
   cursor: pointer;
   white-space: nowrap;
   text-align: center;
-  padding: 0 8px;
+  padding: 0 4px;
   width: 100%;
-  /* Prevent text from ever wrapping or causing height growth */
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -1893,4 +1893,19 @@ html.mobile-preload #mobile-splash {
   padding: 0 16px;
   font-size: 0.9rem;
   white-space: nowrap;
+}
+
+/* ── 35. REF SECTION (standalone Ask the Ref view) ──────────── */
+
+body.mobile-app #ref-section {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+}
+
+body.mobile-app #ref-section .ask-ref-wrap {
+  margin-top: 0;
 }
