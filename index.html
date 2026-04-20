@@ -471,6 +471,9 @@
         </div>
       </section>
     </main>
+    <!-- Leaderboard fade curtain — lives directly in <body> so it is never
+         trapped inside a backdrop-filter stacking context -->
+    <div class="leaderboard-fade-curtain" id="leaderboard-fade-curtain" aria-hidden="true"></div>
     <nav class="mobile-bottom-nav mobile-only hidden" id="mobile-bottom-nav" aria-label="Mobile navigation">
       <button class="mobile-bottom-nav__tab is-active" id="mobile-nav-game" type="button" data-view="player">
         <span aria-hidden="true">🎮</span>
