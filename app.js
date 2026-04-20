@@ -2919,10 +2919,10 @@ init();
 
 // ── ASK THE REF CHATBOT ──────────────────────────────────────────────────────
 //
-// Paste your Anthropic API key below. The key is client-visible (same pattern
-// as the Firebase key above) — keep this app on a private/trusted network.
+// Requests go through a Cloudflare Worker proxy so the Anthropic API key
+// never lives in this file or the public repo.
 //
-const ANTHROPIC_API_KEY = "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";
+const REF_WORKER_URL = "https://beerlympicsapi.boardfreak56.workers.dev";
 
 const REF_SYSTEM_PROMPT = `You are "The Ref" — the official, no-nonsense judge for Beerlympics 2026, a backyard beer Olympics competition between teams of two. Your job is to settle rules disputes quickly and with authority. Keep every answer to 2–4 sentences max. Be fun, confident, and final — like a real sports ref making a judgment call on the fly. If a situation is truly ambiguous, pick the fairest interpretation and commit to it.
 
@@ -2985,12 +2985,6 @@ const askTheRef = async () => {
   const question = (askRefInput?.value || "").trim();
   if (!question) return;
 
-  // Guard: placeholder key
-  if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === "YOUR_ANTHROPIC_API_KEY_HERE") {
-    appendMsg("⚠️ API key not set. Open app.js and replace YOUR_ANTHROPIC_API_KEY_HERE with your real Anthropic key.", "ref");
-    return;
-  }
-
   askRefInput.value = "";
   appendMsg(question, "user");
 
@@ -3000,14 +2994,10 @@ const askTheRef = async () => {
   if (askRefMsgs) askRefMsgs.scrollTop = askRefMsgs.scrollHeight;
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    // Call our Cloudflare Worker proxy — key never touches the browser
+    const res = await fetch(REF_WORKER_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 300,
@@ -3018,7 +3008,6 @@ const askTheRef = async () => {
 
     const data = await res.json();
 
-    // Surface the real API error message instead of falling through to the generic fallback
     if (!res.ok || data.error) {
       const errMsg = data?.error?.message || `HTTP ${res.status}`;
       thinkBubble.closest(".ask-ref-message").classList.remove("thinking");
@@ -3038,6 +3027,9 @@ const askTheRef = async () => {
     console.warn("Ask the Ref fetch error:", err);
   } finally {
     setButtonLoading(askRefSend, false);
+    if (askRefMsgs) askRefMsgs.scrollTop = askRefMsgs.scrollHeight;
+  }
+};
     if (askRefMsgs) askRefMsgs.scrollTop = askRefMsgs.scrollHeight;
   }
 };
