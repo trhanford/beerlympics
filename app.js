@@ -239,8 +239,14 @@ const setButtonLoading = (button, isLoading, label) => {
   button.disabled = isLoading;
   button.classList.toggle("loading", isLoading);
   if (label) {
+    // Store the original label the first time we see one
     button.dataset.defaultLabel = button.dataset.defaultLabel || button.textContent;
-    button.textContent = isLoading ? label : button.dataset.defaultLabel;
+  }
+  if (isLoading && label) {
+    button.textContent = label;
+  } else if (!isLoading && button.dataset.defaultLabel) {
+    // Always restore the original text when loading ends, even if no label passed
+    button.textContent = button.dataset.defaultLabel;
   }
 };
 
@@ -255,10 +261,12 @@ let mobileSplashExitTimer = null;
 const resetJoinButtonLabels = () => {
   if (joinGameButton) {
     joinGameButton.dataset.defaultLabel = "Lock in our team 🚀";
+    joinGameButton.textContent = "Lock in our team 🚀";
     setButtonLoading(joinGameButton, false);
   }
   if (mobileCodeContinueButton) {
     mobileCodeContinueButton.dataset.defaultLabel = "Join game";
+    mobileCodeContinueButton.textContent = "Join game";
     setButtonLoading(mobileCodeContinueButton, false);
   }
 };
@@ -1826,7 +1834,7 @@ const renderMatch = () => {
 
   nextGameCard.innerHTML = `
     <h3>Game: ${gameType?.name || match.gameType}</h3>
-    <p class="matchup-subtitle">against:</p>
+    <p class="matchup-subtitle">Against:</p>
     <div class="opponents aesthetic">
       ${opponentSummary}
     </div>
@@ -2908,3 +2916,121 @@ const enableDesktopPointerGlow = () => {
 
 enableDesktopPointerGlow();
 init();
+
+// ── ASK THE REF CHATBOT ──────────────────────────────────────────────────────
+//
+// Paste your Anthropic API key below. The key is client-visible (same pattern
+// as the Firebase key above) — keep this app on a private/trusted network.
+//
+const ANTHROPIC_API_KEY = "YOUR_ANTHROPIC_API_KEY_HERE";
+
+const REF_SYSTEM_PROMPT = `You are "The Ref" — the official, no-nonsense judge for Beerlympics 2026, a backyard beer Olympics competition between teams of two. Your job is to settle rules disputes quickly and with authority. Keep every answer to 2–4 sentences max. Be fun, confident, and final — like a real sports ref making a judgment call on the fly. If a situation is truly ambiguous, pick the fairest interpretation and commit to it.
+
+Official game rules:
+
+BEER PONG:
+- 10 cups in a triangle per team.
+- Teams alternate tosses; one player at a time.
+- Made shot = that cup is removed and drunk.
+- Both teammates sink in one turn = balls back.
+- When all cups are gone, losing team gets one redemption turn.
+
+FLIP CUP:
+- Teams line up shoulder-to-shoulder on opposite sides of the table.
+- First player drinks, sets cup on the table edge, flips it until it lands upside-down.
+- Next teammate starts only after the previous flip lands.
+- First team with every player done wins the round.
+- No hand-switching mid-flip; no touching a teammate's cup.
+
+BEERIO KART:
+- Each player starts a Mario Kart race with one unopened beer.
+- You must finish your drink before crossing the finish line.
+- No drinking while your kart is moving — pull over first.
+- Cross before finishing = race score doesn't count for that player.
+- Fastest valid combined team finish wins.
+
+DIE:
+- Two teams face each other, drinks at table corners.
+- Toss the die so it hits the table cleanly and bounces high.
+- One-handed catch by the defending team negates the point.
+- Missed catch = 1 point for offense; die hits the floor untouched = 2 points.
+- Play to the host-set target (commonly 9 or 11).
+
+DRINKBALL:
+- One cup per player; one ball in play.
+- Teams pass and shoot to land the ball in an opponent's cup.
+- Made shot = that opposing player drinks and the cup resets.
+- No goaltending, blocking with the cup hand, or body contact.
+- First team to the agreed score wins.
+
+When a situation isn't covered explicitly, rule in the spirit of fair play. End yes/no rulings with a bold "RULING: [Yes/No — reason]".`;
+
+const askRefInput  = document.getElementById("ask-ref-input");
+const askRefSend   = document.getElementById("ask-ref-send");
+const askRefMsgs   = document.getElementById("ask-ref-messages");
+
+const appendMsg = (text, role) => {
+  const wrap   = document.createElement("div");
+  wrap.className = `ask-ref-message ${role === "user" ? "user-msg" : "ref-msg"}`;
+  const bubble = document.createElement("span");
+  bubble.className = "ask-ref-bubble";
+  bubble.textContent = text;
+  wrap.appendChild(bubble);
+  askRefMsgs?.appendChild(wrap);
+  if (askRefMsgs) askRefMsgs.scrollTop = askRefMsgs.scrollHeight;
+  return bubble;
+};
+
+const askTheRef = async () => {
+  const question = (askRefInput?.value || "").trim();
+  if (!question) return;
+
+  askRefInput.value = "";
+  appendMsg(question, "user");
+
+  setButtonLoading(askRefSend, true, "...");
+  const thinkBubble = appendMsg("The Ref is reviewing the play…", "ref");
+  thinkBubble.closest(".ask-ref-message").classList.add("thinking");
+  if (askRefMsgs) askRefMsgs.scrollTop = askRefMsgs.scrollHeight;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 300,
+        system: REF_SYSTEM_PROMPT,
+        messages: [{ role: "user", content: question }],
+      }),
+    });
+
+    const data = await res.json();
+    const answer = data?.content?.[0]?.text?.trim()
+      || "The Ref couldn't make a call on that one. Try rephrasing!";
+
+    thinkBubble.closest(".ask-ref-message").classList.remove("thinking");
+    thinkBubble.textContent = answer;
+  } catch (err) {
+    thinkBubble.closest(".ask-ref-message").classList.remove("thinking");
+    thinkBubble.textContent = "The Ref's mic cut out. Check your API key or try again.";
+    console.warn("Ask the Ref error:", err);
+  } finally {
+    setButtonLoading(askRefSend, false);
+    if (askRefMsgs) askRefMsgs.scrollTop = askRefMsgs.scrollHeight;
+  }
+};
+
+askRefSend?.addEventListener("click", askTheRef);
+askRefInput?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    askTheRef();
+  }
+});
+// ── END ASK THE REF ──────────────────────────────────────────────────────────
