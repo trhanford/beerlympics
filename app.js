@@ -50,6 +50,7 @@ const scoreActions = document.getElementById("score-actions");
 const leaderboardSection = document.getElementById("leaderboard-section");
 const playerSection = document.getElementById("player-section");
 const rulesSection = document.getElementById("rules-section");
+const refSection = document.getElementById("ref-section");
 const rosterSection = document.getElementById("roster-section");
 const controlSection = document.getElementById("control-section");
 const leaderboardEl = document.getElementById("leaderboard");
@@ -2143,6 +2144,7 @@ const setView = (view) => {
   const sections = {
     player: playerSection,
     rules: rulesSection,
+    ref: refSection,
     leaderboard: leaderboardSection,
     roster: rosterSection,
     control: controlSection,
@@ -2918,10 +2920,7 @@ enableDesktopPointerGlow();
 init();
 
 // ── ASK THE REF CHATBOT ──────────────────────────────────────────────────────
-//
-// Requests go through a Cloudflare Worker proxy so the Anthropic API key
-// never lives in this file or the public repo.
-//
+// Requests route through a Cloudflare Worker — no API key in this file.
 const REF_WORKER_URL = "https://beerlympicsapi.boardfreak56.workers.dev";
 
 const REF_SYSTEM_PROMPT = `You are "The Ref" — the official, no-nonsense judge for Beerlympics 2026, a backyard beer Olympics competition between teams of two. Your job is to settle rules disputes quickly and with authority. Keep every answer to 2–4 sentences max. Be fun, confident, and final — like a real sports ref making a judgment call on the fly. If a situation is truly ambiguous, pick the fairest interpretation and commit to it.
@@ -2994,7 +2993,6 @@ const askTheRef = async () => {
   if (askRefMsgs) askRefMsgs.scrollTop = askRefMsgs.scrollHeight;
 
   try {
-    // Call our Cloudflare Worker proxy — key never touches the browser
     const res = await fetch(REF_WORKER_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
