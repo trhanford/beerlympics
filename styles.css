@@ -1316,16 +1316,15 @@ body.mobile-app #leaderboard-section {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 200px;
+  height: 130px;
   pointer-events: none;
   z-index: 1099;
   background: linear-gradient(
     to bottom,
     transparent                    0%,
-    rgba(244, 239, 230, 0.55)     28%,
-    rgba(244, 239, 230, 0.90)     52%,
-    rgba(244, 239, 230, 1)         68%,
-    rgba(244, 239, 230, 1)        100%
+    rgba(4, 4, 4, 0.45)           42%,
+    rgba(4, 4, 4, 0.88)           70%,
+    rgba(4, 4, 4, 1)              100%
   );
 }
 
@@ -1424,9 +1423,9 @@ body.mobile-app .mobile-access-panel .mobile-panel-header {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-body.mobile-app .mobile-play-panel .game-card { color: #1b2340; }
+body.mobile-app .mobile-play-panel .game-card { color: #f0ece2; }
 
-body.mobile-app .mobile-play-panel .game-card .status { color: #566180; }
+body.mobile-app .mobile-play-panel .game-card .status { color: rgba(240, 236, 226, 0.78); }
 
 body.mobile-app .mobile-play-panel .matchup-subtitle {
   color: #f7f1de;
@@ -1910,10 +1909,96 @@ body.mobile-app #ref-section .ask-ref-wrap {
   margin-top: 0;
 }
 
-/* ── 36. JOIN LINK BUTTON ROW ───────────────────────────────── */
+/* ── 36. PRE-GAME POWERUP SCREEN ─────────────────────────────── */
+
+.pre-game-card {
+  background: linear-gradient(145deg, rgba(14, 10, 4, 0.88), rgba(60, 40, 10, 0.82));
+  border: 1px solid rgba(216, 191, 124, 0.38);
+  border-radius: 20px;
+  padding: 22px 18px 18px;
+  text-align: center;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.pre-game-card .pre-game-kicker {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #c9a860;
+  margin: 0 0 8px;
+}
+
+.pre-game-card .pre-game-title {
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  font-weight: 800;
+  color: #f7f1de;
+  margin: 0 0 6px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.pre-game-card .pre-game-question {
+  font-size: 1rem;
+  color: rgba(247, 241, 222, 0.78);
+  margin: 0 0 18px;
+}
+
+.pre-game-timer-ring {
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 16px;
+  position: relative;
+}
+
+.pre-game-timer-ring svg {
+  transform: rotate(-90deg);
+}
+
+.pre-game-timer-ring .ring-bg {
+  fill: none;
+  stroke: rgba(255,255,255,0.1);
+  stroke-width: 5;
+}
+
+.pre-game-timer-ring .ring-fill {
+  fill: none;
+  stroke: #c9a860;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 163;   /* 2π × r(26) ≈ 163 */
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
+}
+
+.pre-game-timer-ring .ring-fill.urgent { stroke: #e05c5c; }
+
+.pre-game-timer-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #f7f1de;
+}
+
+/* ── 37. JOIN LINK BUTTON ROW ───────────────────────────────── */
 .join-link-buttons {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   margin-top: 2px;
+}
+
+/* ── 38. REF SECTION ────────────────────────────────────────── */
+body.mobile-app #ref-section {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
 }
