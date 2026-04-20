@@ -342,9 +342,34 @@
             </ul>
           </details>
         </div>
-      </section>
 
-      <section class="card hidden leaderboard-section" id="leaderboard-section">
+        <!-- ── ASK THE REF CHATBOT ─────────────────────────────── -->
+        <div class="ask-ref-wrap" id="ask-ref-wrap">
+          <div class="ask-ref-header">
+            <span class="ask-ref-icon">🏛️</span>
+            <div>
+              <h3>Ask the Ref</h3>
+              <p class="status">Rules dispute? The Ref has the final word.</p>
+            </div>
+          </div>
+          <div class="ask-ref-messages" id="ask-ref-messages">
+            <div class="ask-ref-message ref-msg">
+              <span class="ask-ref-bubble">Ready to settle debates. What's your ruling question?</span>
+            </div>
+          </div>
+          <div class="ask-ref-input-row">
+            <input
+              type="text"
+              id="ask-ref-input"
+              placeholder="e.g. If the die hit the centerline, does that count?"
+              autocomplete="off"
+              autocorrect="off"
+              spellcheck="false"
+            />
+            <button class="btn ask-ref-send" id="ask-ref-send" type="button">Ask</button>
+          </div>
+        </div>
+      </section>
         <div class="leaderboard-stage">
           <p class="stage-kicker">Join at <span id="join-domain">your link</span></p>
           <div class="game-code-hero" id="game-code">----</div>
