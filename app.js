@@ -78,6 +78,7 @@ const joinQrEl = document.getElementById("join-qr");
 const joinLinkEl = document.getElementById("join-link");
 const joinDomainEl = document.getElementById("join-domain");
 const copyJoinLinkButton = document.getElementById("copy-join-link");
+const shareJoinLinkButton = document.getElementById("share-join-link");
 const currentMatchesEl = document.getElementById("current-matches");
 const newGameButton = document.getElementById("new-game");
 const resetGameButton = document.getElementById("reset-game");
@@ -768,6 +769,9 @@ let unsubscribeTeams = null;
 let unsubscribeMatches = null;
 let adminEditingTeamId = null;
 let pendingTeamActionInFlight = false;
+
+// Tracks which matchIds have had their pre-game powerup decision made this session
+const preGameDecided = new Set();
 
 const activeTeamStorageKey = (code = getActiveGameCode()) =>
   code ? `${STORAGE_KEYS.activeTeamId}:${code}` : STORAGE_KEYS.activeTeamId;
@@ -1842,29 +1846,80 @@ const renderMatch = () => {
   `;
 
   scoreActions.innerHTML = "";
-  if (match.status !== "complete") {
-    const powerupStatus = document.createElement("div");
+
+  // ── PRE-GAME POWERUP DECISION ──────────────────────────────────────────────
+  // Show the decision screen until the player commits, UNLESS they already have
+  // double-down active (set in a previous session) or the match is complete.
+  const alreadyDoubledDown = Boolean(match.doubleDown?.[activeTeamId]);
+  const needsPreGameDecision =
+    match.status !== "complete" &&
+    !alreadyDoubledDown &&
+    !preGameDecided.has(match.id);
+
+  if (needsPreGameDecision) {
     const powerupsRemaining = activeTeam.powerupsRemaining ?? 0;
-    powerupStatus.className = `powerups${match.doubleDown?.[activeTeamId] ? " active" : ""}`;
+    const powerupDisplay = powerupsRemaining > 0
+      ? "⚡".repeat(powerupsRemaining)
+      : "none";
+
+    const preCard = document.createElement("div");
+    preCard.className = "game-card";
+    preCard.innerHTML = `
+      <h3>Ready to play? 🎯</h3>
+      <p class="status">
+        You have <strong>${powerupDisplay}</strong> powerup${powerupsRemaining !== 1 ? "s" : ""} remaining.
+        Lock in your strategy <em>before</em> the game starts.
+      </p>
+    `;
+    scoreActions.appendChild(preCard);
+
+    if (powerupsRemaining > 0) {
+      const useBtn = document.createElement("button");
+      useBtn.type = "button";
+      useBtn.className = "btn";
+      useBtn.textContent = "Use Double Points 💥";
+      useBtn.addEventListener("click", async () => {
+        dismissMobileKeyboard();
+        preGameDecided.add(match.id);
+        await toggleDoubleDown(activeTeamId, match.id);
+        renderMatch();
+      });
+      scoreActions.appendChild(useBtn);
+    }
+
+    const skipBtn = document.createElement("button");
+    skipBtn.type = "button";
+    skipBtn.className = "btn ghost";
+    skipBtn.textContent = powerupsRemaining > 0 ? "Nope, just play" : "Let's go! 🏃";
+    skipBtn.addEventListener("click", () => {
+      dismissMobileKeyboard();
+      preGameDecided.add(match.id);
+      renderMatch();
+    });
+    scoreActions.appendChild(skipBtn);
+    updateStepIndicator({ hasCoreInfo: true, hasCode: true });
+    return;
+  }
+  // ── END PRE-GAME ───────────────────────────────────────────────────────────
+
+  if (match.status !== "complete") {
+    // Show powerup status (pulsing if double-down is active) but no button —
+    // the player already committed at the pre-game screen.
+    const powerupsRemaining = activeTeam.powerupsRemaining ?? 0;
+    const powerupStatus = document.createElement("div");
+    powerupStatus.className = `powerups${alreadyDoubledDown ? " active" : ""}`;
     powerupStatus.innerHTML = `
       <span>Powerups remaining:</span>
       <span class="charges">${"⚡".repeat(Math.max(powerupsRemaining, 0)) || "—"}</span>
     `;
+    if (alreadyDoubledDown) {
+      const ddBadge = document.createElement("span");
+      ddBadge.className = "stat-pill";
+      ddBadge.textContent = "Double Points active 💥";
+      ddBadge.style.marginTop = "4px";
+      scoreActions.appendChild(ddBadge);
+    }
     scoreActions.appendChild(powerupStatus);
-
-    const doubleDownButton = document.createElement("button");
-    doubleDownButton.type = "button";
-    doubleDownButton.className = "btn ghost";
-    const isDoubleDown = Boolean(match.doubleDown?.[activeTeamId]);
-    doubleDownButton.textContent = isDoubleDown
-      ? "Double Down active 💥"
-      : "Use Double Points Powerup 💥";
-    doubleDownButton.disabled = activeTeam.powerupsRemaining <= 0 && !isDoubleDown;
-    doubleDownButton.addEventListener("click", () => {
-      dismissMobileKeyboard();
-      void toggleDoubleDown(activeTeamId, match.id);
-    });
-    scoreActions.appendChild(doubleDownButton);
   }
 
   if (match.gameType !== "flip_cup") {
@@ -2731,6 +2786,32 @@ if (copyJoinLinkButton) {
     } catch (error) {
       console.error("Unable to copy join link.", error);
       showToast("Could not copy the link on this device.", "warning");
+    }
+  });
+}
+
+if (shareJoinLinkButton) {
+  shareJoinLinkButton.addEventListener("click", async () => {
+    const code = getActiveGameCode();
+    if (!code) {
+      showToast("Start or join a game first.", "warning");
+      return;
+    }
+    const joinUrl = getJoinUrl(code);
+    const shareText = `🍻 Join our Beerlympics game! Use code ${code} or tap the link to jump straight in: ${joinUrl}`;
+
+    // Use the native share sheet if available (iOS/Android), else fall back to SMS
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: shareText });
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          showToast("Could not open share sheet.", "warning");
+        }
+      }
+    } else {
+      // Fallback: open SMS with pre-filled body
+      window.open(`sms:?body=${encodeURIComponent(shareText)}`, "_blank");
     }
   });
 }
