@@ -78,7 +78,6 @@ const joinQrEl = document.getElementById("join-qr");
 const joinLinkEl = document.getElementById("join-link");
 const joinDomainEl = document.getElementById("join-domain");
 const copyJoinLinkButton = document.getElementById("copy-join-link");
-const shareJoinLinkButton = document.getElementById("share-join-link");
 const currentMatchesEl = document.getElementById("current-matches");
 const newGameButton = document.getElementById("new-game");
 const resetGameButton = document.getElementById("reset-game");
@@ -770,9 +769,8 @@ let unsubscribeMatches = null;
 let adminEditingTeamId = null;
 let pendingTeamActionInFlight = false;
 
-// Tracks match IDs where the pre-game powerup decision has been made this session
 const preGameDecided = new Set();
-let preGameTimerInterval = null; // active countdown interval
+let preGameTimerInterval = null;
 
 const activeTeamStorageKey = (code = getActiveGameCode()) =>
   code ? `${STORAGE_KEYS.activeTeamId}:${code}` : STORAGE_KEYS.activeTeamId;
@@ -1818,43 +1816,9 @@ const renderMatch = () => {
     .filter(Boolean);
 
   const gameType = GAME_TYPES.find((entry) => entry.id === match.gameType);
-  const opponentSummary = opponents.length
-    ? opponents
-        .map((team) => {
-          const members = [team.playerName, team.partnerName].filter(Boolean).join(" + ");
-          const country = team.country || "Unknown country";
-          return `
-            <article class="opponent-card">
-              <div class="opponent-head">
-                ${renderFlagAvatar(country)}
-                <div class="opponent-meta">
-                  <span class="opponent-country">${country}</span>
-                  <span class="opponent-members">${members || "Team TBD"}</span>
-                </div>
-              </div>
-            </article>
-          `;
-        })
-        .join("")
-    : `<p class="status">Opponent team was removed. Waiting for a new matchup…</p>`;
-
-  nextGameCard.innerHTML = `
-    <h3>Game: ${gameType?.name || match.gameType}</h3>
-    <p class="matchup-subtitle">Against:</p>
-    <div class="opponents aesthetic">
-      ${opponentSummary}
-    </div>
-  `;
-
-  scoreActions.innerHTML = "";
-
-  // Clear any running timer from a previous render
-  if (preGameTimerInterval) {
-    clearInterval(preGameTimerInterval);
-    preGameTimerInterval = null;
-  }
 
   // ── PRE-GAME POWERUP DECISION ──────────────────────────────────────────────
+  // Show INSTEAD of the match card — takes over the whole screen until decided.
   const alreadyDoubledDown = Boolean(match.doubleDown?.[activeTeamId]);
   const needsPreGameDecision =
     match.status !== "complete" &&
@@ -1865,29 +1829,30 @@ const renderMatch = () => {
     const powerupsRemaining = activeTeam.powerupsRemaining ?? 0;
     const hasPowerup = powerupsRemaining > 0;
     const TIMER_SECS = 30;
-    const circumference = 163; // 2π × 26
+    const circumference = 163;
 
-    // Build the distinct pre-game card
-    const preCard = document.createElement("div");
-    preCard.className = "pre-game-card";
-    preCard.innerHTML = `
-      <p class="pre-game-kicker">Up next</p>
-      <p class="pre-game-title">You're playing<br><strong>${gameType?.name || match.gameType}</strong>!</p>
-      <p class="pre-game-question">${
-        hasPowerup
-          ? `You have ${"⚡".repeat(powerupsRemaining)} powerup${powerupsRemaining !== 1 ? "s" : ""} left.<br>Think you'll win? Double your points!`
-          : "No powerups remaining — give it your all!"
-      }</p>
-      <div class="pre-game-timer-ring" id="pre-game-ring">
-        <svg width="62" height="62" viewBox="0 0 62 62">
-          <circle class="ring-bg" cx="31" cy="31" r="26"/>
-          <circle class="ring-fill" id="pre-game-ring-fill" cx="31" cy="31" r="26"
-            stroke-dasharray="${circumference}" stroke-dashoffset="0"/>
-        </svg>
-        <div class="pre-game-timer-label" id="pre-game-timer-label">${TIMER_SECS}</div>
+    // Replace the match card entirely with the pre-game screen
+    nextGameCard.innerHTML = `
+      <div class="pre-game-card">
+        <p class="pre-game-kicker">Up next</p>
+        <p class="pre-game-title">You're playing<br><strong>${gameType?.name || match.gameType}</strong>!</p>
+        <p class="pre-game-question">${
+          hasPowerup
+            ? `You have ${"⚡".repeat(powerupsRemaining)} powerup${powerupsRemaining !== 1 ? "s" : ""} left.<br>Think you'll win? Double your points!`
+            : "No powerups remaining — give it your all!"
+        }</p>
+        <div class="pre-game-timer-ring" id="pre-game-ring">
+          <svg width="62" height="62" viewBox="0 0 62 62">
+            <circle class="ring-bg" cx="31" cy="31" r="26"/>
+            <circle class="ring-fill" id="pre-game-ring-fill" cx="31" cy="31" r="26"
+              stroke-dasharray="${circumference}" stroke-dashoffset="0"/>
+          </svg>
+          <div class="pre-game-timer-label" id="pre-game-timer-label">${TIMER_SECS}</div>
+        </div>
       </div>
     `;
-    scoreActions.appendChild(preCard);
+
+    scoreActions.innerHTML = "";
 
     if (hasPowerup) {
       const useBtn = document.createElement("button");
@@ -1919,17 +1884,17 @@ const renderMatch = () => {
     skipBtn.addEventListener("click", commitSkip);
     scoreActions.appendChild(skipBtn);
 
-    // 30-second countdown — auto-skips if they don't decide
+    // 30-second countdown — auto-skips on expiry
     let secsLeft = TIMER_SECS;
     const ringFill = document.getElementById("pre-game-ring-fill");
     const timerLabel = document.getElementById("pre-game-timer-label");
 
+    if (preGameTimerInterval) clearInterval(preGameTimerInterval);
     preGameTimerInterval = setInterval(() => {
       secsLeft -= 1;
       if (timerLabel) timerLabel.textContent = secsLeft;
       if (ringFill) {
-        const offset = circumference * (1 - secsLeft / TIMER_SECS);
-        ringFill.style.strokeDashoffset = offset;
+        ringFill.style.strokeDashoffset = circumference * (1 - secsLeft / TIMER_SECS);
         if (secsLeft <= 10) ringFill.classList.add("urgent");
       }
       if (secsLeft <= 0) {
@@ -1945,6 +1910,35 @@ const renderMatch = () => {
   }
   // ── END PRE-GAME ───────────────────────────────────────────────────────────
 
+  const opponentSummary = opponents.length
+    ? opponents
+        .map((team) => {
+          const members = [team.playerName, team.partnerName].filter(Boolean).join(" + ");
+          const country = team.country || "Unknown country";
+          return `
+            <article class="opponent-card">
+              <div class="opponent-head">
+                ${renderFlagAvatar(country)}
+                <div class="opponent-meta">
+                  <span class="opponent-country">${country}</span>
+                  <span class="opponent-members">${members || "Team TBD"}</span>
+                </div>
+              </div>
+            </article>
+          `;
+        })
+        .join("")
+    : `<p class="status">Opponent team was removed. Waiting for a new matchup…</p>`;
+
+  nextGameCard.innerHTML = `
+    <h3>Game: ${gameType?.name || match.gameType}</h3>
+    <p class="matchup-subtitle">Against:</p>
+    <div class="opponents aesthetic">
+      ${opponentSummary}
+    </div>
+  `;
+
+  scoreActions.innerHTML = "";
   if (match.status !== "complete") {
     const powerupsRemaining = activeTeam.powerupsRemaining ?? 0;
     const powerupStatus = document.createElement("div");
@@ -2827,27 +2821,6 @@ if (copyJoinLinkButton) {
     } catch (error) {
       console.error("Unable to copy join link.", error);
       showToast("Could not copy the link on this device.", "warning");
-    }
-  });
-}
-
-if (shareJoinLinkButton) {
-  shareJoinLinkButton.addEventListener("click", async () => {
-    const code = getActiveGameCode();
-    if (!code) {
-      showToast("Start or join a game first.", "warning");
-      return;
-    }
-    const joinUrl = getJoinUrl(code);
-    const shareText = `🍻 Join our Beerlympics game! Use code ${code} or tap the link to jump straight in: ${joinUrl}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ text: shareText });
-      } catch (err) {
-        if (err.name !== "AbortError") showToast("Could not open share sheet.", "warning");
-      }
-    } else {
-      window.open(`sms:?body=${encodeURIComponent(shareText)}`, "_blank");
     }
   });
 }
