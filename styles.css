@@ -1,3 +1,11 @@
+/* ============================================================
+   BEERLYMPICS — styles.css
+   Refactored for clean mobile layout, single background source,
+   and no conflicting override layers.
+   ============================================================ */
+
+/* ── 1. DESIGN TOKENS ────────────────────────────────────── */
+
 :root {
   color-scheme: light;
   --bg: #f4f7fc;
@@ -18,35 +26,27 @@
   --leaderboard-flag-url: none;
 }
 
-* {
+/* ── 2. BASE RESET ───────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-html,
-body {
+/*
+ * Desktop default: html gets a fallback background.
+ * body carries the gradient for the desktop view.
+ * Both are transparent in mobile mode (background comes from ::before).
+ */
+html {
   margin: 0;
   min-height: 100%;
-}
-
-html {
-  background: linear-gradient(160deg, #000000 0%, #221c12 48%, #ceb88f 76%, #f4efe6 100%);
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-color: #040404;
-  min-height: 100%;
-}
-
-html.mobile-app-bg {
-  background:
-    radial-gradient(circle at 50% -10%, rgba(255,255,255,0.10), transparent 34%),
-    radial-gradient(circle at 10% 92%, rgba(206, 184, 143, 0.16), transparent 34%),
-    linear-gradient(180deg, #040404 0%, #17120b 42%, #5b4a2d 78%, #f4efe6 100%);
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-color: #040404;
+  background-color: #f4f7fc;
 }
 
 body {
+  margin: 0;
   min-height: 100vh;
   min-height: 100dvh;
   font-family: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -59,19 +59,7 @@ body {
   background-size: cover;
 }
 
-body.mobile-app {
-  min-height: 100dvh;
-  min-height: 100svh;
-  background: transparent;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-color: #040404;
-  overscroll-behavior-y: none;
-  position: relative;
-  isolation: isolate;
-}
-
+/* ── 3. DESKTOP LAYOUT ───────────────────────────────────── */
 
 .top-header {
   max-width: 1220px;
@@ -152,7 +140,7 @@ body.mobile-app {
   padding: 8px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: rgba(255,255,255,0.88);
+  background: rgba(255, 255, 255, 0.88);
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
@@ -198,6 +186,8 @@ main {
   gap: 28px;
 }
 
+/* ── 4. CARD & COMPONENT STYLES ─────────────────────────── */
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -213,9 +203,7 @@ main {
     radial-gradient(circle at 10% 0%, rgba(47, 89, 255, 0.14), transparent 60%);
 }
 
-.hero h2 {
-  margin: 0;
-}
+.hero h2 { margin: 0; }
 
 .hero p {
   margin: 10px 0 0;
@@ -336,6 +324,8 @@ input.small {
   font-weight: 600;
 }
 
+/* ── 5. BUTTONS ──────────────────────────────────────────── */
+
 .btn {
   appearance: none;
   border: 1px solid transparent;
@@ -351,13 +341,8 @@ input.small {
   box-shadow: 0 8px 18px rgba(47, 89, 255, 0.24);
 }
 
-.btn:hover {
-  transform: translateY(-1px);
-}
-
-.btn:active {
-  transform: translateY(1px);
-}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(1px); }
 
 .btn.secondary {
   background: linear-gradient(120deg, var(--secondary), #ff78b3);
@@ -369,6 +354,11 @@ input.small {
   border-color: rgba(47, 89, 255, 0.18);
   color: #2e4bb1;
   box-shadow: none;
+}
+
+.btn.ghost:hover {
+  background: #e3ecff;
+  border-color: rgba(47, 89, 255, 0.3);
 }
 
 #mobile-exit-game-btn {
@@ -425,12 +415,12 @@ input.small {
 
 @keyframes shimmer {
   from { transform: translateX(-100%); }
-  to { transform: translateX(100%); }
+  to   { transform: translateX(100%); }
 }
 
-.stepper {
-  margin-bottom: 14px;
-}
+/* ── 6. STEPPER ──────────────────────────────────────────── */
+
+.stepper { margin-bottom: 14px; }
 
 .step {
   display: flex;
@@ -443,10 +433,7 @@ input.small {
   font-weight: 600;
 }
 
-.step small {
-  color: var(--muted);
-  font-weight: 500;
-}
+.step small { color: var(--muted); font-weight: 500; }
 
 .step-circle {
   width: 28px;
@@ -460,15 +447,10 @@ input.small {
   background: rgba(47, 89, 255, 0.12);
 }
 
-.step.active .step-circle {
-  background: var(--primary);
-  color: #fff;
-}
+.step.active .step-circle { background: var(--primary); color: #fff; }
+.step.complete .step-circle { background: rgba(21, 181, 139, 0.2); color: #0a7a5d; }
 
-.step.complete .step-circle {
-  background: rgba(21, 181, 139, 0.2);
-  color: #0a7a5d;
-}
+/* ── 7. GAME CARDS & LEADERBOARD COMPONENTS ─────────────── */
 
 .game-card,
 .roster-group,
@@ -480,14 +462,9 @@ input.small {
   padding: 16px;
 }
 
-.access-card {
-  border-color: rgba(47, 89, 255, 0.24);
-}
+.access-card { border-color: rgba(47, 89, 255, 0.24); }
 
-.opponents {
-  display: grid;
-  gap: 8px;
-}
+.opponents { display: grid; gap: 8px; }
 
 .opponent-pill,
 .current-match-team,
@@ -539,14 +516,10 @@ input.small {
   filter: blur(10px) saturate(1.1);
 }
 
-.leaderboard-heading > * {
-  position: relative;
-  z-index: 1;
-}
+.leaderboard-heading > * { position: relative; z-index: 1; }
+.leaderboard-heading h2 { font-size: clamp(1.4rem, 3.5vw, 2rem); }
 
-.current-matches-card {
-  display: none;
-}
+.current-matches-card { display: none; }
 
 .current-match-header {
   display: flex;
@@ -581,22 +554,11 @@ input.small {
   background-clip: text;
 }
 
-.rank--silver {
-  color: #c0c0c0;
-}
+.rank--silver { color: #c0c0c0; }
+.rank--bronze { color: #cd7f32; }
+.rank--default { color: #fff; }
 
-.rank--bronze {
-  color: #cd7f32;
-}
-
-.rank--default {
-  color: #fff;
-}
-
-.team-info {
-  display: grid;
-  gap: 6px;
-}
+.team-info { display: grid; gap: 6px; }
 
 .team-row {
   display: flex;
@@ -619,11 +581,7 @@ input.small {
   color: #2f4fb5;
 }
 
-.flag img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+.flag img { width: 100%; height: 100%; object-fit: cover; }
 
 .stat-pill {
   display: inline-flex;
@@ -645,14 +603,8 @@ input.small {
   background: #fff;
 }
 
-.roster-team.admin {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-}
-
-.roster-team:last-child {
-  margin-bottom: 0;
-}
+.roster-team.admin { display: grid; grid-template-columns: 1fr auto auto; }
+.roster-team:last-child { margin-bottom: 0; }
 
 .roster-team strong {
   display: inline-flex;
@@ -660,11 +612,7 @@ input.small {
   gap: 8px;
 }
 
-.roster-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
+.roster-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .admin-merge {
   margin-top: 12px;
@@ -705,12 +653,12 @@ input.small {
 
 @keyframes pop {
   from { transform: scale(0.97); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  to   { transform: scale(1);    opacity: 1; }
 }
 
 @keyframes float-up {
-  0% { transform: translateY(0); opacity: 0; }
-  25% { opacity: 1; }
+  0%   { transform: translateY(0);     opacity: 0; }
+  25%  { opacity: 1; }
   100% { transform: translateY(-14px); opacity: 0; }
 }
 
@@ -721,378 +669,16 @@ input.small {
   font-weight: 700;
 }
 
-.powerups .charges {
-  letter-spacing: 1px;
-}
+.powerups .charges { letter-spacing: 1px; }
 
-.powerups.active .charges {
-  animation: pulse 0.9s ease infinite;
-}
+.powerups.active .charges { animation: pulse 0.9s ease infinite; }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  0%, 100% { transform: scale(1);   }
+  50%       { transform: scale(1.1); }
 }
 
-.toast-container {
-  position: fixed;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1200;
-  display: grid;
-  gap: 8px;
-}
-
-body.mobile-app .toast-container {
-  bottom: calc(94px + env(safe-area-inset-bottom, 0px));
-}
-
-.toast {
-  color: #fff;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  box-shadow: var(--shadow-md);
-  background: #1c2a4b;
-  opacity: 0;
-  transform: translateY(8px) scale(0.98);
-  animation: toast-in 220ms ease forwards;
-}
-
-.toast.success { background: #204fcf; }
-.toast.warning { background: var(--warning); }
-.toast.info { background: #2f3f6e; }
-
-.toast.is-leaving {
-  animation: toast-out 260ms ease forwards;
-}
-
-@keyframes toast-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes toast-out {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(6px) scale(0.98);
-  }
-}
-
-.confetti {
-  position: fixed;
-  width: 8px;
-  height: 12px;
-  border-radius: 2px;
-  animation: confetti-fall 1.4s ease-out forwards;
-  z-index: 210;
-}
-
-@keyframes confetti-fall {
-  from { transform: translateY(-20px) rotate(0); opacity: 1; }
-  to { transform: translateY(180px) rotate(120deg); opacity: 0; }
-}
-
-.mobile-welcome-screen {
-  position: fixed;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  padding: 20px;
-  z-index: 300;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 260ms ease;
-}
-
-.mobile-welcome-card {
-  width: min(92vw, 380px);
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  background: rgba(255, 255, 255, 0.985);
-  border: 1px solid rgba(17, 26, 44, 0.16);
-  border-radius: 18px;
-  padding: 22px;
-  text-align: left;
-  color: #101a2e;
-  box-shadow: var(--shadow-md);
-  display: grid;
-  gap: 10px;
-  opacity: 0;
-  transform: translate(-50%, calc(-50% + 12px));
-  pointer-events: none;
-  transition: opacity 260ms ease, transform 260ms ease;
-}
-
-.mobile-welcome-card h1,
-.mobile-welcome-card h2,
-.mobile-welcome-card label {
-  color: #101a2e;
-}
-
-.mobile-welcome-card.is-visible {
-  opacity: 1;
-  transform: translate(-50%, -50%);
-  pointer-events: auto;
-}
-
-body[data-mobile-state="onboarding-code"] .mobile-welcome-screen,
-body[data-mobile-state="onboarding-team"] .mobile-welcome-screen {
-  pointer-events: auto;
-  opacity: 1;
-  background: linear-gradient(160deg, #000000 0%, #221c12 48%, #ceb88f 76%, #ffffff 100%);
-}
-
-
-body:not([data-mobile-state="onboarding-code"]):not([data-mobile-state="onboarding-team"]) .mobile-welcome-screen {
-  display: none;
-}
-
-.welcome-continue {
-  margin-top: 8px;
-  width: 100%;
-}
-
-.mobile-onboarding-note {
-  margin: 0;
-  color: rgba(17, 26, 44, 0.78);
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.mobile-onboarding-note.success {
-  color: #0f8f69;
-}
-
-
-.mobile-dock {
-  display: none;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: #fff;
-}
-
-.mobile-dock-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  background: rgba(47, 89, 255, 0.1);
-}
-
-.mobile-dock-text {
-  display: grid;
-}
-
-.mobile-dock-title {
-  font-weight: 700;
-}
-
-.mobile-dock-subtitle {
-  color: var(--muted);
-  font-size: 0.84rem;
-}
-
-.mobile-panel-header {
-  background: #f4f7ff;
-  border: 1px solid rgba(47, 89, 255, 0.14);
-  border-radius: 12px;
-  padding: 10px 12px;
-}
-
-.mobile-panel-kicker {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.08rem;
-  text-transform: uppercase;
-  color: var(--primary-strong);
-}
-
-.hidden { display: none !important; }
-.mobile-only { display: none; }
-.desktop-only { display: block; }
-
-body[data-view="leaderboard"] .hero { display: none; }
-
-/* Apply the mobile app shell whenever JS marks the device as mobile,
-   even if the browser reports a desktop-sized viewport. */
-body.mobile-app header { display: none; }
-body.mobile-app .desktop-only { display: none; }
-body.mobile-app .mobile-only { display: block; }
-body.mobile-app .stepper { display: none; }
-body.mobile-app .mobile-dock { display: flex; }
-
-body.mobile-app[data-mobile-state="access"] .mobile-register-panel,
-body.mobile-app[data-mobile-state="register"] .mobile-access-panel,
-body.mobile-app[data-mobile-state="register"] .mobile-play-panel,
-body.mobile-app[data-mobile-state="access"] .mobile-play-panel,
-body.mobile-app[data-mobile-state="playing"] .mobile-register-panel,
-body.mobile-app[data-mobile-state="playing"] .mobile-access-panel,
-body.mobile-app[data-mobile-state="playing"] .team-setup-column {
-  display: none;
-}
-
-@media (min-width: 768px) {
-  .split {
-    grid-template-columns: minmax(380px, 460px) 1fr;
-    align-items: start;
-    gap: 16px;
-  }
-
-  .leaderboard-split {
-    grid-template-columns: minmax(280px, 360px) 1fr;
-    align-items: start;
-  }
-
-  .current-matches-card {
-    display: block;
-    position: sticky;
-    top: 16px;
-  }
-
-  .stepper {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .merge-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 767px) {
-  body.mobile-app header { display: none; }
-  body.mobile-app .desktop-only { display: none; }
-  body.mobile-app .mobile-only { display: block; }
-
-  body.mobile-app main {
-    padding: 14px 12px 28px;
-    gap: 20px;
-  }
-
-  body.mobile-app .card,
-  body.mobile-app #player-section,
-  body.mobile-app .mobile-play-panel,
-  body.mobile-app .mobile-dock {
-    background: transparent;
-    border-color: rgba(255, 255, 255, 0.22);
-    color: #fff;
-  }
-
-  body.mobile-app .mobile-dock-subtitle {
-    color: rgba(255, 255, 255, 0.78);
-  }
-
-  body.mobile-app #player-section {
-    padding: 14px;
-  }
-
-  body.mobile-app .stepper { display: none; }
-  body.mobile-app .mobile-dock { display: flex; }
-
-  body.mobile-app .mobile-register-panel,
-  body.mobile-app .mobile-access-panel,
-  body.mobile-app[data-mobile-state="playing"] .mobile-play-panel {
-    background: linear-gradient(160deg, rgba(0, 0, 0, 0.92), rgba(34, 28, 18, 0.9), rgba(206, 184, 143, 0.42));
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    border-radius: 14px;
-    padding: 14px;
-    color: #fff;
-  }
-
-  body.mobile-app .mobile-play-panel .status,
-  body.mobile-app .mobile-register-panel .hint,
-  body.mobile-app .mobile-access-panel .hint,
-  body.mobile-app .mobile-register-panel .status,
-  body.mobile-app .mobile-access-panel .status,
-  body.mobile-app .mobile-panel-kicker {
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  body.mobile-app .mobile-register-panel label,
-  body.mobile-app .mobile-access-panel label,
-  body.mobile-app .mobile-register-panel h3,
-  body.mobile-app .mobile-access-panel h3,
-  body.mobile-app .mobile-register-panel .section-title h2,
-  body.mobile-app .mobile-access-panel .section-title h3,
-  body.mobile-app #player-section .section-title h2 {
-    color: #f6f8ff;
-  }
-
-  body.mobile-app .mobile-register-panel .mobile-panel-header,
-  body.mobile-app .mobile-access-panel .mobile-panel-header {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
-
-  body.mobile-app .mobile-register-panel .btn.secondary,
-  body.mobile-app .mobile-access-panel .btn,
-  body.mobile-app .mobile-welcome-card .btn.primary {
-    color: #fff;
-    font-weight: 700;
-  }
-
-  body.mobile-app .mobile-play-panel .game-card {
-    color: #1b2340;
-  }
-
-  body.mobile-app .mobile-play-panel .game-card .status {
-    color: #566180;
-  }
-
-  body.mobile-app .mobile-play-panel .matchup-subtitle {
-    color: #435075;
-    font-size: 1.25rem;
-    font-weight: 700;
-  }
-
-  body.mobile-app .mobile-play-panel .opponent-country {
-    color: #2c4bae;
-    font-size: 0.82rem;
-  }
-
-  body.mobile-app .mobile-play-panel .opponent-members {
-    color: #1a2649;
-    font-size: 1.2rem;
-    line-height: 1.2;
-  }
-
-  body.mobile-app .mobile-register-panel input,
-  body.mobile-app .mobile-access-panel input,
-  body.mobile-app .mobile-welcome-card input {
-    background: rgba(255, 255, 255, 0.96);
-    color: #111;
-  }
-
-  body.mobile-app[data-mobile-state="access"] .mobile-register-panel,
-  body.mobile-app[data-mobile-state="register"] .mobile-access-panel,
-  body.mobile-app[data-mobile-state="register"] .mobile-play-panel,
-  body.mobile-app[data-mobile-state="access"] .mobile-play-panel,
-  body.mobile-app[data-mobile-state="playing"] .mobile-register-panel,
-  body.mobile-app[data-mobile-state="playing"] .mobile-access-panel,
-  body.mobile-app[data-mobile-state="playing"] .team-setup-column {
-    display: none;
-  }
-}
-
+/* ── 8. LEADERBOARD STAGE ────────────────────────────────── */
 
 .leaderboard-stage {
   border-radius: 16px;
@@ -1101,6 +687,8 @@ body.mobile-app[data-mobile-state="playing"] .team-setup-column {
   padding: 20px;
   margin-bottom: 10px;
 }
+
+.leaderboard-split { margin-top: 10px; }
 
 .matchup-subtitle {
   margin: 6px 0 0;
@@ -1127,10 +715,7 @@ body.mobile-app[data-mobile-state="playing"] .team-setup-column {
   gap: 10px;
 }
 
-.opponent-meta {
-  display: grid;
-  gap: 2px;
-}
+.opponent-meta { display: grid; gap: 2px; }
 
 .opponent-country {
   font-size: 0.78rem;
@@ -1140,13 +725,7 @@ body.mobile-app[data-mobile-state="playing"] .team-setup-column {
   font-weight: 700;
 }
 
-.opponent-members {
-  font-weight: 700;
-}
-
-.leaderboard-split {
-  margin-top: 10px;
-}
+.opponent-members { font-weight: 700; }
 
 .stage-kicker {
   margin: 0;
@@ -1184,8 +763,149 @@ body.mobile-app[data-mobile-state="playing"] .team-setup-column {
   word-break: break-all;
 }
 
-.leaderboard-heading h2 {
-  font-size: clamp(1.4rem, 3.5vw, 2rem);
+/* ── 9. TOAST ────────────────────────────────────────────── */
+
+.toast-container {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1200;
+  display: grid;
+  gap: 8px;
+}
+
+.toast {
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-md);
+  background: #1c2a4b;
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  animation: toast-in 220ms ease forwards;
+}
+
+.toast.success { background: #204fcf; }
+.toast.warning { background: var(--warning); }
+.toast.info    { background: #2f3f6e; }
+
+.toast.is-leaving { animation: toast-out 260ms ease forwards; }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(6px) scale(0.98); }
+}
+
+/* ── 10. CONFETTI ────────────────────────────────────────── */
+
+.confetti {
+  position: fixed;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  animation: confetti-fall 1.4s ease-out forwards;
+  z-index: 210;
+}
+
+@keyframes confetti-fall {
+  from { transform: translateY(-20px) rotate(0);   opacity: 1; }
+  to   { transform: translateY(180px) rotate(120deg); opacity: 0; }
+}
+
+/* ── 11. MOBILE DOCK (default hidden on desktop) ─────────── */
+
+.mobile-dock {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+
+.mobile-dock-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(47, 89, 255, 0.1);
+}
+
+.mobile-dock-text { display: grid; }
+.mobile-dock-title { font-weight: 700; }
+.mobile-dock-subtitle { color: var(--muted); font-size: 0.84rem; }
+
+/* ── 12. MOBILE PANEL COMPONENTS ────────────────────────── */
+
+.mobile-panel-header {
+  background: #f4f7ff;
+  border: 1px solid rgba(47, 89, 255, 0.14);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.mobile-panel-kicker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08rem;
+  text-transform: uppercase;
+  color: var(--primary-strong);
+}
+
+/* ── 13. VISIBILITY UTILITIES ────────────────────────────── */
+
+.hidden       { display: none !important; }
+.mobile-only  { display: none; }
+.desktop-only { display: block; }
+
+/* Hide the hero card on desktop when leaderboard is active */
+body[data-view="leaderboard"] .hero { display: none; }
+
+/* ── 14. DESKTOP MEDIA QUERIES ───────────────────────────── */
+
+@media (min-width: 768px) {
+  .split {
+    grid-template-columns: minmax(380px, 460px) 1fr;
+    align-items: start;
+    gap: 16px;
+  }
+
+  .leaderboard-split {
+    grid-template-columns: minmax(280px, 360px) 1fr;
+    align-items: start;
+  }
+
+  .current-matches-card {
+    display: block;
+    position: sticky;
+    top: 16px;
+  }
+
+  .stepper {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .merge-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .top-header {
+    padding-top: calc(16px + env(safe-area-inset-top));
+  }
+
+  .install-app-btn { width: auto; margin-top: 0; }
+
+  .join-qr { width: 118px; height: 118px; }
 }
 
 @media (max-width: 767px) {
@@ -1206,451 +926,80 @@ body.mobile-app[data-mobile-state="playing"] .team-setup-column {
     min-width: 120px;
   }
 
-  .join-qr {
-    width: 96px;
-    height: 96px;
-  }
+  .join-qr { width: 96px; height: 96px; }
 }
 
+/* ── 15. MOBILE WELCOME / ONBOARDING ────────────────────── */
 
-/* ===== Mobile rebuild overrides ===== */
-html, body {
-  min-height: 100%;
-}
-
-body.mobile-app {
-  color: #fff;
-  background: transparent !important;
-  background-color: #040404 !important;
-  min-height: 100dvh;
-  min-height: 100svh;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-body.mobile-app::before {
-  content: "";
-  position: fixed;
-  top: calc(-1 * env(safe-area-inset-top, 0px));
-  right: 0;
-  bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
-  left: 0;
-  z-index: -2;
-  background:
-    radial-gradient(circle at 50% -10%, rgba(255,255,255,0.10), transparent 34%),
-    radial-gradient(circle at 10% 92%, rgba(206, 184, 143, 0.16), transparent 34%),
-    linear-gradient(180deg, #040404 0%, #17120b 42%, #5b4a2d 78%, #f4efe6 100%);
-  background-repeat: no-repeat;
-  background-size: cover;
-}
-
-body.mobile-app::after {
-  content: "";
-  position: fixed;
-  top: calc(-1 * env(safe-area-inset-top, 0px));
-  right: 0;
-  bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
-  left: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: transparent;
-}
-
-body.mobile-app header,
-body.mobile-app #roster-section,
-body.mobile-app #control-section,
-body.mobile-app .hero,
-body.mobile-app .stepper,
-body.mobile-app .team-setup-column,
-body.mobile-app .desktop-only,
-body.mobile-app .tabs,
-body.mobile-app .top-header {
-  display: none !important;
-}
-
-body.mobile-app main {
-  width: 100%;
-  max-width: none;
-  height: 100dvh;
-  height: 100svh;
-  padding: max(10px, env(safe-area-inset-top, 0px)) 14px calc(92px + env(safe-area-inset-bottom, 0px));
-  display: block;
-  position: relative;
-  z-index: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-}
-
-body.mobile-app #player-section,
-body.mobile-app .mobile-play-panel {
-  display: block;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-}
-
-body.mobile-app #player-section {
-  min-height: calc(100dvh - max(10px, env(safe-area-inset-top, 0px)) - max(22px, env(safe-area-inset-bottom, 0px)));
-  padding-top: calc(66px + env(safe-area-inset-top, 0px));
-  overflow: visible;
-}
-
-body.mobile-app[data-view="leaderboard"] #player-section {
-  display: none !important;
-}
-
-body.mobile-app #leaderboard-section {
-  display: none !important;
-  background: rgba(13, 13, 13, 0.34);
-  border-color: rgba(255,255,255,0.14);
-}
-
-body.mobile-app[data-view="leaderboard"] #leaderboard-section {
-  display: block !important;
-  height: calc(100dvh - max(10px, env(safe-area-inset-top, 0px)) - 84px - env(safe-area-inset-bottom, 0px));
-  min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
-  position: relative;
-}
-
-body.mobile-app[data-view="rules"] #rules-section {
-  display: block !important;
-  max-height: calc(100dvh - max(10px, env(safe-area-inset-top, 0px)) - 84px - env(safe-area-inset-bottom, 0px));
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
-}
-
-body.mobile-app[data-view="leaderboard"] #leaderboard-section::after {
-  content: "";
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
-  height: 62px;
-  pointer-events: none;
-  z-index: 1090;
-  background: linear-gradient(to bottom, rgba(4, 4, 4, 0), rgba(4, 4, 4, 0.98) 76%, rgba(4, 4, 4, 1));
-}
-
-body.mobile-app .mobile-play-panel {
-  display: none;
-}
-
-body.mobile-app.has-active-team .mobile-play-panel,
-body.mobile-app[data-mobile-state="playing"] .mobile-play-panel {
-  display: grid !important;
-  gap: 14px;
-}
-
-body.mobile-app .mobile-dock {
-  display: flex !important;
-  justify-content: center;
-  margin: 0 auto;
-  width: 100%;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  color: #fff;
-}
-
-body.mobile-app .mobile-dock-subtitle,
-body.mobile-app .status,
-body.mobile-app .hint {
-  color: rgba(255,255,255,0.78);
-}
-
-body.mobile-app .mobile-dock-logo {
-  width: min(92vw, 392px);
-  max-height: 142px;
-  object-fit: contain;
-}
-
-body.mobile-app .mobile-splash-screen {
+.mobile-welcome-screen {
   position: fixed;
   inset: 0;
-  z-index: 900;
-  display: grid;
-  place-items: center;
-  padding: max(20px, env(safe-area-inset-top, 0px)) 24px max(20px, env(safe-area-inset-bottom, 0px));
-  background:
-    radial-gradient(circle at 50% -10%, rgba(255,255,255,0.10), transparent 34%),
-    radial-gradient(circle at 10% 92%, rgba(206, 184, 143, 0.16), transparent 34%),
-    linear-gradient(180deg, #040404 0%, #17120b 42%, #5b4a2d 78%, #f4efe6 100%);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 340ms ease, visibility 340ms ease;
-}
-
-body.mobile-app.is-splash-active .mobile-splash-screen {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-}
-
-body.mobile-app .mobile-splash-logo {
-  width: min(78vw, 330px);
-  max-height: 36vh;
-  object-fit: contain;
-  filter: drop-shadow(0 14px 38px rgba(0, 0, 0, 0.35));
-  transform-origin: center center;
-  animation: splashZoomIn 1650ms cubic-bezier(0.16, 0.84, 0.24, 1) forwards;
-}
-
-body.mobile-app.is-splash-exiting .mobile-splash-screen {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-body.mobile-app.is-splash-exiting .mobile-splash-logo {
-  animation: splashZoomOutFast 320ms cubic-bezier(0.4, 0.0, 1, 1) forwards;
-}
-
-/* Keep the app content mounted under the splash overlay.
-   Hiding main caused a blank gameplay screen if the splash/preload class stuck. */
-body.mobile-app.pre-mobile-app main,
-body.mobile-app.pre-mobile-app .mobile-welcome-screen,
-body.mobile-app.is-splash-active main,
-body.mobile-app.is-splash-active .mobile-welcome-screen,
-body.mobile-app.is-splash-exiting main,
-body.mobile-app.is-splash-exiting .mobile-welcome-screen {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-body.mobile-app .mobile-welcome-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 500;
-  padding: max(20px, env(safe-area-inset-top, 0px)) 18px max(20px, env(safe-area-inset-bottom, 0px));
   display: grid;
   place-items: center;
   align-content: center;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  padding: 20px;
+  z-index: 300;
+  pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  pointer-events: none;
-  background: transparent !important;
+  transition: opacity 260ms ease;
 }
 
-body.mobile-app[data-mobile-state="onboarding-code"] .mobile-welcome-screen,
-body.mobile-app[data-mobile-state="onboarding-team"] .mobile-welcome-screen {
-  opacity: 1;
-  visibility: visible;
+body[data-mobile-state="onboarding-code"] .mobile-welcome-screen,
+body[data-mobile-state="onboarding-team"] .mobile-welcome-screen {
   pointer-events: auto;
+  opacity: 1;
+  background: linear-gradient(160deg, #000000 0%, #221c12 48%, #ceb88f 76%, #ffffff 100%);
 }
 
-body.mobile-app .mobile-welcome-card {
+body:not([data-mobile-state="onboarding-code"]):not([data-mobile-state="onboarding-team"]) .mobile-welcome-screen {
   display: none;
-  position: relative;
-  top: auto;
-  left: auto;
-  transform: none;
-  width: min(100%, 420px);
-  max-width: 420px;
-  margin: auto;
-  max-height: min(82dvh, 760px);
-  overflow-y: auto;
-  border-radius: 28px;
-  padding: 26px 22px 22px;
-  background: rgba(7, 7, 7, 0.72);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.14);
-  box-shadow: 0 24px 60px rgba(0,0,0,0.42);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  gap: 14px;
 }
 
-body.mobile-app .mobile-welcome-card.is-visible {
-  display: grid;
-  opacity: 1;
-  pointer-events: auto;
-  transform: none;
-}
-
-body.mobile-app .mobile-welcome-card::before {
-  content: "";
+.mobile-welcome-card {
+  width: min(92vw, 380px);
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(145deg, rgba(255,255,255,0.22), rgba(212,187,127,0.42), rgba(255,255,255,0.08));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-body.mobile-app .mobile-welcome-card h1,
-body.mobile-app .mobile-welcome-card h2,
-body.mobile-app .mobile-welcome-card label {
-  color: #fff;
-}
-
-body.mobile-app .mobile-welcome-card h1,
-body.mobile-app .mobile-welcome-card h2 {
-  font-size: clamp(2rem, 8vw, 2.6rem);
-  line-height: 1.02;
-  letter-spacing: -0.03em;
-  margin: 0 0 2px;
-}
-
-body.mobile-app .mobile-welcome-card label {
-  font-size: 0.92rem;
-  margin-bottom: 4px;
-}
-
-body.mobile-app .mobile-welcome-card input {
-  background: rgba(255,255,255,0.96);
-  color: #111;
-  border-radius: 16px;
-  min-height: 54px;
-  font-size: 1.04rem;
-  border: 1px solid rgba(255,255,255,0.16);
-}
-
-body.mobile-app .mobile-onboarding-note {
-  color: rgba(255,255,255,0.78);
-  min-height: 1.4em;
-}
-
-body.mobile-app .mobile-onboarding-note.success {
-  color: #c8ffd8;
-}
-
-body.mobile-app .welcome-download {
-  margin-top: 2px;
-}
-
-body.mobile-app .welcome-continue,
-body.mobile-app .btn {
+  top: 50%;
+  left: 50%;
+  background: rgba(255, 255, 255, 0.985);
+  border: 1px solid rgba(17, 26, 44, 0.16);
   border-radius: 18px;
-  min-height: 54px;
-  font-size: 1rem;
-  font-weight: 800;
+  padding: 22px;
+  text-align: left;
+  color: #101a2e;
+  box-shadow: var(--shadow-md);
+  display: grid;
+  gap: 10px;
+  opacity: 0;
+  transform: translate(-50%, calc(-50% + 12px));
+  pointer-events: none;
+  transition: opacity 260ms ease, transform 260ms ease;
 }
 
-body.mobile-app .btn,
-body.mobile-app .mobile-welcome-card .btn.primary {
-  background: linear-gradient(135deg, #d8bf7c 0%, #f7f1de 52%, #b89146 100%);
-  color: #0b0b0b;
-  box-shadow: 0 16px 30px rgba(0,0,0,0.24);
+.mobile-welcome-card h1,
+.mobile-welcome-card h2,
+.mobile-welcome-card label { color: #101a2e; }
+
+.mobile-welcome-card.is-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
 }
 
-body.mobile-app .btn.secondary {
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.16);
-  box-shadow: none;
+.welcome-continue { margin-top: 8px; width: 100%; }
+
+.mobile-onboarding-note {
+  margin: 0;
+  color: rgba(17, 26, 44, 0.78);
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
-body.mobile-app .btn.ghost {
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.14);
-}
+.mobile-onboarding-note.success { color: #0f8f69; }
 
-body.mobile-app .game-card,
-body.mobile-app .reward-banner,
-body.mobile-app .leaderboard-card,
-body.mobile-app .roster-team,
-body.mobile-app .opponent-card,
-body.mobile-app .current-match-card {
-  background: rgba(10,10,10,0.48);
-  border: 1px solid rgba(255,255,255,0.12);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: #fff;
-}
+/* ── 16. INSTALL / EXIT MODAL ────────────────────────────── */
 
-body.mobile-app #next-game h3,
-body.mobile-app .mobile-play-panel h2,
-body.mobile-app .mobile-play-panel .matchup-subtitle,
-body.mobile-app .opponent-country,
-body.mobile-app .opponent-members {
-  color: #fff !important;
-}
-
-body.mobile-app .flag {
-  border-color: rgba(255,255,255,0.18);
-}
-
-body.mobile-app .stat-pill {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.12);
-  color: #fff;
-}
-
-body.mobile-app .section-title {
-  margin-bottom: 4px;
-}
-
-body.mobile-app .section-title h2 {
-  font-size: 1.55rem;
-  color: #fff;
-}
-
-body.mobile-app .score-actions {
-  gap: 12px;
-}
-
-body.mobile-app .powerups {
-  color: rgba(255,255,255,0.86);
-}
-
-body.mobile-app .reward-banner {
-  color: #fff;
-}
-
-body.mobile-app #manual-refresh {
-  margin-top: 4px;
-}
-
-body.mobile-app[data-mobile-state="onboarding-code"] .mobile-dock,
-body.mobile-app[data-mobile-state="onboarding-team"] .mobile-dock {
-  display: none !important;
-}
-
-@keyframes splashZoomIn {
-  0% {
-    transform: scale(0.68);
-    opacity: 0.42;
-  }
-  60% {
-    transform: scale(1.04);
-    opacity: 0.94;
-  }
-  100% {
-    transform: scale(1.14);
-    opacity: 1;
-  }
-}
-
-@keyframes splashZoomOutFast {
-  from {
-    transform: scale(1.14);
-    opacity: 1;
-  }
-  to {
-    transform: scale(0.22);
-    opacity: 0;
-  }
-}
-
-.install-app-btn {
-  min-height: 42px;
-  white-space: nowrap;
-}
+.install-app-btn { min-height: 42px; white-space: nowrap; }
 
 .install-modal {
   position: fixed;
@@ -1661,9 +1010,7 @@ body.mobile-app[data-mobile-state="onboarding-team"] .mobile-dock {
   animation: modalFadeIn 180ms ease;
 }
 
-.install-modal.hidden {
-  display: none;
-}
+.install-modal.hidden { display: none; }
 
 .install-modal-backdrop {
   position: absolute;
@@ -1707,11 +1054,7 @@ body.mobile-app[data-mobile-state="onboarding-team"] .mobile-dock {
   text-transform: uppercase;
 }
 
-.install-steps {
-  margin: 14px 0;
-  display: grid;
-  gap: 10px;
-}
+.install-steps { margin: 14px 0; display: grid; gap: 10px; }
 
 .install-step-card {
   display: grid;
@@ -1735,100 +1078,29 @@ body.mobile-app[data-mobile-state="onboarding-team"] .mobile-dock {
   font-size: 1rem;
 }
 
-.exit-modal-sheet .status {
-  margin: 8px 0 0;
+.exit-modal-sheet .status { margin: 8px 0 0; }
+.exit-options { margin-top: 14px; display: grid; gap: 10px; }
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-
-body.mobile-app .install-modal-sheet {
-  color: var(--text);
+@keyframes modalSlideIn {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
 }
 
-body.mobile-app .install-modal-sheet h2,
-body.mobile-app .install-modal-sheet .install-kicker {
-  color: var(--text);
-}
+/* ── 17. RULES ACCORDION ─────────────────────────────────── */
 
-body.mobile-app .install-modal-sheet .status {
-  color: var(--muted);
-}
+#rules-section h2 { margin-bottom: 4px; }
 
-body.mobile-app .exit-modal-sheet .btn.secondary {
-  background: linear-gradient(135deg, #d8bf7c 0%, #f7f1de 52%, #b89146 100%);
-  color: #0b0b0b;
-  border-color: rgba(255,255,255,0.22);
-  box-shadow: 0 16px 30px rgba(0,0,0,0.24);
-}
-
-body.mobile-app .exit-modal-sheet .btn.ghost {
-  background: rgba(20, 32, 62, 0.08);
-  color: #132750;
-  border-color: rgba(20, 55, 130, 0.36);
-  box-shadow: inset 0 0 0 1px rgba(20, 55, 130, 0.08);
-  text-shadow: none;
-}
-
-.exit-options {
-  margin-top: 14px;
-  display: grid;
-  gap: 10px;
-}
-
-.mobile-bottom-nav {
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(560px, calc(100% - 24px));
-  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-  z-index: 1100;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: center;
-  gap: 10px;
-  padding: 8px;
-  border-radius: 16px;
-  background: rgba(9, 9, 9, 0.78);
-  border: 1px solid rgba(255,255,255,0.2);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-.mobile-bottom-nav__tab {
-  appearance: none;
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.88);
-  border-radius: 12px;
-  min-height: 44px;
-  font-weight: 600;
-  text-align: center;
-}
-
-.mobile-bottom-nav__tab.is-active {
-  color: #111a2c;
-  border-color: rgba(255,255,255,0.35);
-  background: linear-gradient(120deg, #ffe4aa, #ffffff);
-}
-
-#rules-section h2 {
-  margin-bottom: 4px;
-}
-
-.rules-accordion {
-  margin-top: 14px;
-  display: grid;
-  gap: 10px;
-}
+.rules-accordion { margin-top: 14px; display: grid; gap: 10px; }
 
 .rules-item {
-  border: 1px solid rgba(255,255,255,0.14);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 12px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   overflow: hidden;
 }
 
@@ -1839,13 +1111,8 @@ body.mobile-app .exit-modal-sheet .btn.ghost {
   font-weight: 700;
 }
 
-.rules-item summary::-webkit-details-marker {
-  display: none;
-}
-
-.rules-item[open] summary {
-  border-bottom: 1px solid rgba(255,255,255,0.12);
-}
+.rules-item summary::-webkit-details-marker { display: none; }
+.rules-item[open] summary { border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
 
 .rules-item ul {
   margin: 0;
@@ -1854,275 +1121,643 @@ body.mobile-app .exit-modal-sheet .btn.ghost {
   gap: 8px;
 }
 
-@keyframes modalFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* ========================================================
+   MOBILE APP SHELL
+   Single, authoritative section — no overrides below this.
+   ======================================================== */
+
+/*
+ * ARCHITECTURE:
+ * - html.mobile-app-bg: solid fallback color to plug safe-area gaps
+ * - body.mobile-app::before: position:fixed gradient that covers entire viewport
+ * - body.mobile-app and all children: transparent
+ * - body.mobile-app main: single scroll container, natural height
+ * - Sections show/hide via JS-toggled .hidden class only
+ * - Bottom nav: always a 3-column grid, never block
+ */
+
+/* ── 18. MOBILE BACKGROUND ───────────────────────────────── */
+
+html.mobile-app-bg {
+  /* Solid color fills notch / home-indicator safe-area edges */
+  background-color: #040404;
+  min-height: 100dvh;
 }
 
-@keyframes modalSlideIn {
-  from { transform: translateY(16px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-@media (max-width: 767px) {
-  .top-header {
-    padding-top: calc(16px + env(safe-area-inset-top));
-  }
-
-  .navbar {
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .install-app-btn {
-    width: auto;
-    margin-top: 0;
-  }
-}
-
-/* ===== FINAL MOBILE POLISH OVERRIDES ===== */
-
-html.mobile-app-bg,
 body.mobile-app {
-  background: #040404 !important;
+  background: transparent;
+  color: #fff;
   min-height: 100dvh;
   min-height: 100svh;
   overflow-x: hidden;
+  overscroll-behavior-y: none;
 }
 
+/*
+ * One ::before, one definition — the full-screen gradient.
+ * position:fixed covers the entire viewport regardless of scroll.
+ * Extending slightly beyond inset:0 via negative top/bottom ensures
+ * the gradient reaches behind the status bar and home indicator on iOS.
+ */
 body.mobile-app::before {
-  top: -12vh !important;
+  content: "";
+  position: fixed;
+  top: calc(-1 * env(safe-area-inset-top, 0px) - 20px);
   right: 0;
-  bottom: -12vh !important;
+  bottom: calc(-1 * env(safe-area-inset-bottom, 0px) - 20px);
   left: 0;
+  z-index: -1;
   background:
-    radial-gradient(circle at 50% -8%, rgba(255, 255, 255, 0.08), transparent 30%),
-    radial-gradient(circle at 12% 90%, rgba(206, 184, 143, 0.15), transparent 32%),
-    linear-gradient(180deg, #040404 0%, #17120b 40%, #5b4a2d 76%, #f4efe6 100%) !important;
-  background-repeat: no-repeat;
+    radial-gradient(circle at 50% -10%, rgba(255, 255, 255, 0.10), transparent 34%),
+    radial-gradient(circle at 10% 92%, rgba(206, 184, 143, 0.16), transparent 34%),
+    linear-gradient(180deg, #040404 0%, #17120b 42%, #5b4a2d 78%, #f4efe6 100%);
   background-size: cover;
+  background-repeat: no-repeat;
 }
+
+/* ── 19. MOBILE HIDE / SHOW RULES ────────────────────────── */
+
+body.mobile-app header,
+body.mobile-app #roster-section,
+body.mobile-app #control-section,
+body.mobile-app .hero,
+body.mobile-app .stepper,
+body.mobile-app .team-setup-column,
+body.mobile-app .desktop-only,
+body.mobile-app .tabs,
+body.mobile-app .top-header {
+  display: none !important;
+}
+
+body.mobile-app .mobile-only { display: block; }
+
+/* State-driven panel visibility */
+body.mobile-app[data-mobile-state="access"]  .mobile-register-panel,
+body.mobile-app[data-mobile-state="register"] .mobile-access-panel,
+body.mobile-app[data-mobile-state="register"] .mobile-play-panel,
+body.mobile-app[data-mobile-state="access"]  .mobile-play-panel,
+body.mobile-app[data-mobile-state="playing"] .mobile-register-panel,
+body.mobile-app[data-mobile-state="playing"] .mobile-access-panel,
+body.mobile-app[data-mobile-state="playing"] .team-setup-column {
+  display: none;
+}
+
+/* Onboarding: hide the dock during welcome flow */
+body.mobile-app[data-mobile-state="onboarding-code"] .mobile-dock,
+body.mobile-app[data-mobile-state="onboarding-team"] .mobile-dock {
+  display: none !important;
+}
+
+/* ── 20. MOBILE MAIN LAYOUT ──────────────────────────────── */
 
 body.mobile-app main {
-  height: auto !important;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  display: block;
+  background: transparent;
+  padding:
+    max(16px, env(safe-area-inset-top, 16px))
+    16px
+    calc(104px + env(safe-area-inset-bottom, 0px));
+  position: relative;
+  z-index: 1;
+  /* Let the page scroll naturally — no fixed height, no nested overflow */
   min-height: 100dvh;
   min-height: 100svh;
-  padding:
-    calc(8px + env(safe-area-inset-top, 0px))
-    14px
-    calc(104px + env(safe-area-inset-bottom, 0px)) !important;
-  overflow: visible !important;
 }
 
-/* remove the big dead space above the logo */
-body.mobile-app #player-section {
-  min-height: auto !important;
-  padding-top: calc(10px + env(safe-area-inset-top, 0px)) !important;
-  overflow: visible !important;
+/* ── 21. PLAYER SECTION ──────────────────────────────────── */
+
+body.mobile-app #player-section,
+body.mobile-app .mobile-play-panel {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
 }
 
-/* make the logo bigger and tighten spacing above/below it */
+/* ── 22. LOGO / DOCK ─────────────────────────────────────── */
+
 body.mobile-app .mobile-dock {
-  display: flex !important;
+  display: flex;
   justify-content: center;
   align-items: center;
-  margin: 0 auto 2px !important;
-  padding: 0 !important;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: #fff;
+  /* Clean, intentional spacing: 16px above (from main padding), 8px below */
+  padding: 8px 0 16px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 body.mobile-app .mobile-dock-logo {
-  width: min(96vw, 440px) !important;
-  max-height: 172px !important;
+  /* Constrained but not cramped: max 88vw or 380px, cap height at 144px */
+  width: min(88vw, 380px);
+  max-height: 144px;
   object-fit: contain;
   display: block;
+  /* Drop shadow for depth against the gradient */
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.3));
 }
 
-/* tighten the heading under the logo */
+/* ── 23. PLAY PANEL ──────────────────────────────────────── */
+
 body.mobile-app .mobile-play-panel {
-  gap: 10px !important;
+  display: none;
+  gap: 14px;
 }
 
-body.mobile-app .mobile-play-panel .section-title {
-  margin: 0 0 2px !important;
+body.mobile-app.has-active-team .mobile-play-panel,
+body.mobile-app[data-mobile-state="playing"] .mobile-play-panel {
+  display: grid;
 }
 
-body.mobile-app .mobile-play-panel .section-title h2 {
-  font-size: 1.5rem !important;
-  line-height: 1.05;
+body.mobile-app .section-title { margin-bottom: 4px; }
+
+body.mobile-app .section-title h2 {
+  font-size: 1.55rem;
+  color: #fff;
 }
 
-/* make the leaderboard/rules pages feel like part of the same background,
-   not their own rectangular panel */
-body.mobile-app #leaderboard-section,
-body.mobile-app #rules-section {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
+body.mobile-app .score-actions { gap: 12px; }
+body.mobile-app .powerups { color: rgba(255, 255, 255, 0.86); }
+body.mobile-app .reward-banner { color: #fff; }
+body.mobile-app #manual-refresh { margin-top: 4px; }
 
-/* give the leaderboard content breathing room so the first place card
-   does not visually crash into the heading */
-body.mobile-app .leaderboard-stage {
-  margin-bottom: 14px !important;
-}
+/* ── 24. LEADERBOARD SECTION ─────────────────────────────── */
 
-body.mobile-app .leaderboard-heading {
-  margin-bottom: 14px !important;
-}
-
-body.mobile-app .leaderboard-split {
-  margin-top: 0 !important;
-  gap: 14px !important;
-}
-
-body.mobile-app .leaderboard {
-  gap: 14px !important;
-  padding-top: 4px !important;
-}
-
-/* leaderboard list container sizing */
-body.mobile-app[data-view="leaderboard"] #leaderboard-section {
-  display: block !important;
-  height: auto !important;
-  min-height: calc(100dvh - 140px) !important;
-  overflow: visible !important;
-  padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)) !important;
-}
-
-/* keep the bottom fade, but position it cleanly above the nav */
-body.mobile-app[data-view="leaderboard"] #leaderboard-section::after {
-  bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
-  height: 72px !important;
-  background: linear-gradient(
-    to bottom,
-    rgba(4, 4, 4, 0),
-    rgba(4, 4, 4, 0.88) 58%,
-    rgba(4, 4, 4, 1)
-  ) !important;
-}
-
-/* THIS fixes the bottom nav stacking vertically.
-   body.mobile-app .mobile-only was overriding your grid layout before. */
-body.mobile-app .mobile-bottom-nav.mobile-only {
-  display: grid !important;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  align-items: center;
-}
-
-body.mobile-app .mobile-bottom-nav {
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(560px, calc(100% - 24px)) !important;
-  bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important;
-  gap: 8px !important;
-  padding: 8px !important;
-  border-radius: 18px !important;
-}
-
-body.mobile-app .mobile-bottom-nav__tab {
-  width: 100%;
-  min-width: 0;
-  min-height: 52px !important;
-  padding: 0 10px;
-  display: inline-flex !important;
-  flex-direction: row !important;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  text-align: center;
-  white-space: nowrap;
-}
-
-body.mobile-app .mobile-bottom-nav__tab span {
-  display: inline-block;
-}
-
-body.mobile-app .mobile-bottom-nav__tab.is-active {
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
-}
-
-/* slightly cleaner cards overall */
-body.mobile-app .game-card,
-body.mobile-app .leaderboard-card,
-body.mobile-app .opponent-card,
-body.mobile-app .current-match-card,
-body.mobile-app .reward-banner {
-  border-radius: 18px !important;
-}
-
-/* prevent accidental little seams from nested panels */
-body.mobile-app,
-body.mobile-app main,
-body.mobile-app #player-section,
-body.mobile-app .mobile-play-panel {
-  background-color: transparent !important;
-}
-
-/* ===== FINAL MOBILE STRUCTURE FIX ===== */
-
-body.mobile-app main {
-  height: auto !important;
-  min-height: 100dvh !important;
-  min-height: 100svh !important;
-  overflow: visible !important;
-  padding:
-    calc(8px + env(safe-area-inset-top, 0px))
-    14px
-    calc(108px + env(safe-area-inset-bottom, 0px)) !important;
-}
-
-body.mobile-app[data-view="leaderboard"] #leaderboard-section,
-body.mobile-app[data-view="rules"] #rules-section {
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  overflow: visible !important;
-  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)) !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-
+/*
+ * Leaderboard is shown/hidden via JS's .hidden class.
+ * We do NOT set display:none here — we just style it.
+ * padding-bottom ensures content clears the fixed navbar.
+ */
 body.mobile-app #leaderboard-section {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+  /* Extra bottom space so last item clears the fade + navbar */
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
 }
 
+/* Subtle fade above the navbar when leaderboard is active */
 body.mobile-app[data-view="leaderboard"] #leaderboard-section::after {
   content: "";
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
-  height: 110px !important;
+  bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+  height: 90px;
   pointer-events: none;
   z-index: 1095;
   background: linear-gradient(
     to bottom,
-    rgba(4, 4, 4, 0) 0%,
-    rgba(4, 4, 4, 0.72) 48%,
-    rgba(4, 4, 4, 0.96) 78%,
+    transparent 0%,
+    rgba(4, 4, 4, 0.55) 48%,
+    rgba(4, 4, 4, 0.92) 80%,
     rgba(4, 4, 4, 1) 100%
-  ) !important;
+  );
 }
 
-body.mobile-app #player-section {
-  padding-top: calc(4px + env(safe-area-inset-top, 0px)) !important;
-  min-height: auto !important;
+body.mobile-app .leaderboard-stage { margin-bottom: 14px; }
+body.mobile-app .leaderboard-heading { margin-bottom: 14px; }
+body.mobile-app .leaderboard-split { margin-top: 0; gap: 14px; }
+body.mobile-app .leaderboard { gap: 14px; padding-top: 4px; }
+
+/* ── 25. RULES SECTION ───────────────────────────────────── */
+
+body.mobile-app #rules-section {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
 }
 
+/* ── 26. MOBILE CARD THEMING ─────────────────────────────── */
+
+body.mobile-app .card,
 body.mobile-app .mobile-dock {
-  margin: 0 auto -8px !important;
-  padding: 0 !important;
-  width: 100% !important;
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
-body.mobile-app .mobile-dock-logo {
-  width: min(96vw, 440px) !important;
-  max-height: 132px !important;
-  display: block;
+body.mobile-app .mobile-dock-subtitle { color: rgba(255, 255, 255, 0.78); }
+body.mobile-app .status  { color: rgba(255, 255, 255, 0.78); }
+body.mobile-app .hint    { color: rgba(255, 255, 255, 0.78); }
+
+body.mobile-app .game-card,
+body.mobile-app .reward-banner,
+body.mobile-app .leaderboard-card,
+body.mobile-app .roster-team,
+body.mobile-app .opponent-card,
+body.mobile-app .current-match-card {
+  background: rgba(10, 10, 10, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #fff;
+  border-radius: 18px;
+}
+
+body.mobile-app #next-game h3,
+body.mobile-app .mobile-play-panel h2,
+body.mobile-app .mobile-play-panel .matchup-subtitle,
+body.mobile-app .opponent-country,
+body.mobile-app .opponent-members { color: #fff; }
+
+body.mobile-app .flag { border-color: rgba(255, 255, 255, 0.18); }
+
+body.mobile-app .stat-pill {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+/* Mobile-themed form panels */
+body.mobile-app .mobile-register-panel,
+body.mobile-app .mobile-access-panel,
+body.mobile-app[data-mobile-state="playing"] .mobile-play-panel {
+  background: linear-gradient(160deg, rgba(0, 0, 0, 0.92), rgba(34, 28, 18, 0.9), rgba(206, 184, 143, 0.42));
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 18px;
+  padding: 16px;
+  color: #fff;
+}
+
+body.mobile-app .mobile-play-panel .status,
+body.mobile-app .mobile-register-panel .hint,
+body.mobile-app .mobile-access-panel .hint,
+body.mobile-app .mobile-register-panel .status,
+body.mobile-app .mobile-access-panel .status,
+body.mobile-app .mobile-panel-kicker { color: rgba(255, 255, 255, 0.9); }
+
+body.mobile-app .mobile-register-panel label,
+body.mobile-app .mobile-access-panel label,
+body.mobile-app .mobile-register-panel h3,
+body.mobile-app .mobile-access-panel h3,
+body.mobile-app .mobile-register-panel .section-title h2,
+body.mobile-app .mobile-access-panel .section-title h3,
+body.mobile-app #player-section .section-title h2 { color: #f6f8ff; }
+
+body.mobile-app .mobile-register-panel .mobile-panel-header,
+body.mobile-app .mobile-access-panel .mobile-panel-header {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+body.mobile-app .mobile-play-panel .game-card { color: #1b2340; }
+
+body.mobile-app .mobile-play-panel .game-card .status { color: #566180; }
+
+body.mobile-app .mobile-play-panel .matchup-subtitle {
+  color: #435075;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+body.mobile-app .mobile-play-panel .opponent-country {
+  color: #2c4bae;
+  font-size: 0.82rem;
+}
+
+body.mobile-app .mobile-play-panel .opponent-members {
+  color: #1a2649;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+body.mobile-app .mobile-register-panel input,
+body.mobile-app .mobile-access-panel input { background: rgba(255, 255, 255, 0.96); color: #111; }
+
+/* ── 27. MOBILE BUTTON THEMING ───────────────────────────── */
+
+body.mobile-app .btn {
+  border-radius: 18px;
+  min-height: 52px;
+  font-size: 1rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #d8bf7c 0%, #f7f1de 52%, #b89146 100%);
+  color: #0b0b0b;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+}
+
+body.mobile-app .btn.secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+}
+
+body.mobile-app .btn.ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+
+/* ── 28. BOTTOM NAV ──────────────────────────────────────── */
+
+/*
+ * Always a 3-column grid. The .mobile-only override (display:block) is
+ * counteracted here with an explicit display:grid on the nav itself.
+ * No !important needed because this selector is more specific.
+ */
+.mobile-bottom-nav {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100% - 24px));
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 1100;
+  /* Grid: always 3 equal columns, never stacks */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 18px;
+  background: rgba(9, 9, 9, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/*
+ * Override the .mobile-only { display: block } that gets applied
+ * when body.mobile-app is set. The nav needs display:grid, not block.
+ */
+body.mobile-app .mobile-bottom-nav.mobile-only {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mobile-bottom-nav__tab {
+  appearance: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.88);
+  border-radius: 12px;
+  min-height: 50px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  white-space: nowrap;
+  text-align: center;
+  padding: 0 8px;
+  width: 100%;
+  /* Prevent text from ever wrapping or causing height growth */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-bottom-nav__tab.is-active {
+  color: #111a2c;
+  border-color: rgba(255, 255, 255, 0.35);
+  background: linear-gradient(120deg, #ffe4aa, #ffffff);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+}
+
+/* ── 29. TOAST (mobile offset) ───────────────────────────── */
+
+body.mobile-app .toast-container {
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ── 30. SPLASH SCREEN ───────────────────────────────────── */
+
+body.mobile-app .mobile-splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: grid;
+  place-items: center;
+  padding:
+    max(20px, env(safe-area-inset-top, 0px))
+    24px
+    max(20px, env(safe-area-inset-bottom, 0px));
+  background:
+    radial-gradient(circle at 50% -10%, rgba(255, 255, 255, 0.10), transparent 34%),
+    radial-gradient(circle at 10% 92%, rgba(206, 184, 143, 0.16), transparent 34%),
+    linear-gradient(180deg, #040404 0%, #17120b 42%, #5b4a2d 78%, #f4efe6 100%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 340ms ease, visibility 340ms ease;
+}
+
+body.mobile-app.is-splash-active .mobile-splash-screen {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+body.mobile-app.is-splash-exiting .mobile-splash-screen {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.mobile-app .mobile-splash-logo {
+  width: min(78vw, 330px);
+  max-height: 36vh;
   object-fit: contain;
+  filter: drop-shadow(0 14px 38px rgba(0, 0, 0, 0.35));
+  transform-origin: center center;
+  animation: splashZoomIn 1650ms cubic-bezier(0.16, 0.84, 0.24, 1) forwards;
+}
+
+body.mobile-app.is-splash-exiting .mobile-splash-logo {
+  animation: splashZoomOutFast 320ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+/* Content stays mounted behind splash so it's ready when splash exits */
+body.mobile-app.pre-mobile-app main,
+body.mobile-app.pre-mobile-app .mobile-welcome-screen,
+body.mobile-app.is-splash-active main,
+body.mobile-app.is-splash-active .mobile-welcome-screen,
+body.mobile-app.is-splash-exiting main,
+body.mobile-app.is-splash-exiting .mobile-welcome-screen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@keyframes splashZoomIn {
+  0%   { transform: scale(0.68); opacity: 0.42; }
+  60%  { transform: scale(1.04); opacity: 0.94; }
+  100% { transform: scale(1.14); opacity: 1; }
+}
+
+@keyframes splashZoomOutFast {
+  from { transform: scale(1.14); opacity: 1; }
+  to   { transform: scale(0.22); opacity: 0; }
+}
+
+/* ── 31. MOBILE WELCOME CARD (in-app) ────────────────────── */
+
+body.mobile-app .mobile-welcome-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  padding:
+    max(20px, env(safe-area-inset-top, 0px))
+    18px
+    max(20px, env(safe-area-inset-bottom, 0px));
+  display: grid;
+  place-items: center;
+  align-content: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  background: transparent;
+}
+
+body.mobile-app[data-mobile-state="onboarding-code"] .mobile-welcome-screen,
+body.mobile-app[data-mobile-state="onboarding-team"] .mobile-welcome-screen {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+body.mobile-app .mobile-welcome-card {
+  display: none;
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  width: min(100%, 420px);
+  max-width: 420px;
+  margin: auto;
+  max-height: min(82dvh, 760px);
+  overflow-y: auto;
+  border-radius: 28px;
+  padding: 26px 22px 22px;
+  background: rgba(7, 7, 7, 0.72);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  gap: 14px;
+}
+
+body.mobile-app .mobile-welcome-card.is-visible {
+  display: grid;
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+/* Gradient border ring */
+body.mobile-app .mobile-welcome-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(212, 187, 127, 0.42), rgba(255, 255, 255, 0.08));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+body.mobile-app .mobile-welcome-card h1,
+body.mobile-app .mobile-welcome-card h2,
+body.mobile-app .mobile-welcome-card label { color: #fff; }
+
+body.mobile-app .mobile-welcome-card h1,
+body.mobile-app .mobile-welcome-card h2 {
+  font-size: clamp(2rem, 8vw, 2.6rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  margin: 0 0 2px;
+}
+
+body.mobile-app .mobile-welcome-card label {
+  font-size: 0.92rem;
+  margin-bottom: 4px;
+}
+
+body.mobile-app .mobile-welcome-card input {
+  background: rgba(255, 255, 255, 0.96);
+  color: #111;
+  border-radius: 16px;
+  min-height: 54px;
+  font-size: 1.04rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+body.mobile-app .mobile-onboarding-note {
+  color: rgba(255, 255, 255, 0.78);
+  min-height: 1.4em;
+}
+
+body.mobile-app .mobile-onboarding-note.success { color: #c8ffd8; }
+body.mobile-app .welcome-download { margin-top: 2px; }
+
+/* ── 32. MOBILE MODAL THEMING ────────────────────────────── */
+
+body.mobile-app .install-modal-sheet { color: var(--text); }
+
+body.mobile-app .install-modal-sheet h2,
+body.mobile-app .install-modal-sheet .install-kicker { color: var(--text); }
+
+body.mobile-app .install-modal-sheet .status { color: var(--muted); }
+
+body.mobile-app .exit-modal-sheet .btn.secondary {
+  background: linear-gradient(135deg, #d8bf7c 0%, #f7f1de 52%, #b89146 100%);
+  color: #0b0b0b;
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.24);
+}
+
+body.mobile-app .exit-modal-sheet .btn.ghost {
+  background: rgba(20, 32, 62, 0.08);
+  color: #132750;
+  border-color: rgba(20, 55, 130, 0.36);
+  box-shadow: inset 0 0 0 1px rgba(20, 55, 130, 0.08);
+  text-shadow: none;
+}
+
+/* ── 33. HTML PRELOAD (before JS runs) ───────────────────── */
+
+html.mobile-preload {
+  background:
+    radial-gradient(circle at 50% -10%, rgba(255, 255, 255, 0.1), transparent 34%),
+    radial-gradient(circle at 10% 92%, rgba(206, 184, 143, 0.16), transparent 34%),
+    linear-gradient(180deg, #040404 0%, #17120b 42%, #5b4a2d 78%, #f4efe6 100%);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-color: #040404;
+}
+
+html.mobile-preload body {
+  min-height: 100dvh;
+  background: transparent;
+}
+
+html.mobile-preload body > :not(#mobile-splash) { visibility: hidden; }
+
+html.mobile-preload #mobile-splash {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
 }
