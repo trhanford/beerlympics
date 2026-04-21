@@ -3003,12 +3003,12 @@ const initDesktopLanding = () => {
   // If already in a session, skip landing
   if (getActiveGameCode() && getActiveTeamId()) {
     hideDtLanding();
-    showDtModePill(false); // player mode
+    showDtModePill(false);
     return;
   }
   if (getActiveGameCode() && isHost()) {
     hideDtLanding();
-    showDtModePill(true); // host mode
+    showDtModePill(true);
     return;
   }
 
@@ -3018,8 +3018,15 @@ const initDesktopLanding = () => {
   const dtGenerateBtn = document.getElementById("dt-generate-btn");
   const dtGenerateStatus = document.getElementById("dt-generate-status");
   const dtStartBtn2 = document.getElementById("dt-start-btn");
+  const dtRejoinBtn = document.getElementById("dt-rejoin-btn");
+  const dtRejoinInput = document.getElementById("dt-rejoin-code");
+  const dtRejoinStatus = document.getElementById("dt-rejoin-status");
+  const logoBtn = document.getElementById("dt-logo-btn");
 
-  // ── Join button ───────────────────────────────────────────
+  // Logo is non-interactive while on landing
+  logoBtn?.classList.add("dt-landing-active");
+
+  // ── Join button ────────────────────────────────────────────
   dtJoinBtn?.addEventListener("click", async () => {
     const code = normalizeGameCode(dtGameCodeInput?.value || "");
     const playerName = (dtPlayerNameInput?.value || "").trim();
@@ -3045,8 +3052,8 @@ const initDesktopLanding = () => {
       validateTeamInputs();
       await registerTeam({ playerName, country, partnerName });
       hideDtLanding();
-      showDtModePill(false); // player mode
-      // Show Play tab for players
+      logoBtn?.classList.remove("dt-landing-active");
+      showDtModePill(false);
       document.querySelectorAll(".dt-play-tab").forEach(t => t.classList.remove("dt-host-hide"));
     } catch (err) {
       showDtHint(dtJoinStatus, `Error: ${err?.message || err}`, "error");
@@ -3057,6 +3064,31 @@ const initDesktopLanding = () => {
 
   dtGameCodeInput?.addEventListener("keydown", (e) => { if (e.key === "Enter") dtJoinBtn?.click(); });
 
+  // ── Rejoin button ──────────────────────────────────────────
+  dtRejoinBtn?.addEventListener("click", async () => {
+    const code = normalizeGameCode(dtRejoinInput?.value || "");
+    if (!code) { showDtHint(dtRejoinStatus, "Enter your game code.", "error"); return; }
+    setButtonLoadingDt(dtRejoinBtn, true, "Looking up...");
+    showDtHint(dtRejoinStatus, "", "");
+    try {
+      const game = await withTimeout(fetchGame(code), 7000, "Timed out.");
+      if (!game) { showDtHint(dtRejoinStatus, "No game found for that code.", "error"); return; }
+      setGameCodes(code);
+      subscribeToGame(code);
+      hideDtLanding();
+      logoBtn?.classList.remove("dt-landing-active");
+      showDtModePill(false);
+      setView("leaderboard");
+      showToast("Welcome back! You're viewing the live leaderboard.", "success");
+    } catch (err) {
+      showDtHint(dtRejoinStatus, `Error: ${err?.message || err}`, "error");
+    } finally {
+      setButtonLoadingDt(dtRejoinBtn, false);
+    }
+  });
+
+  dtRejoinInput?.addEventListener("keydown", (e) => { if (e.key === "Enter") dtRejoinBtn?.click(); });
+
   // ── Step 1 → Step 2: Generate code ────────────────────────
   dtGenerateBtn?.addEventListener("click", async () => {
     setButtonLoadingDt(dtGenerateBtn, true, "Generating...");
@@ -3064,9 +3096,10 @@ const initDesktopLanding = () => {
     try {
       const newCode = await startNewGame();
       if (dtCodeBadge) dtCodeBadge.textContent = newCode;
-      // Transition to step 2
       step1?.classList.add("hidden");
       step2?.classList.remove("hidden");
+      // Wire game-rules filtering now that step 2 is visible
+      initGameRulesFilter();
     } catch (err) {
       showDtHint(dtGenerateStatus, `Failed: ${err?.message || err}`, "error");
     } finally {
@@ -3077,11 +3110,88 @@ const initDesktopLanding = () => {
   // ── Step 2 → App: Let's play ──────────────────────────────
   dtStartBtn2?.addEventListener("click", () => {
     hideDtLanding();
-    showDtModePill(true); // host mode
-    // Hide Play tab — hosts view leaderboard/roster, not the play panel
+    logoBtn?.classList.remove("dt-landing-active");
+    showDtModePill(true);
     document.querySelectorAll(".dt-play-tab").forEach(t => t.classList.add("dt-host-hide"));
     setView("leaderboard");
     showToast("Game is live! Share the code with your players.", "success");
+  });
+
+  // ── Logo leave button (only active after past landing) ─────
+  initDtLeaveModal(logoBtn);
+};
+
+// Map game checkbox IDs → rule value prefixes to show/hide
+const GAME_RULE_MAP = {
+  "cfg-die":        ["die_"],
+  "cfg-beer-pong":  ["pong_"],
+  "cfg-beerio-kart":["kart_"],
+  "cfg-flip-cup":   ["flipcup_"],
+  "cfg-drinkball":  [], // no specific house rules yet
+};
+
+const initGameRulesFilter = () => {
+  const rulesList = document.getElementById("dt-rules-list");
+  if (!rulesList) return;
+
+  Object.entries(GAME_RULE_MAP).forEach(([checkboxId, prefixes]) => {
+    const gameChk = document.getElementById(checkboxId);
+    if (!gameChk || prefixes.length === 0) return;
+
+    gameChk.addEventListener("change", () => {
+      const enabled = gameChk.checked;
+      rulesList.querySelectorAll("input[type='checkbox']").forEach(ruleChk => {
+        const matchesGame = prefixes.some(p => ruleChk.value.startsWith(p));
+        if (matchesGame) {
+          const row = ruleChk.closest("label");
+          if (row) {
+            row.style.display = enabled ? "" : "none";
+            ruleChk.checked = enabled; // uncheck hidden rules too
+          }
+        }
+      });
+    });
+  });
+};
+
+const initDtLeaveModal = (logoBtn) => {
+  const modal = document.getElementById("dt-leave-modal");
+  const backdrop = document.getElementById("dt-leave-backdrop");
+  const confirmBtn = document.getElementById("dt-leave-confirm");
+  const cancelBtn = document.getElementById("dt-leave-cancel");
+  if (!modal || !logoBtn) return;
+
+  logoBtn.addEventListener("click", () => {
+    // Don't open if on the landing itself
+    if (logoBtn.classList.contains("dt-landing-active")) return;
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+  });
+
+  const closeModal = () => {
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden", "true");
+  };
+
+  backdrop?.addEventListener("click", closeModal);
+  cancelBtn?.addEventListener("click", closeModal);
+
+  confirmBtn?.addEventListener("click", () => {
+    closeModal();
+    // Reset session and show landing
+    clearActiveSession();
+    // Re-show step 1, hide step 2
+    document.getElementById("dt-step-1")?.classList.remove("hidden");
+    document.getElementById("dt-step-2")?.classList.add("hidden");
+    dtLanding?.classList.remove("hidden");
+    // Hide mode pill again
+    const pill = document.getElementById("mode-pill");
+    if (pill) pill.classList.remove("dt-visible");
+    logoBtn.classList.add("dt-landing-active");
+    // Restore Play tab visibility
+    document.querySelectorAll(".dt-play-tab").forEach(t => t.classList.remove("dt-host-hide"));
+    setView("player");
+    showToast("You've left the session. The game continues without you.", "info");
   });
 };
 
