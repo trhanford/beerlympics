@@ -1,4 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+import { HOUSE_RULES } from "./house-rules.js";
 import {
   getFirestore,
   doc,
@@ -3045,6 +3046,8 @@ BEERIO KART: Each player starts a Mario Kart race with one unopened beer. Must f
 DIE: Two teams face each other, drinks at table corners. Toss the die so it hits the table cleanly and bounces high. One-handed catch by defending team negates the point. Missed catch = 1 point for offense; die hits floor untouched = 2 points. Play to host-set target (commonly 9 or 11).
 
 DRINKBALL: One cup per player; one ball in play. Teams pass and shoot to land ball in an opponent's cup. Made shot = that opposing player drinks and cup resets. No goaltending, blocking with cup hand, or body contact. First team to agreed score wins.
+
+${HOUSE_RULES}
 
 When a situation isn't covered explicitly, rule in the spirit of fair play. For clear yes/no rulings, end your response with exactly one of these on its own line:
 VERDICT: GOOD
