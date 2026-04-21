@@ -74,6 +74,10 @@
     <div class="mobile-welcome-screen mobile-only" id="mobile-welcome">
       <div class="mobile-welcome-card is-visible" id="mobile-onboarding-code">
         <h1>Welcome to the Beerlympics</h1>
+        <div class="onboarding-tip" id="onboarding-tip-code">
+          <span class="onboarding-tip-icon">💡</span>
+          <span>You can leave the app mid-game — as long as it stays running in the background, we'll remember exactly where you left off.</span>
+        </div>
         <label for="mobileGameCodeInput">Game code:</label>
         <input
           id="mobileGameCodeInput"
@@ -95,6 +99,10 @@
       </div>
       <div class="mobile-welcome-card" id="mobile-onboarding-team">
         <h2>We found your game.</h2>
+        <div class="onboarding-tip" id="onboarding-tip-team">
+          <span class="onboarding-tip-icon">🔁</span>
+          <span>Played before? Just enter the same details and we'll reunite you with your team and stats instantly.</span>
+        </div>
         <label for="mobilePlayerNameInput">Your Name</label>
         <input id="mobilePlayerNameInput" name="mobilePlayerNameInput" placeholder="Your name" />
         <label for="mobilePartnerNameInput">Partner Name</label>
@@ -483,6 +491,10 @@
         <span aria-hidden="true">🎮</span>
         <span>Game</span>
       </button>
+      <button class="mobile-bottom-nav__tab" id="mobile-nav-rules" type="button" data-view="rules">
+        <span aria-hidden="true">📜</span>
+        <span>Rules</span>
+      </button>
       <button class="mobile-bottom-nav__tab" id="mobile-nav-ref" type="button" data-view="ref">
         <span aria-hidden="true">🏛️</span>
         <span>The Ref</span>
@@ -490,10 +502,6 @@
       <button class="mobile-bottom-nav__tab" id="mobile-nav-leaderboard" type="button" data-view="leaderboard">
         <span aria-hidden="true">🏆</span>
         <span>Scores</span>
-      </button>
-      <button class="mobile-bottom-nav__tab" id="mobile-nav-rules" type="button" data-view="rules">
-        <span aria-hidden="true">📜</span>
-        <span>Rules</span>
       </button>
     </nav>
     <div class="install-modal hidden" id="install-modal" aria-hidden="true">
