@@ -136,88 +136,124 @@
           <img class="dt-nav-logo" src="assets/icons/beerlogo.png" alt="Beerlympics" />
         </div>
         <div class="dt-nav-links">
-          <button class="tab active" data-view="player">Play</button>
+          <button class="tab active dt-play-tab" data-view="player">Play</button>
           <button class="tab" data-view="roster">Roster</button>
           <button class="tab" data-view="leaderboard">Leaderboard</button>
           <button class="tab hidden" data-view="control" id="control-tab">Control</button>
         </div>
         <div class="dt-nav-right">
-          <div class="mode-pill" id="mode-pill">🎈 Player Mode</div>
+          <div class="mode-pill dt-mode-pill hidden" id="mode-pill">🎈 Player Mode</div>
           <div class="mode-pill host hidden" id="host-pill">🎬 Host Mode</div>
           <button id="install-app-btn" class="btn ghost install-app-btn hidden" type="button">Install App</button>
         </div>
       </nav>
     </header>
 
-    <!-- Desktop landing overlay — shown until user joins or starts a game -->
+    <!-- Desktop landing overlay -->
     <div class="dt-landing desktop-only" id="dt-landing">
       <div class="dt-landing-inner">
-        <img class="dt-landing-logo" src="assets/icons/beerlogo.png" alt="Beerlympics" />
-        <p class="dt-landing-sub">The official live scoreboard for game night.</p>
 
-        <div class="dt-landing-cards">
-          <!-- Join an existing game -->
-          <div class="dt-card" id="dt-join-card">
-            <div class="dt-card-icon">🔐</div>
-            <h2>Join a Game</h2>
-            <p>Got a code from the host? Drop it in and register your team.</p>
-            <label for="dt-game-code">Game code</label>
-            <input id="dt-game-code" placeholder="e.g. 7421" inputmode="numeric"
-              autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
-            <div class="dt-name-row">
-              <div>
-                <label for="dt-player-name">Your name</label>
-                <input id="dt-player-name" placeholder="e.g. Jordan" />
+        <!-- STEP 1: Join or Host -->
+        <div id="dt-step-1">
+          <img class="dt-landing-logo" src="assets/icons/beerlogo.png" alt="Beerlympics" />
+          <p class="dt-landing-sub">The official live scoreboard for game night.</p>
+
+          <div class="dt-landing-cards">
+            <!-- Join -->
+            <div class="dt-card" id="dt-join-card">
+              <div class="dt-card-icon">🔐</div>
+              <h2>Join a Game</h2>
+              <p>Got a code from the host? Drop it in and register your team.</p>
+              <label for="dt-game-code">Game code</label>
+              <input id="dt-game-code" placeholder="e.g. 7421" inputmode="numeric"
+                autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
+              <div class="dt-name-row">
+                <div>
+                  <label for="dt-player-name">Your name</label>
+                  <input id="dt-player-name" placeholder="e.g. Jordan" />
+                </div>
+                <div>
+                  <label for="dt-partner-name">Partner name</label>
+                  <input id="dt-partner-name" placeholder="e.g. Sam" />
+                </div>
               </div>
               <div>
-                <label for="dt-partner-name">Partner name</label>
-                <input id="dt-partner-name" placeholder="e.g. Sam" />
+                <label for="dt-country">Country represented</label>
+                <input id="dt-country" placeholder="e.g. Brazil" />
               </div>
+              <button class="dt-btn dt-btn-gold" type="button" id="dt-join-btn">Join game →</button>
+              <p class="dt-hint" id="dt-join-status"></p>
             </div>
-            <div>
-              <label for="dt-country">Country represented</label>
-              <input id="dt-country" placeholder="e.g. Brazil" />
+
+            <!-- Host -->
+            <div class="dt-card" id="dt-setup-card">
+              <div class="dt-card-icon">🎬</div>
+              <h2>Host a Game</h2>
+              <p>Setting up tonight's event? Generate a code and let everyone join from their phones. You'll configure the games and rules next.</p>
+              <button class="dt-btn dt-btn-gold" type="button" id="dt-generate-btn">Generate game code →</button>
+              <p class="dt-hint" id="dt-generate-status"></p>
             </div>
-            <button class="dt-btn dt-btn-gold" type="button" id="dt-join-btn">Join game →</button>
-            <p class="dt-hint" id="dt-join-status"></p>
           </div>
 
-          <!-- Start a new game -->
-          <div class="dt-card" id="dt-setup-card">
-            <div class="dt-card-icon">🎬</div>
-            <h2>Host a Game</h2>
-            <p>Setting up tonight's event? Generate a code and let everyone join from their phones.</p>
-            <!-- Step 1: house rules selection -->
-            <div id="dt-rules-step">
-              <p class="dt-rules-label">Select house rules to play by:</p>
+          <div class="admin-toggle dt-admin-toggle">
+            <label>
+              <input type="checkbox" id="admin-toggle" />
+              Admin mode
+            </label>
+            <small id="admin-status">Admin tools are locked.</small>
+          </div>
+        </div>
+
+        <!-- STEP 2: Configure (shown after game code generated) -->
+        <div id="dt-step-2" class="hidden">
+          <div class="dt-configure-header">
+            <div class="dt-code-badge" id="dt-code-badge">----</div>
+            <h2>Configure Your Game</h2>
+            <p class="dt-landing-sub">Choose your games and house rules. We'll brief the Ref automatically.</p>
+          </div>
+
+          <div class="dt-configure-grid">
+            <!-- Games -->
+            <div class="dt-card">
+              <div class="dt-card-icon">🎮</div>
+              <h2>Games to Play</h2>
+              <p>All selected games will be included in the rotation.</p>
+              <div class="dt-rules-list">
+                <label class="dt-rule-check"><input type="checkbox" id="cfg-beer-pong" checked /> 🏓 Beer Pong</label>
+                <label class="dt-rule-check"><input type="checkbox" id="cfg-flip-cup" checked /> 🥤 Flip Cup</label>
+                <label class="dt-rule-check"><input type="checkbox" id="cfg-beerio-kart" checked /> 🏎️ Beerio Kart</label>
+                <label class="dt-rule-check"><input type="checkbox" id="cfg-die" checked /> 🎲 Die</label>
+                <label class="dt-rule-check"><input type="checkbox" id="cfg-drinkball" checked /> ⚽ Drinkball</label>
+              </div>
+            </div>
+
+            <!-- House Rules -->
+            <div class="dt-card">
+              <div class="dt-card-icon">📋</div>
+              <h2>House Rules</h2>
+              <p>The Ref will be briefed on all enabled rules before the first question.</p>
               <div class="dt-rules-list" id="dt-rules-list">
-                <label class="dt-rule-check"><input type="checkbox" value="die_line" checked /> Die: Hitting the center line is a live play</label>
+                <label class="dt-rule-check"><input type="checkbox" value="die_line" checked /> Die: Center line is a live play</label>
                 <label class="dt-rule-check"><input type="checkbox" value="die_field_goal" checked /> Die: Field goal (2 pts)</label>
                 <label class="dt-rule-check"><input type="checkbox" value="die_cup_side" checked /> Die: Cup-side deflection (2 pts)</label>
                 <label class="dt-rule-check"><input type="checkbox" value="die_cup_land" checked /> Die: Cup landing / can top (3 pts)</label>
-                <label class="dt-rule-check"><input type="checkbox" value="die_halftime" checked /> Die: Halftime at 10 combined points</label>
+                <label class="dt-rule-check"><input type="checkbox" value="die_halftime" checked /> Die: Halftime at 10 combined pts</label>
                 <label class="dt-rule-check"><input type="checkbox" value="die_fifa" checked /> Die: FIFA rule</label>
                 <label class="dt-rule-check"><input type="checkbox" value="die_number_shout" checked /> Die: Number shout on long bounce</label>
                 <label class="dt-rule-check"><input type="checkbox" value="pong_bitch_cup" checked /> Beer Pong: Bitch cup rule</label>
                 <label class="dt-rule-check"><input type="checkbox" value="pong_elbow" checked /> Beer Pong: Elbow rule</label>
                 <label class="dt-rule-check"><input type="checkbox" value="pong_reracks" checked /> Beer Pong: Reracks (2 per game)</label>
-                <label class="dt-rule-check"><input type="checkbox" value="pong_gentlemens" checked /> Beer Pong: Automatic Gentleman's at 2 cups</label>
+                <label class="dt-rule-check"><input type="checkbox" value="pong_gentlemens" checked /> Beer Pong: Gentleman's at 2 cups</label>
                 <label class="dt-rule-check"><input type="checkbox" value="kart_no_dd" checked /> Beerio Kart: No drinking and driving</label>
-                <label class="dt-rule-check"><input type="checkbox" value="flipcup_block" checked /> Flip Cup: Teammate wind-blocking allowed</label>
+                <label class="dt-rule-check"><input type="checkbox" value="flipcup_block" checked /> Flip Cup: Wind-blocking allowed</label>
               </div>
-              <button class="dt-btn dt-btn-gold" type="button" id="dt-start-btn">Generate game code →</button>
             </div>
-            <p class="dt-hint" id="dt-setup-status"></p>
           </div>
+
+          <button class="dt-btn dt-btn-gold dt-configure-go" type="button" id="dt-start-btn">Let's play →</button>
+          <p class="dt-hint" id="dt-setup-status"></p>
         </div>
 
-        <div class="admin-toggle dt-admin-toggle">
-          <label>
-            <input type="checkbox" id="admin-toggle" />
-            Admin mode
-          </label>
-          <small id="admin-status">Admin tools are locked.</small>
-        </div>
       </div>
     </div>
 
