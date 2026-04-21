@@ -494,16 +494,14 @@ const setMobileOnboardingStep = (step) => {
   mobileOnboardingTeamCard.classList.toggle("is-visible", !showCode);
   if (showCode) {
     resetJoinButtonLabels();
-    // Auto-dismiss the code-page tip after 5 seconds
     const tip = document.getElementById("onboarding-tip-code");
     if (tip && !tip.classList.contains("is-dismissed")) {
-      setTimeout(() => tip.classList.add("is-dismissed"), 5000);
+      setTimeout(() => tip.classList.add("is-dismissed"), 12000);
     }
   } else {
-    // Auto-dismiss the team-page tip after 5 seconds
     const tip = document.getElementById("onboarding-tip-team");
     if (tip && !tip.classList.contains("is-dismissed")) {
-      setTimeout(() => tip.classList.add("is-dismissed"), 5000);
+      setTimeout(() => tip.classList.add("is-dismissed"), 12000);
     }
   }
 };
@@ -604,10 +602,12 @@ const runMobileWelcome = () => {
   document.documentElement.classList.add("mobile-app-bg");
   const state = computeMobileState();
   setMobileState(state);
-  // Auto-dismiss the first-page tip for fresh sessions
+  // Dismiss code-page tip after 12 seconds on first load
   if (state === "onboarding-code") {
     const tip = document.getElementById("onboarding-tip-code");
-    if (tip) setTimeout(() => tip.classList.add("is-dismissed"), 5000);
+    if (tip && !tip.classList.contains("is-dismissed")) {
+      setTimeout(() => tip.classList.add("is-dismissed"), 12000);
+    }
   }
 };
 
@@ -786,6 +786,7 @@ let unsubscribeMatches = null;
 let adminEditingTeamId = null;
 let pendingTeamActionInFlight = false;
 
+// Pre-game powerup decision tracking
 const preGameDecided = new Set();
 let preGameTimerInterval = null;
 
@@ -1829,8 +1830,8 @@ const renderMatch = () => {
 
   const gameType = GAME_TYPES.find((entry) => entry.id === match.gameType);
 
-  // ── PRE-GAME POWERUP DECISION ──────────────────────────────────────────────
-  // Shown INSTEAD of the match card — takes over the whole screen until decided.
+  // ── PRE-GAME POWERUP DECISION ─────────────────────────────────────────────
+  // Replaces the match card entirely until the player decides or timer expires.
   const alreadyDoubledDown = Boolean(match.doubleDown?.[activeTeamId]);
   const needsPreGameDecision =
     match.status !== "complete" &&
@@ -1852,10 +1853,10 @@ const renderMatch = () => {
             ? `You have ${"⚡".repeat(powerupsRemaining)} powerup${powerupsRemaining !== 1 ? "s" : ""} left.<br>Think you'll win? Double your points!`
             : "No powerups remaining — give it your all!"
         }</p>
-        <div class="pre-game-timer-ring" id="pre-game-ring">
-          <svg width="62" height="62" viewBox="0 0 62 62">
-            <circle class="ring-bg" cx="31" cy="31" r="26"/>
-            <circle class="ring-fill" id="pre-game-ring-fill" cx="31" cy="31" r="26"
+        <div class="pre-game-timer-ring">
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <circle class="ring-bg" cx="32" cy="32" r="26"/>
+            <circle class="ring-fill" id="pre-game-ring-fill" cx="32" cy="32" r="26"
               stroke-dasharray="${circumference}" stroke-dashoffset="0"/>
           </svg>
           <div class="pre-game-timer-label" id="pre-game-timer-label">${TIMER_SECS}</div>
@@ -1884,26 +1885,25 @@ const renderMatch = () => {
     skipBtn.type = "button";
     skipBtn.className = "btn ghost";
     skipBtn.textContent = hasPowerup ? "Nah, just play" : "Let's go! 🏃";
-    const commitSkip = () => {
+    skipBtn.addEventListener("click", () => {
       dismissMobileKeyboard();
       clearInterval(preGameTimerInterval);
       preGameTimerInterval = null;
       preGameDecided.add(match.id);
       renderMatch();
-    };
-    skipBtn.addEventListener("click", commitSkip);
+    });
     scoreActions.appendChild(skipBtn);
 
     let secsLeft = TIMER_SECS;
-    const ringFill = document.getElementById("pre-game-ring-fill");
-    const timerLabel = document.getElementById("pre-game-timer-label");
     if (preGameTimerInterval) clearInterval(preGameTimerInterval);
     preGameTimerInterval = setInterval(() => {
       secsLeft -= 1;
-      if (timerLabel) timerLabel.textContent = secsLeft;
-      if (ringFill) {
-        ringFill.style.strokeDashoffset = circumference * (1 - secsLeft / TIMER_SECS);
-        if (secsLeft <= 10) ringFill.classList.add("urgent");
+      const label = document.getElementById("pre-game-timer-label");
+      const ring = document.getElementById("pre-game-ring-fill");
+      if (label) label.textContent = secsLeft;
+      if (ring) {
+        ring.style.strokeDashoffset = circumference * (1 - secsLeft / TIMER_SECS);
+        if (secsLeft <= 10) ring.classList.add("urgent");
       }
       if (secsLeft <= 0) {
         clearInterval(preGameTimerInterval);
@@ -1916,7 +1916,7 @@ const renderMatch = () => {
     updateStepIndicator({ hasCoreInfo: true, hasCode: true });
     return;
   }
-  // ── END PRE-GAME ───────────────────────────────────────────────────────────
+  // ── END PRE-GAME ──────────────────────────────────────────────────────────
 
   const opponents = (match.teamIds || [])
     .filter((id) => id !== activeTeamId)
@@ -2286,6 +2286,8 @@ const updateTabsVisibility = () => {
   }
   const showMobileNav = isMobileLayout() && hasGame && Boolean(getActiveTeamId());
   mobileBottomNav?.classList.toggle("hidden", !showMobileNav);
+  const helpBtn = document.getElementById("help-btn");
+  if (helpBtn) helpBtn.classList.toggle("hidden", !showMobileNav);
 };
 
 const startNewGame = async () => {
@@ -2841,23 +2843,38 @@ if (copyJoinLinkButton) {
 if (shareJoinLinkButton) {
   shareJoinLinkButton.addEventListener("click", async () => {
     const code = getActiveGameCode();
-    if (!code) {
-      showToast("Start or join a game first.", "warning");
-      return;
-    }
+    if (!code) { showToast("Start or join a game first.", "warning"); return; }
     const joinUrl = getJoinUrl(code);
     const shareText = `🍻 Join our Beerlympics game! Use code ${code} or tap the link to jump straight in: ${joinUrl}`;
     if (navigator.share) {
-      try {
-        await navigator.share({ text: shareText });
-      } catch (err) {
-        if (err.name !== "AbortError") showToast("Could not open share sheet.", "warning");
-      }
+      try { await navigator.share({ text: shareText }); }
+      catch (err) { if (err.name !== "AbortError") showToast("Could not open share sheet.", "warning"); }
     } else {
       window.open(`sms:?body=${encodeURIComponent(shareText)}`, "_blank");
     }
   });
 }
+
+// Help modal
+const helpBtn = document.getElementById("help-btn");
+const helpModal = document.getElementById("help-modal");
+const helpModalBackdrop = document.getElementById("help-modal-backdrop");
+const helpModalClose = document.getElementById("help-modal-close");
+
+const openHelpModal = () => {
+  if (!helpModal) return;
+  helpModal.classList.remove("hidden");
+  helpModal.setAttribute("aria-hidden", "false");
+};
+const closeHelpModal = () => {
+  if (!helpModal) return;
+  helpModal.classList.add("hidden");
+  helpModal.setAttribute("aria-hidden", "true");
+};
+
+helpBtn?.addEventListener("click", openHelpModal);
+helpModalBackdrop?.addEventListener("click", closeHelpModal);
+helpModalClose?.addEventListener("click", closeHelpModal);
 
 tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
