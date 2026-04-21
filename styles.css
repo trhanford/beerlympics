@@ -2122,8 +2122,8 @@ body.mobile-app #ref-section {
 
 .ref-input-bar input {
   flex: 1;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   color: #fff;
   border-radius: 22px !important;
   -webkit-border-radius: 22px !important;
@@ -2327,4 +2327,19 @@ body.mobile-app .help-btn.mobile-only { display: flex; }
 .flipcup-confirm-actions {
   display: grid;
   gap: 10px;
+}
+
+/* ── SPINNING HOURGLASS ─────────────────────────────────────── */
+@keyframes hourglass-spin {
+  0%   { transform: rotate(0deg);   }
+  40%  { transform: rotate(180deg); }
+  50%  { transform: rotate(180deg); }
+  90%  { transform: rotate(360deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.hourglass-spin {
+  display: inline-block;
+  animation: hourglass-spin 1.8s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+  transform-origin: center;
 }
