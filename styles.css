@@ -2111,9 +2111,9 @@ body.mobile-app #ref-section {
 .ref-input-bar {
   flex-shrink: 0;
   padding: 10px 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(6, 4, 2, 0.82);
-  backdrop-filter: blur(14px);
+  border-top: none;
+  background: transparent;
+  backdrop-filter: none;
   display: flex;
   gap: 8px;
   position: sticky;
