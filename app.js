@@ -2832,6 +2832,8 @@ const closeHelpModal = () => { helpModal?.classList.add("hidden"); helpModal?.se
 helpBtn?.addEventListener("click", openHelpModal);
 helpModalBackdrop?.addEventListener("click", closeHelpModal);
 helpModalClose?.addEventListener("click", closeHelpModal);
+
+tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     setView(tab.dataset.view);
   });
