@@ -2262,17 +2262,16 @@ body.mobile-app .help-btn.mobile-only { display: flex; }
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.25);
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 1rem;
+  background: rgba(0, 0, 0, 0.18);
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 0.95rem;
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
-  /* Hidden by default — JS toggles display */
   display: none;
   align-items: center;
   justify-content: center;
@@ -2285,4 +2284,4 @@ body.mobile-app .help-btn.mobile-only { display: flex; }
   display: flex;
 }
 
-.input-clear-btn:hover { background: rgba(255,255,255,0.40); }
+.input-clear-btn:hover { background: rgba(0,0,0,0.28); }
