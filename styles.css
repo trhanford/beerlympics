@@ -1316,15 +1316,15 @@ body.mobile-app #leaderboard-section {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 130px;
+  height: 100px;
   pointer-events: none;
   z-index: 1099;
   background: linear-gradient(
     to bottom,
     transparent                    0%,
-    rgba(244, 239, 230, 0.55)     42%,
-    rgba(244, 239, 230, 0.92)     72%,
-    rgba(244, 239, 230, 1)        100%
+    rgba(244, 239, 230, 0.30)     55%,
+    rgba(244, 239, 230, 0.72)     80%,
+    rgba(244, 239, 230, 0.90)    100%
   );
 }
 
@@ -2110,14 +2110,14 @@ body.mobile-app #ref-section {
 /* Ref input bar */
 .ref-input-bar {
   flex-shrink: 0;
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  padding: 10px 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(6, 4, 2, 0.82);
   backdrop-filter: blur(14px);
   display: flex;
   gap: 8px;
   position: sticky;
-  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(82px + env(safe-area-inset-bottom, 0px));
 }
 
 .ref-input-bar input {
@@ -2125,10 +2125,10 @@ body.mobile-app #ref-section {
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: #fff;
-  border-radius: 14px;
+  border-radius: 22px !important;
   min-height: 46px;
   font-size: 0.92rem;
-  padding: 0 14px;
+  padding: 0 16px;
 }
 
 .ref-input-bar input::placeholder { color: rgba(255,255,255,0.35); }
