@@ -2960,6 +2960,8 @@ const init = async () => {
       state.matches = [];
     } else {
       subscribeToGame(code);
+      // If already in a game on desktop, hide the landing
+      if (!isMobileLayout()) hideDtLanding();
     }
   }
   void ensureCountryLookup().then(() => {
@@ -2970,7 +2972,115 @@ const init = async () => {
   });
   refreshState();
   validateTeamInputs();
+
+  // Desktop landing init
+  if (!isMobileLayout()) {
+    initDesktopLanding();
+  }
 };
+
+// ── DESKTOP LANDING ────────────────────────────────────────────────────────
+const dtLanding   = document.getElementById("dt-landing");
+const dtJoinBtn   = document.getElementById("dt-join-btn");
+const dtStartBtn  = document.getElementById("dt-start-btn");
+const dtJoinStatus   = document.getElementById("dt-join-status");
+const dtSetupStatus  = document.getElementById("dt-setup-status");
+const dtGameCodeInput   = document.getElementById("dt-game-code");
+const dtPlayerNameInput = document.getElementById("dt-player-name");
+const dtPartnerNameInput = document.getElementById("dt-partner-name");
+const dtCountryInput    = document.getElementById("dt-country");
+
+const hideDtLanding = () => dtLanding?.classList.add("hidden");
+
+const initDesktopLanding = () => {
+  if (!dtLanding) return;
+
+  // If already in a session, skip landing
+  if (getActiveGameCode() && getActiveTeamId()) {
+    hideDtLanding();
+    return;
+  }
+  if (getActiveGameCode() && isHost()) {
+    hideDtLanding();
+    return;
+  }
+
+  // Join button
+  dtJoinBtn?.addEventListener("click", async () => {
+    const code = normalizeGameCode(dtGameCodeInput?.value || "");
+    const playerName = (dtPlayerNameInput?.value || "").trim();
+    const partnerName = (dtPartnerNameInput?.value || "").trim();
+    const country = (dtCountryInput?.value || "").trim();
+
+    if (!code) { showDtHint(dtJoinStatus, "Enter a game code.", "error"); return; }
+    if (!playerName || !partnerName || !country) {
+      showDtHint(dtJoinStatus, "Fill in your name, partner, and country.", "error"); return;
+    }
+
+    setButtonLoadingDt(dtJoinBtn, true, "Joining...");
+    showDtHint(dtJoinStatus, "Looking up game...", "");
+    try {
+      const game = await withTimeout(fetchGame(code), 7000, "Timed out.");
+      if (!game) { showDtHint(dtJoinStatus, "No game found for that code.", "error"); return; }
+      setGameCodes(code);
+      subscribeToGame(code);
+      // Copy values into the main form so registerTeam works
+      playerNameInput.value = playerName;
+      partnerNameInput.value = partnerName;
+      countryInput.value = country;
+      gameCodeInput.value = code;
+      validateTeamInputs();
+      await registerTeam({ playerName, country, partnerName });
+      hideDtLanding();
+    } catch (err) {
+      showDtHint(dtJoinStatus, `Error: ${err?.message || err}`, "error");
+    } finally {
+      setButtonLoadingDt(dtJoinBtn, false);
+    }
+  });
+
+  // Start (host) button — no name required, just generate code
+  dtStartBtn?.addEventListener("click", async () => {
+    setButtonLoadingDt(dtStartBtn, true, "Creating game...");
+    showDtHint(dtSetupStatus, "", "");
+    try {
+      const newCode = await startNewGame();
+      showDtHint(dtSetupStatus, `Game created! Code: ${newCode}. Share this with players.`, "success");
+      showToast(`Game started! Code ${newCode}.`, "success");
+      hideDtLanding();
+      setView("leaderboard");
+    } catch (err) {
+      showDtHint(dtSetupStatus, `Failed: ${err?.message || err}`, "error");
+    } finally {
+      setButtonLoadingDt(dtStartBtn, false);
+    }
+  });
+
+  // Enter key on code input
+  dtGameCodeInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") dtJoinBtn?.click();
+  });
+};
+
+const showDtHint = (el, msg, type) => {
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `dt-hint${type ? " " + type : ""}`;
+};
+
+const setButtonLoadingDt = (btn, loading, label) => {
+  if (!btn) return;
+  btn.disabled = loading;
+  if (label) {
+    btn.dataset.origLabel = btn.dataset.origLabel || btn.textContent;
+    btn.textContent = loading ? label : btn.dataset.origLabel;
+  } else if (!loading && btn.dataset.origLabel) {
+    btn.textContent = btn.dataset.origLabel;
+  }
+};
+// ── END DESKTOP LANDING ────────────────────────────────────────────────────
+
+
 
 startGameButton.addEventListener("click", async () => {
   const formData = new FormData(form);
