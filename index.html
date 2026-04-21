@@ -133,7 +133,9 @@
     <header class="top-header">
       <nav class="dt-navbar" aria-label="Main navigation">
         <div class="dt-nav-brand">
-          <img class="dt-nav-logo" src="assets/icons/beerlogo.png" alt="Beerlympics" />
+          <button class="dt-logo-btn" id="dt-logo-btn" type="button" aria-label="Return to start">
+            <img class="dt-nav-logo" src="assets/icons/beerlogo.png" alt="Beerlympics" />
+          </button>
         </div>
         <div class="dt-nav-links">
           <button class="tab active dt-play-tab" data-view="player">Play</button>
@@ -158,7 +160,7 @@
           <img class="dt-landing-logo" src="assets/icons/beerlogo.png" alt="Beerlympics" />
           <p class="dt-landing-sub">The official live scoreboard for game night.</p>
 
-          <div class="dt-landing-cards">
+          <div class="dt-landing-cards dt-landing-cards-3">
             <!-- Join -->
             <div class="dt-card" id="dt-join-card">
               <div class="dt-card-icon">🔐</div>
@@ -190,8 +192,20 @@
               <div class="dt-card-icon">🎬</div>
               <h2>Host a Game</h2>
               <p>Setting up tonight's event? Generate a code and let everyone join from their phones. You'll configure the games and rules next.</p>
-              <button class="dt-btn dt-btn-gold" type="button" id="dt-generate-btn">Generate game code →</button>
+              <button class="dt-btn dt-btn-gold dt-btn-compact" type="button" id="dt-generate-btn">Generate game code →</button>
               <p class="dt-hint" id="dt-generate-status"></p>
+            </div>
+
+            <!-- Rejoin -->
+            <div class="dt-card" id="dt-rejoin-card">
+              <div class="dt-card-icon">🔄</div>
+              <h2>Rejoin a Game</h2>
+              <p>Already in a game but lost the page? Enter your code and jump straight back to the leaderboard.</p>
+              <label for="dt-rejoin-code">Game code</label>
+              <input id="dt-rejoin-code" placeholder="e.g. 7421" inputmode="numeric"
+                autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
+              <button class="dt-btn dt-btn-gold dt-btn-compact" type="button" id="dt-rejoin-btn">Rejoin →</button>
+              <p class="dt-hint" id="dt-rejoin-status"></p>
             </div>
           </div>
 
@@ -649,6 +663,20 @@
       </div>
     </div>
     
+    <!-- Desktop leave confirmation -->
+    <div class="dt-leave-modal hidden desktop-only" id="dt-leave-modal">
+      <div class="dt-leave-backdrop" id="dt-leave-backdrop"></div>
+      <div class="dt-leave-sheet" role="dialog" aria-modal="true">
+        <p class="dt-leave-kicker">Heading out?</p>
+        <h2>Leave this round?</h2>
+        <p>Don't worry — the lobby keeps running after you're gone. Teams can still play, scores will be tracked, and you can rejoin anytime with the same game code.</p>
+        <div class="dt-leave-actions">
+          <button class="dt-btn dt-btn-gold" type="button" id="dt-leave-confirm">Yes, take me back</button>
+          <button class="dt-btn dt-btn-ghost" type="button" id="dt-leave-cancel">Stay in the game</button>
+        </div>
+      </div>
+    </div>
+
     <div class="toast-container" id="toast-container"></div>
 
     <script type="module" src="app.js"></script>
