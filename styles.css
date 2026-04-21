@@ -279,8 +279,17 @@ body:not(.mobile-app) .hint.error { color: #ff8080; }
   width: 100%;
 }
 
+.dt-landing-cards-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 900px) {
+  .dt-landing-cards-3 { grid-template-columns: 1fr 1fr; }
+}
+
 @media (max-width: 700px) {
   .dt-landing-cards { grid-template-columns: 1fr; }
+  .dt-landing-cards-3 { grid-template-columns: 1fr; }
 }
 
 .dt-card {
@@ -2733,7 +2742,7 @@ body.mobile-app .help-btn.mobile-only { display: flex; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
 }
 
 .dt-code-badge {
@@ -2777,3 +2786,96 @@ body:not(.mobile-app) .dt-mode-pill.dt-visible { display: inline-flex; }
 
 /* Play tab hidden for hosts on desktop */
 body:not(.mobile-app) .dt-play-tab.dt-host-hide { display: none; }
+
+/* ── COMPACT BUTTON VARIANT ─────────────────────────────── */
+.dt-btn-compact {
+  min-height: 40px;
+  padding: 8px 16px;
+  font-size: 0.88rem;
+}
+
+/* ── LOGO AS BUTTON ─────────────────────────────────────── */
+.dt-logo-btn {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  transition: opacity 150ms ease;
+}
+.dt-logo-btn:hover { opacity: 0.78; }
+/* Only show the leave prompt if we're past the landing */
+.dt-logo-btn.dt-landing-active { pointer-events: none; cursor: default; opacity: 1; }
+
+/* ── DESKTOP LEAVE MODAL ────────────────────────────────── */
+.dt-leave-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: modalFadeIn 180ms ease;
+}
+.dt-leave-modal.hidden { display: none; }
+
+.dt-leave-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 4, 4, 0.68);
+  backdrop-filter: blur(4px);
+}
+
+.dt-leave-sheet {
+  position: relative;
+  width: min(480px, calc(100% - 48px));
+  background: rgba(14, 10, 4, 0.97);
+  border: 1px solid rgba(216, 191, 124, 0.28);
+  border-radius: 24px;
+  padding: 32px 28px 28px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  display: grid;
+  gap: 14px;
+  animation: modalSlideIn 220ms ease;
+}
+
+.dt-leave-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #c9a860;
+}
+
+.dt-leave-sheet h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #f7f1de;
+  letter-spacing: -0.02em;
+}
+
+.dt-leave-sheet p {
+  margin: 0;
+  color: rgba(240, 236, 226, 0.72);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.dt-leave-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.dt-btn-ghost {
+  background: rgba(255,255,255,0.06);
+  color: rgba(240,236,226,0.82);
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: none;
+}
+.dt-btn-ghost:hover { background: rgba(255,255,255,0.10); }
