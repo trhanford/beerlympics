@@ -131,48 +131,97 @@
       </div>
     </div>
     <header class="top-header">
-      <div class="navbar">
-        <div class="brand-wrap">
-          <span class="brand-mark">🍻</span>
-          <div>
-            <h1>Beerlympics</h1>
-            <p class="subtitle">Live game night scoreboard</p>
-          </div>
+      <nav class="dt-navbar" aria-label="Main navigation">
+        <div class="dt-nav-brand">
+          <img class="dt-nav-logo" src="assets/icons/beerlogo.png" alt="Beerlympics" />
         </div>
-        <div class="mode-banner">
+        <div class="dt-nav-links">
+          <button class="tab active" data-view="player">Play</button>
+          <button class="tab" data-view="roster">Roster</button>
+          <button class="tab" data-view="leaderboard">Leaderboard</button>
+          <button class="tab hidden" data-view="control" id="control-tab">Control</button>
+        </div>
+        <div class="dt-nav-right">
           <div class="mode-pill" id="mode-pill">🎈 Player Mode</div>
           <div class="mode-pill host hidden" id="host-pill">🎬 Host Mode</div>
+          <button id="install-app-btn" class="btn ghost install-app-btn hidden" type="button">Install App</button>
         </div>
-        <button id="install-app-btn" class="btn ghost install-app-btn hidden" type="button">Install App</button>
-      </div>
-      <nav class="tabs" aria-label="Main navigation">
-        <button class="tab active" data-view="player">Play</button>
-        <button class="tab" data-view="roster">Roster</button>
-        <button class="tab" data-view="leaderboard">Leaderboard</button>
-        <button class="tab hidden" data-view="control" id="control-tab">Control</button>
       </nav>
     </header>
 
-    <main>
-      <section class="card hero desktop-only">
-        <h2>Ready for the 2026 Beerlympics?</h2>
-        <p>
-          Get your duo in, join a lobby, and jump into the next challenge in seconds.
-        </p>
-        <div class="hero-badges">
-          <span class="badge">⚡ Live matchups</span>
-          <span class="badge">🏆 Points in real time</span>
-          <span class="badge">📈 Auto-updating leaderboard</span>
+    <!-- Desktop landing overlay — shown until user joins or starts a game -->
+    <div class="dt-landing desktop-only" id="dt-landing">
+      <div class="dt-landing-inner">
+        <img class="dt-landing-logo" src="assets/icons/beerlogo.png" alt="Beerlympics" />
+        <p class="dt-landing-sub">The official live scoreboard for game night.</p>
+
+        <div class="dt-landing-cards">
+          <!-- Join an existing game -->
+          <div class="dt-card" id="dt-join-card">
+            <div class="dt-card-icon">🔐</div>
+            <h2>Join a Game</h2>
+            <p>Got a code from the host? Drop it in and register your team.</p>
+            <label for="dt-game-code">Game code</label>
+            <input id="dt-game-code" placeholder="e.g. 7421" inputmode="numeric"
+              autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
+            <div class="dt-name-row">
+              <div>
+                <label for="dt-player-name">Your name</label>
+                <input id="dt-player-name" placeholder="e.g. Jordan" />
+              </div>
+              <div>
+                <label for="dt-partner-name">Partner name</label>
+                <input id="dt-partner-name" placeholder="e.g. Sam" />
+              </div>
+            </div>
+            <div>
+              <label for="dt-country">Country represented</label>
+              <input id="dt-country" placeholder="e.g. Brazil" />
+            </div>
+            <button class="dt-btn dt-btn-gold" type="button" id="dt-join-btn">Join game →</button>
+            <p class="dt-hint" id="dt-join-status"></p>
+          </div>
+
+          <!-- Start a new game -->
+          <div class="dt-card" id="dt-setup-card">
+            <div class="dt-card-icon">🎬</div>
+            <h2>Host a Game</h2>
+            <p>Setting up tonight's event? Generate a code and let everyone join from their phones.</p>
+            <!-- Step 1: house rules selection -->
+            <div id="dt-rules-step">
+              <p class="dt-rules-label">Select house rules to play by:</p>
+              <div class="dt-rules-list" id="dt-rules-list">
+                <label class="dt-rule-check"><input type="checkbox" value="die_line" checked /> Die: Hitting the center line is a live play</label>
+                <label class="dt-rule-check"><input type="checkbox" value="die_field_goal" checked /> Die: Field goal (2 pts)</label>
+                <label class="dt-rule-check"><input type="checkbox" value="die_cup_side" checked /> Die: Cup-side deflection (2 pts)</label>
+                <label class="dt-rule-check"><input type="checkbox" value="die_cup_land" checked /> Die: Cup landing / can top (3 pts)</label>
+                <label class="dt-rule-check"><input type="checkbox" value="die_halftime" checked /> Die: Halftime at 10 combined points</label>
+                <label class="dt-rule-check"><input type="checkbox" value="die_fifa" checked /> Die: FIFA rule</label>
+                <label class="dt-rule-check"><input type="checkbox" value="die_number_shout" checked /> Die: Number shout on long bounce</label>
+                <label class="dt-rule-check"><input type="checkbox" value="pong_bitch_cup" checked /> Beer Pong: Bitch cup rule</label>
+                <label class="dt-rule-check"><input type="checkbox" value="pong_elbow" checked /> Beer Pong: Elbow rule</label>
+                <label class="dt-rule-check"><input type="checkbox" value="pong_reracks" checked /> Beer Pong: Reracks (2 per game)</label>
+                <label class="dt-rule-check"><input type="checkbox" value="pong_gentlemens" checked /> Beer Pong: Automatic Gentleman's at 2 cups</label>
+                <label class="dt-rule-check"><input type="checkbox" value="kart_no_dd" checked /> Beerio Kart: No drinking and driving</label>
+                <label class="dt-rule-check"><input type="checkbox" value="flipcup_block" checked /> Flip Cup: Teammate wind-blocking allowed</label>
+              </div>
+              <button class="dt-btn dt-btn-gold" type="button" id="dt-start-btn">Generate game code →</button>
+            </div>
+            <p class="dt-hint" id="dt-setup-status"></p>
+          </div>
         </div>
-        <div class="admin-toggle">
+
+        <div class="admin-toggle dt-admin-toggle">
           <label>
             <input type="checkbox" id="admin-toggle" />
             Admin mode
           </label>
           <small id="admin-status">Admin tools are locked.</small>
         </div>
-      </section>
+      </div>
+    </div>
 
+    <main>
       <section class="card" id="player-section">
         <div class="mobile-dock mobile-only" id="mobile-dock">
           <img class="mobile-dock-logo" src="assets/icons/beerlogo.png" alt="Beerlympics logo" />
