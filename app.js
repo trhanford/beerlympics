@@ -555,7 +555,9 @@ const computeMobileState = () => {
 
 const scheduleManualRefreshPrompt = (state) => {
   if (!manualRefreshButton) return;
-  manualRefreshButton.classList.add("hidden");
+  // Don't reset/hide if the button is already visible — iOS resize events on scroll
+  // would otherwise dismiss it every time the browser chrome appears/disappears.
+  if (!manualRefreshButton.classList.contains("hidden")) return;
   if (manualRefreshTimeout) {
     clearTimeout(manualRefreshTimeout);
   }
@@ -1016,7 +1018,7 @@ function subscribeToGame(code) {
   });
 }
 
-async function processPendingTeamAction() {
+async function processPendingTeamAction(force = false) {
   if (pendingTeamActionInFlight) return;
   const pendingAction = getPendingTeamAction();
   if (!pendingAction) return;
@@ -1033,7 +1035,9 @@ async function processPendingTeamAction() {
     return;
   }
 
-  if (targetTeam.currentMatchId) return;
+  // When called from a just-completed transaction (force=true), skip the
+  // currentMatchId check because local state hasn't been updated by onSnapshot yet.
+  if (!force && targetTeam.currentMatchId) return;
 
   pendingTeamActionInFlight = true;
   try {
@@ -1380,8 +1384,14 @@ async function fillMatches(gameCode) {
     (match) => match.status === "in_progress"
   );
   const activeByType = new Set(activeMatches.map((match) => match.gameType));
+
+  // Read pending action once — teams with a pending exit/pause must not be
+  // given new matches, otherwise processPendingTeamAction will never fire.
+  const pendingAction = getPendingTeamAction();
+  const pendingTeamId = pendingAction?.gameCode === gameCode ? pendingAction.teamId : null;
+
   let availableTeams = sortTeamsForMatch(
-    getTeams().filter((team) => !team.currentMatchId && !team.paused)
+    getTeams().filter((team) => !team.currentMatchId && !team.paused && team.id !== pendingTeamId)
   );
 
   // 2) Flip Cup first (optional, but keeps everyone playing)
@@ -2186,6 +2196,11 @@ async function recordResult(matchId, payload) {
     });
     // ── END FLIP CUP ──────────────────────────────────────────────────────
   });
+
+  // Process any pending exit/pause BEFORE filling new matches so the
+  // leaving team is never re-assigned to another game first.
+  // force=true bypasses the currentMatchId check since local state hasn't updated yet.
+  await processPendingTeamAction(true);
 
   if (isHost()) {
     await fillMatches(activeGameCode);
