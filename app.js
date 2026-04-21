@@ -495,14 +495,10 @@ const setMobileOnboardingStep = (step) => {
   if (showCode) {
     resetJoinButtonLabels();
     const tip = document.getElementById("onboarding-tip-code");
-    if (tip && !tip.classList.contains("is-dismissed")) {
-      setTimeout(() => tip.classList.add("is-dismissed"), 12000);
-    }
+    if (tip && !tip.classList.contains("is-dismissed")) setTimeout(() => tip.classList.add("is-dismissed"), 12000);
   } else {
     const tip = document.getElementById("onboarding-tip-team");
-    if (tip && !tip.classList.contains("is-dismissed")) {
-      setTimeout(() => tip.classList.add("is-dismissed"), 12000);
-    }
+    if (tip && !tip.classList.contains("is-dismissed")) setTimeout(() => tip.classList.add("is-dismissed"), 12000);
   }
 };
 
@@ -602,12 +598,9 @@ const runMobileWelcome = () => {
   document.documentElement.classList.add("mobile-app-bg");
   const state = computeMobileState();
   setMobileState(state);
-  // Dismiss code-page tip after 12 seconds on first load
   if (state === "onboarding-code") {
     const tip = document.getElementById("onboarding-tip-code");
-    if (tip && !tip.classList.contains("is-dismissed")) {
-      setTimeout(() => tip.classList.add("is-dismissed"), 12000);
-    }
+    if (tip && !tip.classList.contains("is-dismissed")) setTimeout(() => tip.classList.add("is-dismissed"), 12000);
   }
 };
 
@@ -665,6 +658,26 @@ const triggerConfetti = () => {
     piece.style.animationDelay = `${Math.random() * 0.2}s`;
     document.body.appendChild(piece);
     setTimeout(() => piece.remove(), 1600);
+  }
+};
+
+const triggerWinConfetti = () => {
+  const colors = ["#d4af37", "#f7f1de", "#b89146", "#111111", "#ffffff", "#e8d48b"];
+  const count = 60;
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement("div");
+    piece.className = "win-confetti";
+    piece.style.left = `${Math.random() * 100}%`;
+    piece.style.top = `${-10 - Math.random() * 20}px`;
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.width = `${6 + Math.random() * 8}px`;
+    piece.style.height = `${10 + Math.random() * 10}px`;
+    piece.style.borderRadius = Math.random() > 0.5 ? "50%" : "2px";
+    const duration = 2.2 + Math.random() * 2;
+    piece.style.animationDuration = `${duration}s`;
+    piece.style.animationDelay = `${Math.random() * 0.8}s`;
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), (duration + 1) * 1000);
   }
 };
 
@@ -786,7 +799,6 @@ let unsubscribeMatches = null;
 let adminEditingTeamId = null;
 let pendingTeamActionInFlight = false;
 
-// Pre-game powerup decision tracking
 const preGameDecided = new Set();
 let preGameTimerInterval = null;
 
@@ -1831,28 +1843,22 @@ const renderMatch = () => {
   const gameType = GAME_TYPES.find((entry) => entry.id === match.gameType);
 
   // ── PRE-GAME POWERUP DECISION ─────────────────────────────────────────────
-  // Replaces the match card entirely until the player decides or timer expires.
   const alreadyDoubledDown = Boolean(match.doubleDown?.[activeTeamId]);
   const needsPreGameDecision =
-    match.status !== "complete" &&
-    !alreadyDoubledDown &&
-    !preGameDecided.has(match.id);
+    match.status !== "complete" && !alreadyDoubledDown && !preGameDecided.has(match.id);
 
   if (needsPreGameDecision) {
     const powerupsRemaining = activeTeam.powerupsRemaining ?? 0;
     const hasPowerup = powerupsRemaining > 0;
     const TIMER_SECS = 30;
     const circumference = 163;
-
     nextGameCard.innerHTML = `
       <div class="pre-game-card">
         <p class="pre-game-kicker">Up next</p>
         <p class="pre-game-title">You're playing<br><strong>${gameType?.name || match.gameType}</strong>!</p>
-        <p class="pre-game-question">${
-          hasPowerup
-            ? `You have ${"⚡".repeat(powerupsRemaining)} powerup${powerupsRemaining !== 1 ? "s" : ""} left.<br>Think you'll win? Double your points!`
-            : "No powerups remaining — give it your all!"
-        }</p>
+        <p class="pre-game-question">${hasPowerup
+          ? `You have ${"⚡".repeat(powerupsRemaining)} powerup${powerupsRemaining !== 1 ? "s" : ""} left.<br>Think you'll win? Double your points!`
+          : "No powerups remaining — give it your all!"}</p>
         <div class="pre-game-timer-ring">
           <svg width="64" height="64" viewBox="0 0 64 64">
             <circle class="ring-bg" cx="32" cy="32" r="26"/>
@@ -1861,39 +1867,25 @@ const renderMatch = () => {
           </svg>
           <div class="pre-game-timer-label" id="pre-game-timer-label">${TIMER_SECS}</div>
         </div>
-      </div>
-    `;
+      </div>`;
     scoreActions.innerHTML = "";
-
     if (hasPowerup) {
       const useBtn = document.createElement("button");
-      useBtn.type = "button";
-      useBtn.className = "btn";
-      useBtn.textContent = "💥 Double my points!";
+      useBtn.type = "button"; useBtn.className = "btn"; useBtn.textContent = "💥 Double my points!";
       useBtn.addEventListener("click", async () => {
-        dismissMobileKeyboard();
-        clearInterval(preGameTimerInterval);
-        preGameTimerInterval = null;
-        preGameDecided.add(match.id);
-        await toggleDoubleDown(activeTeamId, match.id);
-        renderMatch();
+        dismissMobileKeyboard(); clearInterval(preGameTimerInterval); preGameTimerInterval = null;
+        preGameDecided.add(match.id); await toggleDoubleDown(activeTeamId, match.id); renderMatch();
       });
       scoreActions.appendChild(useBtn);
     }
-
     const skipBtn = document.createElement("button");
-    skipBtn.type = "button";
-    skipBtn.className = "btn ghost";
+    skipBtn.type = "button"; skipBtn.className = "btn ghost";
     skipBtn.textContent = hasPowerup ? "Nah, just play" : "Let's go! 🏃";
     skipBtn.addEventListener("click", () => {
-      dismissMobileKeyboard();
-      clearInterval(preGameTimerInterval);
-      preGameTimerInterval = null;
-      preGameDecided.add(match.id);
-      renderMatch();
+      dismissMobileKeyboard(); clearInterval(preGameTimerInterval); preGameTimerInterval = null;
+      preGameDecided.add(match.id); renderMatch();
     });
     scoreActions.appendChild(skipBtn);
-
     let secsLeft = TIMER_SECS;
     if (preGameTimerInterval) clearInterval(preGameTimerInterval);
     preGameTimerInterval = setInterval(() => {
@@ -1901,18 +1893,9 @@ const renderMatch = () => {
       const label = document.getElementById("pre-game-timer-label");
       const ring = document.getElementById("pre-game-ring-fill");
       if (label) label.textContent = secsLeft;
-      if (ring) {
-        ring.style.strokeDashoffset = circumference * (1 - secsLeft / TIMER_SECS);
-        if (secsLeft <= 10) ring.classList.add("urgent");
-      }
-      if (secsLeft <= 0) {
-        clearInterval(preGameTimerInterval);
-        preGameTimerInterval = null;
-        preGameDecided.add(match.id);
-        renderMatch();
-      }
+      if (ring) { ring.style.strokeDashoffset = circumference * (1 - secsLeft / TIMER_SECS); if (secsLeft <= 10) ring.classList.add("urgent"); }
+      if (secsLeft <= 0) { clearInterval(preGameTimerInterval); preGameTimerInterval = null; preGameDecided.add(match.id); renderMatch(); }
     }, 1000);
-
     updateStepIndicator({ hasCoreInfo: true, hasCode: true });
     return;
   }
@@ -1924,31 +1907,17 @@ const renderMatch = () => {
     .filter(Boolean);
 
   const opponentSummary = opponents.length
-    ? opponents
-        .map((team) => {
-          const members = [team.playerName, team.partnerName].filter(Boolean).join(" + ");
-          const country = team.country || "Unknown country";
-          return `
-            <article class="opponent-card">
-              <div class="opponent-head">
-                ${renderFlagAvatar(country)}
-                <div class="opponent-meta">
-                  <span class="opponent-country">${country}</span>
-                  <span class="opponent-members">${members || "Team TBD"}</span>
-                </div>
-              </div>
-            </article>
-          `;
-        })
-        .join("")
+    ? opponents.map((team) => {
+        const members = [team.playerName, team.partnerName].filter(Boolean).join(" + ");
+        const country = team.country || "Unknown country";
+        return `<article class="opponent-card"><div class="opponent-head">${renderFlagAvatar(country)}<div class="opponent-meta"><span class="opponent-country">${country}</span><span class="opponent-members">${members || "Team TBD"}</span></div></div></article>`;
+      }).join("")
     : `<p class="status">Opponent team was removed. Waiting for a new matchup…</p>`;
 
   nextGameCard.innerHTML = `
     <h3>Game: ${gameType?.name || match.gameType}</h3>
     <p class="matchup-subtitle">Against:</p>
-    <div class="opponents aesthetic">
-      ${opponentSummary}
-    </div>
+    <div class="opponents aesthetic">${opponentSummary}</div>
   `;
 
   scoreActions.innerHTML = "";
@@ -1956,10 +1925,7 @@ const renderMatch = () => {
     const powerupsRemaining = activeTeam.powerupsRemaining ?? 0;
     const powerupStatus = document.createElement("div");
     powerupStatus.className = `powerups${alreadyDoubledDown ? " active" : ""}`;
-    powerupStatus.innerHTML = `
-      <span>Powerups remaining:</span>
-      <span class="charges">${"⚡".repeat(Math.max(powerupsRemaining, 0)) || "—"}</span>
-    `;
+    powerupStatus.innerHTML = `<span>Powerups remaining:</span><span class="charges">${"⚡".repeat(Math.max(powerupsRemaining, 0)) || "—"}</span>`;
     scoreActions.appendChild(powerupStatus);
     if (alreadyDoubledDown) {
       const ddBadge = document.createElement("div");
@@ -1977,6 +1943,7 @@ const renderMatch = () => {
     winButton.textContent = "We won! 🏆";
     winButton.addEventListener("click", () => {
       dismissMobileKeyboard();
+      triggerWinConfetti();
       void recordResult(match.id, { winnerTeamId: activeTeamId });
     });
 
@@ -2860,23 +2827,11 @@ const helpBtn = document.getElementById("help-btn");
 const helpModal = document.getElementById("help-modal");
 const helpModalBackdrop = document.getElementById("help-modal-backdrop");
 const helpModalClose = document.getElementById("help-modal-close");
-
-const openHelpModal = () => {
-  if (!helpModal) return;
-  helpModal.classList.remove("hidden");
-  helpModal.setAttribute("aria-hidden", "false");
-};
-const closeHelpModal = () => {
-  if (!helpModal) return;
-  helpModal.classList.add("hidden");
-  helpModal.setAttribute("aria-hidden", "true");
-};
-
+const openHelpModal = () => { helpModal?.classList.remove("hidden"); helpModal?.setAttribute("aria-hidden", "false"); };
+const closeHelpModal = () => { helpModal?.classList.add("hidden"); helpModal?.setAttribute("aria-hidden", "true"); };
 helpBtn?.addEventListener("click", openHelpModal);
 helpModalBackdrop?.addEventListener("click", closeHelpModal);
 helpModalClose?.addEventListener("click", closeHelpModal);
-
-tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     setView(tab.dataset.view);
   });
@@ -3062,76 +3017,72 @@ init();
 
 // ── ASK THE REF CHATBOT ──────────────────────────────────────────────────────
 // Requests route through a Cloudflare Worker — no API key in this file.
+// ── ASK THE REF ──────────────────────────────────────────────────────────────
 const REF_WORKER_URL = "https://beerlympicsapi.boardfreak56.workers.dev";
 
-const REF_SYSTEM_PROMPT = `You are "The Ref" — the official, no-nonsense judge for Beerlympics 2026, a backyard beer Olympics competition between teams of two. Your job is to settle rules disputes quickly and with authority. Keep every answer to 2–4 sentences max. Be fun, confident, and final — like a real sports ref making a judgment call on the fly. If a situation is truly ambiguous, pick the fairest interpretation and commit to it.
+const REF_SYSTEM_PROMPT = `You are "The Ref" — the official, no-nonsense judge for Beerlympics 2026, a backyard beer Olympics competition between teams of two. Your job is to settle rules disputes quickly and with authority. Keep answers to 2–4 sentences max. Be fun, confident, and final — like a real sports ref making a judgment call on the fly. If a situation is truly ambiguous, pick the fairest interpretation and commit to it.
+
+IMPORTANT: You ONLY answer questions about the Beerlympics games listed below or general party/drinking game etiquette. If asked anything unrelated to these games or general sportsmanship (e.g. math, general knowledge, coding, current events, other sports), respond ONLY with: "That's out of my jurisdiction. Ask me about the games!" and nothing else.
 
 Official game rules:
 
-BEER PONG:
-- 10 cups in a triangle per team.
-- Teams alternate tosses; one player at a time.
-- Made shot = that cup is removed and drunk.
-- Both teammates sink in one turn = balls back.
-- When all cups are gone, losing team gets one redemption turn.
+BEER PONG: 10 cups in a triangle per team. Teams alternate tosses; one player at a time. Made shot = that cup removed and drunk. Both teammates sink in one turn = balls back. When all cups are gone, losing team gets one redemption turn.
 
-FLIP CUP:
-- Teams line up shoulder-to-shoulder on opposite sides of the table.
-- First player drinks, sets cup on the table edge, flips it until it lands upside-down.
-- Next teammate starts only after the previous flip lands.
-- First team with every player done wins the round.
-- No hand-switching mid-flip; no touching a teammate's cup.
+FLIP CUP: Teams line up shoulder-to-shoulder on opposite sides. First player drinks, sets cup on edge, flips until it lands upside-down. Next teammate starts only after previous flip lands. First team with every player done wins the round. No hand-switching mid-flip; no touching a teammate's cup.
 
-BEERIO KART:
-- Each player starts a Mario Kart race with one unopened beer.
-- You must finish your drink before crossing the finish line.
-- No drinking while your kart is moving — pull over first.
-- Cross before finishing = race score doesn't count for that player.
-- Fastest valid combined team finish wins.
+BEERIO KART: Each player starts a Mario Kart race with one unopened beer. Must finish drink before crossing the finish line. No drinking while kart is moving — pull over first. Cross before finishing = race score doesn't count. Fastest valid combined team finish wins.
 
-DIE:
-- Two teams face each other, drinks at table corners.
-- Toss the die so it hits the table cleanly and bounces high.
-- One-handed catch by the defending team negates the point.
-- Missed catch = 1 point for offense; die hits the floor untouched = 2 points.
-- Play to the host-set target (commonly 9 or 11).
+DIE: Two teams face each other, drinks at table corners. Toss the die so it hits the table cleanly and bounces high. One-handed catch by defending team negates the point. Missed catch = 1 point for offense; die hits floor untouched = 2 points. Play to host-set target (commonly 9 or 11).
 
-DRINKBALL:
-- One cup per player; one ball in play.
-- Teams pass and shoot to land the ball in an opponent's cup.
-- Made shot = that opposing player drinks and the cup resets.
-- No goaltending, blocking with the cup hand, or body contact.
-- First team to the agreed score wins.
+DRINKBALL: One cup per player; one ball in play. Teams pass and shoot to land ball in an opponent's cup. Made shot = that opposing player drinks and cup resets. No goaltending, blocking with cup hand, or body contact. First team to agreed score wins.
 
-When a situation isn't covered explicitly, rule in the spirit of fair play. End yes/no rulings with a bold "RULING: [Yes/No — reason]".`;
+For yes/no rulings, ALWAYS end your response with exactly one of these on its own line:
+VERDICT: GOOD
+VERDICT: BAD
 
-const askRefInput  = document.getElementById("ask-ref-input");
-const askRefSend   = document.getElementById("ask-ref-send");
-const askRefMsgs   = document.getElementById("ask-ref-messages");
+Use VERDICT: GOOD when the play counts/is allowed/scores a point.
+Use VERDICT: BAD when the play doesn't count/is disallowed/no point.
+Skip the VERDICT line only when the question isn't a yes/no ruling (e.g. asking for clarification of rules).`;
 
-const appendMsg = (text, role) => {
-  const wrap   = document.createElement("div");
-  wrap.className = `ask-ref-message ${role === "user" ? "user-msg" : "ref-msg"}`;
+const refMsgsEl = document.getElementById("ask-ref-messages");
+const refInput  = document.getElementById("ask-ref-input");
+const refSend   = document.getElementById("ask-ref-send");
+
+const appendRefMsg = (text, role) => {
+  const wrap = document.createElement("div");
+  wrap.className = `ref-message ${role === "user" ? "user-msg" : "ref-msg"}`;
   const bubble = document.createElement("span");
-  bubble.className = "ask-ref-bubble";
+  bubble.className = "ref-bubble";
   bubble.textContent = text;
   wrap.appendChild(bubble);
-  askRefMsgs?.appendChild(wrap);
-  if (askRefMsgs) askRefMsgs.scrollTop = askRefMsgs.scrollHeight;
-  return bubble;
+  refMsgsEl?.appendChild(wrap);
+  if (refMsgsEl) refMsgsEl.scrollTop = refMsgsEl.scrollHeight;
+  return { wrap, bubble };
+};
+
+const triggerRefFlash = (type) => {
+  const flash = document.createElement("div");
+  flash.className = `ref-ruling-flash ${type}`;
+  flash.innerHTML = `
+    <div class="ref-ruling-flash-inner">
+      <span class="ref-ruling-flash-icon">${type === "good" ? "✅" : "❌"}</span>
+      <div class="ref-ruling-flash-text">${type === "good" ? "Play Stands!" : "No Good!"}</div>
+    </div>`;
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 2600);
 };
 
 const askTheRef = async () => {
-  const question = (askRefInput?.value || "").trim();
+  const question = (refInput?.value || "").trim();
   if (!question) return;
 
-  askRefInput.value = "";
-  appendMsg(question, "user");
+  refInput.value = "";
+  appendRefMsg(question, "user");
 
-  setButtonLoading(askRefSend, true, "...");
-  const thinkBubble = appendMsg("The Ref is reviewing the play…", "ref");
-  thinkBubble.closest(".ask-ref-message").classList.add("thinking");
-  if (askRefMsgs) askRefMsgs.scrollTop = askRefMsgs.scrollHeight;
+  setButtonLoading(refSend, true, "...");
+  const { wrap: thinkWrap, bubble: thinkBubble } = appendRefMsg("The Ref is reviewing the play…", "ref");
+  thinkWrap.classList.add("thinking");
+  if (refMsgsEl) refMsgsEl.scrollTop = refMsgsEl.scrollHeight;
 
   try {
     const res = await fetch(REF_WORKER_URL, {
@@ -3139,7 +3090,7 @@ const askTheRef = async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 300,
+        max_tokens: 320,
         system: REF_SYSTEM_PROMPT,
         messages: [{ role: "user", content: question }],
       }),
@@ -3148,33 +3099,42 @@ const askTheRef = async () => {
     const data = await res.json();
 
     if (!res.ok || data.error) {
-      const errMsg = data?.error?.message || `HTTP ${res.status}`;
-      thinkBubble.closest(".ask-ref-message").classList.remove("thinking");
-      thinkBubble.textContent = `Ref error: ${errMsg}`;
-      console.warn("Ask the Ref API error:", data);
+      thinkWrap.classList.remove("thinking");
+      thinkBubble.textContent = `Ref error: ${data?.error?.message || `HTTP ${res.status}`}`;
       return;
     }
 
-    const answer = data?.content?.[0]?.text?.trim()
-      || "The Ref couldn't make a call on that one. Try rephrasing!";
+    let answer = data?.content?.[0]?.text?.trim() || "The Ref couldn't make a call on that one.";
 
-    thinkBubble.closest(".ask-ref-message").classList.remove("thinking");
+    // Detect verdict
+    let verdict = null;
+    if (/VERDICT:\s*GOOD/i.test(answer)) { verdict = "good"; answer = answer.replace(/VERDICT:\s*GOOD/i, "").trim(); }
+    else if (/VERDICT:\s*BAD/i.test(answer)) { verdict = "bad"; answer = answer.replace(/VERDICT:\s*BAD/i, "").trim(); }
+
+    thinkWrap.classList.remove("thinking");
     thinkBubble.textContent = answer;
+
+    // Add verdict badge below bubble
+    if (verdict) {
+      const badge = document.createElement("span");
+      badge.className = `ref-verdict ${verdict}`;
+      badge.textContent = verdict === "good" ? "✅ Play stands!" : "❌ No good!";
+      thinkWrap.appendChild(badge);
+      triggerRefFlash(verdict);
+    }
+
   } catch (err) {
-    thinkBubble.closest(".ask-ref-message").classList.remove("thinking");
+    thinkWrap.classList.remove("thinking");
     thinkBubble.textContent = "The Ref's mic cut out. Check your connection and try again.";
-    console.warn("Ask the Ref fetch error:", err);
+    console.warn("Ask the Ref error:", err);
   } finally {
-    setButtonLoading(askRefSend, false);
-    if (askRefMsgs) askRefMsgs.scrollTop = askRefMsgs.scrollHeight;
+    setButtonLoading(refSend, false);
+    if (refMsgsEl) refMsgsEl.scrollTop = refMsgsEl.scrollHeight;
   }
 };
 
-askRefSend?.addEventListener("click", askTheRef);
-askRefInput?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    askTheRef();
-  }
+refSend?.addEventListener("click", askTheRef);
+refInput?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); askTheRef(); }
 });
 // ── END ASK THE REF ──────────────────────────────────────────────────────────
