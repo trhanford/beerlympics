@@ -1963,51 +1963,62 @@ const renderMatch = () => {
     return;
   }
 
+  // ── FLIP CUP: simple Win/Lose with best-of-3 confirmation ────────────────
   const rounds = match.result?.rounds || [];
-  const currentRound = rounds.length + 1;
-  const pairing = getFlipCupPairings(match.teamIds)[currentRound - 1];
   const roundCard = document.createElement("div");
   roundCard.className = "game-card";
   roundCard.innerHTML = `
-    <h3>Flip Cup Round ${Math.min(currentRound, 3)}</h3>
-    <p class="status">Round history: ${rounds.length}/3 completed</p>
+    <h3>Flip Cup — Best of 3</h3>
+    <p class="status">Play all 3 rounds, then report your result below.</p>
   `;
   scoreActions.appendChild(roundCard);
 
-  if (currentRound <= 3 && pairing && match.status !== "complete") {
-    const buttonWrap = document.createElement("div");
-    buttonWrap.className = "score-actions";
-    const sideAButton = document.createElement("button");
-    sideAButton.type = "button";
-    sideAButton.className = "btn";
-    sideAButton.textContent = `${pairing.pairA
-      .map((id) => teams.find((team) => team.id === id))
-      .map((team) => `${team.playerName} + ${team.partnerName}`)
-      .join(" & ")} won`;
-    sideAButton.addEventListener("click", () => {
-      dismissMobileKeyboard();
-      void recordResult(match.id, { winnerSide: "A" });
-    });
-    const sideBButton = document.createElement("button");
-    sideBButton.type = "button";
-    sideBButton.className = "btn secondary";
-    sideBButton.textContent = `${pairing.pairB
-      .map((id) => teams.find((team) => team.id === id))
-      .map((team) => `${team.playerName} + ${team.partnerName}`)
-      .join(" & ")} won`;
-    sideBButton.addEventListener("click", () => {
-      dismissMobileKeyboard();
-      void recordResult(match.id, { winnerSide: "B" });
-    });
-    buttonWrap.appendChild(sideAButton);
-    buttonWrap.appendChild(sideBButton);
-    scoreActions.appendChild(buttonWrap);
-  } else if (match.status === "complete") {
+  if (match.status !== "complete") {
+    const showFlipCupConfirm = (claimedWin) => {
+      const overlay = document.createElement("div");
+      overlay.className = "flipcup-confirm-overlay";
+      overlay.innerHTML = `
+        <div class="flipcup-confirm-card">
+          <h3>Best of 3 complete? 🏓</h3>
+          <p>Make sure you've finished all 3 rounds before reporting. Have both teams played all their rounds?</p>
+          <div class="flipcup-confirm-actions">
+            <button class="btn" id="fc-confirm-yes" type="button">Yes, all 3 done — ${claimedWin ? "We Won! 🏆" : "We Lost 😅"}</button>
+            <button class="btn ghost" id="fc-confirm-no" type="button">Not yet, go back</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+
+      document.getElementById("fc-confirm-yes").addEventListener("click", () => {
+        overlay.remove();
+        dismissMobileKeyboard();
+        // Report result: active team's side wins or loses
+        const winnerSide = claimedWin ? "win" : "lose";
+        void recordResult(match.id, { flipCupFinalResult: winnerSide, activeTeamId });
+      });
+      document.getElementById("fc-confirm-no").addEventListener("click", () => overlay.remove());
+    };
+
+    const winButton = document.createElement("button");
+    winButton.type = "button";
+    winButton.className = "btn";
+    winButton.textContent = "We Won! 🏆";
+    winButton.addEventListener("click", () => { dismissMobileKeyboard(); showFlipCupConfirm(true); });
+
+    const loseButton = document.createElement("button");
+    loseButton.type = "button";
+    loseButton.className = "btn secondary";
+    loseButton.textContent = "We Lost 😅";
+    loseButton.addEventListener("click", () => { dismissMobileKeyboard(); showFlipCupConfirm(false); });
+
+    scoreActions.appendChild(winButton);
+    scoreActions.appendChild(loseButton);
+  } else {
     const done = document.createElement("div");
     done.className = "status";
-    done.textContent = "Flip cup complete! 🎉";
+    done.textContent = "Flip Cup complete! 🎉";
     scoreActions.appendChild(done);
   }
+  // ── END FLIP CUP ─────────────────────────────────────────────────────────
 
   updateStepIndicator({ hasCoreInfo: true, hasCode: true });
 };
@@ -2076,14 +2087,10 @@ async function recordResult(matchId, payload) {
       const points = calculatePoints(activeTeamId, isWin, localMatch);
       rewardPayload = { points, isWin };
     } else {
-      const rounds = localMatch.result?.rounds || [];
-      const pairing = getFlipCupPairings(localMatch.teamIds)[rounds.length];
-      if (pairing) {
-        const winners = payload.winnerSide === "A" ? pairing.pairA : pairing.pairB;
-        const isWin = winners.includes(activeTeamId);
-        const points = calculatePoints(activeTeamId, isWin, localMatch);
-        rewardPayload = { points, isWin };
-      }
+      // New: flipCupFinalResult = "win" or "lose" from the reporting team's perspective
+      const isWin = payload.flipCupFinalResult === "win";
+      const points = calculatePoints(activeTeamId, isWin, localMatch);
+      rewardPayload = { points, isWin };
     }
   }
   await runTransaction(db, async (transaction) => {
@@ -2109,9 +2116,7 @@ async function recordResult(matchId, payload) {
         const powerupsRemaining = shouldCharge
           ? Math.max((team.powerupsRemaining ?? 3) - 1, 0)
           : team.powerupsRemaining ?? 3;
-        if (shouldCharge) {
-          doubleDownCharged[team.id] = true;
-        }
+        if (shouldCharge) doubleDownCharged[team.id] = true;
         const opponents = team.id === winnerTeamId ? [loserTeamId] : [winnerTeamId];
         transaction.update(doc(teamsCollection(activeGameCode), team.id), {
           wins: (team.wins || 0) + (isWinner ? 1 : 0),
@@ -2133,66 +2138,52 @@ async function recordResult(matchId, payload) {
       return;
     }
 
-    const rounds = match.result?.rounds || [];
-    if (rounds.length >= 3) return;
-    const pairing = getFlipCupPairings(match.teamIds)[rounds.length];
-    if (!pairing) return;
-    const winnerSide = payload.winnerSide;
-    if (!["A", "B"].includes(winnerSide)) return;
-    const winners = winnerSide === "A" ? pairing.pairA : pairing.pairB;
-    const roundIndex = rounds.length + 1;
-    const updatedRounds = [
-      ...rounds,
-      {
-        roundIndex,
-        pairA: pairing.pairA,
-        pairB: pairing.pairB,
-        winnerSide,
-      },
-    ];
-    const otherTeams = match.teamIds;
+    // ── FLIP CUP: single result, complete immediately ──────────────────────
+    // The reporting team says they won or lost; derive winner/loser team IDs.
+    const reportingTeamId = payload.activeTeamId;
+    const reportingWon = payload.flipCupFinalResult === "win";
+    if (!match.teamIds.includes(reportingTeamId)) return;
+
+    // Flip cup has 4 teams — split into two pairs (sides A & B)
+    // We don't know which pair won from each side, so award based on reporting
+    // team's claim. All 4 teams get win/loss regardless (2 winners, 2 losers).
+    // We derive partner by finding the other team NOT on the opposite pair.
+    // Simplest: use pairings[0] to identify the two sides, then check which
+    // side the reporting team is on.
+    const pairings = getFlipCupPairings(match.teamIds);
+    const firstPairing = pairings[0];
+    const reportingOnA = firstPairing.pairA.includes(reportingTeamId);
+    const winnerIds = reportingWon
+      ? (reportingOnA ? firstPairing.pairA : firstPairing.pairB)
+      : (reportingOnA ? firstPairing.pairB : firstPairing.pairA);
+
     teams.forEach((team) => {
-      const isWinner = winners.includes(team.id);
+      const isWinner = winnerIds.includes(team.id);
       const points = calculatePoints(team.id, isWinner, match);
       const shouldCharge = match.doubleDown?.[team.id] && !doubleDownCharged[team.id];
       const powerupsRemaining = shouldCharge
         ? Math.max((team.powerupsRemaining ?? 3) - 1, 0)
         : team.powerupsRemaining ?? 3;
-      if (shouldCharge) {
-        doubleDownCharged[team.id] = true;
-      }
+      if (shouldCharge) doubleDownCharged[team.id] = true;
       transaction.update(doc(teamsCollection(activeGameCode), team.id), {
         wins: (team.wins || 0) + (isWinner ? 1 : 0),
         losses: (team.losses || 0) + (isWinner ? 0 : 1),
         points: (team.points || 0) + points,
-        currentMatchId: roundIndex === 3 ? null : team.currentMatchId,
-        lastOpponents: otherTeams.filter((id) => id !== team.id).slice(0, 3),
-        lastGameType: roundIndex === 3 ? match.gameType : team.lastGameType || null,
-        flipCupStreak:
-          roundIndex === 3
-            ? team.lastGameType === "flip_cup"
-              ? Math.min((team.flipCupStreak || 0) + 1, 2)
-              : 1
-            : team.flipCupStreak || 0,
+        currentMatchId: null,
+        lastOpponents: match.teamIds.filter((id) => id !== team.id).slice(0, 3),
+        lastGameType: match.gameType,
+        flipCupStreak: team.lastGameType === "flip_cup"
+          ? Math.min((team.flipCupStreak || 0) + 1, 2) : 1,
         powerupsRemaining,
       });
     });
-
-    const matchUpdate = {
-      result: {
-        rounds: updatedRounds,
-        finalWinners:
-          roundIndex === 3
-            ? computeFlipCupFinalWinners(updatedRounds, match.teamIds)
-            : null,
-      },
+    transaction.update(matchRef, {
+      status: "complete",
+      result: { winnerIds, reportedByTeamId: reportingTeamId },
+      completedAt: serverTimestamp(),
       doubleDownCharged,
-    };
-    if (roundIndex === 3) {
-      matchUpdate.status = "complete";
-      matchUpdate.completedAt = serverTimestamp();
-    }
-    transaction.update(matchRef, matchUpdate);
+    });
+    // ── END FLIP CUP ──────────────────────────────────────────────────────
   });
 
   if (isHost()) {
