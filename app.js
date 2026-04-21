@@ -3022,6 +3022,9 @@ init();
 // ── ASK THE REF ──────────────────────────────────────────────────────────────
 const REF_WORKER_URL = "https://beerlympicsapi.boardfreak56.workers.dev";
 
+// Conversation history — keeps context across turns
+const refHistory = [];
+
 const REF_SYSTEM_PROMPT = `You are "The Ref" — the official, no-nonsense judge for Beerlympics 2026, a backyard beer Olympics competition between teams of two. Your job is to settle rules disputes quickly and with authority. Keep every answer to 2–4 sentences max. Be fun, confident, and final — like a real sports ref making a judgment call on the fly. If a situation is truly ambiguous, pick the fairest interpretation and commit to it.
 
 Official game rules:
@@ -3075,6 +3078,9 @@ const askTheRef = async () => {
   if (!question) return;
 
   refInput.value = "";
+
+  // Maintain conversation history for context
+  refHistory.push({ role: "user", content: question });
   appendRefMsg(question, "user");
 
   setButtonLoading(refSend, true, "...");
@@ -3090,7 +3096,7 @@ const askTheRef = async () => {
         model: "claude-haiku-4-5-20251001",
         max_tokens: 320,
         system: REF_SYSTEM_PROMPT,
-        messages: [{ role: "user", content: question }],
+        messages: refHistory, // full history = memory
       }),
     });
 
@@ -3099,10 +3105,14 @@ const askTheRef = async () => {
     if (!res.ok || data.error) {
       thinkWrap.classList.remove("thinking");
       thinkBubble.textContent = `Ref error: ${data?.error?.message || `HTTP ${res.status}`}`;
+      refHistory.pop(); // undo the failed message
       return;
     }
 
     let answer = data?.content?.[0]?.text?.trim() || "The Ref couldn't make a call on that one.";
+
+    // Store assistant reply in history
+    refHistory.push({ role: "assistant", content: answer });
 
     // Detect verdict
     let verdict = null;
@@ -3112,7 +3122,6 @@ const askTheRef = async () => {
     thinkWrap.classList.remove("thinking");
     thinkBubble.textContent = answer;
 
-    // Add verdict badge below bubble
     if (verdict) {
       const badge = document.createElement("span");
       badge.className = `ref-verdict ${verdict}`;
@@ -3124,6 +3133,7 @@ const askTheRef = async () => {
   } catch (err) {
     thinkWrap.classList.remove("thinking");
     thinkBubble.textContent = "The Ref's mic cut out. Check your connection and try again.";
+    refHistory.pop();
     console.warn("Ask the Ref error:", err);
   } finally {
     setButtonLoading(refSend, false);
@@ -3134,5 +3144,17 @@ const askTheRef = async () => {
 refSend?.addEventListener("click", askTheRef);
 refInput?.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); askTheRef(); }
+});
+
+// ── CLEAR BUTTONS on registration inputs ─────────────────────────────────────
+document.querySelectorAll(".input-clear-wrap").forEach((wrap) => {
+  const input = wrap.querySelector("input");
+  const btn = wrap.querySelector(".input-clear-btn");
+  if (!input || !btn) return;
+  btn.addEventListener("click", () => {
+    input.value = "";
+    input.focus();
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
 });
 // ── END ASK THE REF ──────────────────────────────────────────────────────────
