@@ -3049,6 +3049,12 @@ const refMsgsEl = document.getElementById("ask-ref-messages");
 const refInput  = document.getElementById("ask-ref-input");
 const refSend   = document.getElementById("ask-ref-send");
 
+// Force rounded corners inline — highest possible specificity, beats all CSS rules
+if (refInput) {
+  refInput.style.setProperty("border-radius", "22px", "important");
+  refInput.style.setProperty("-webkit-border-radius", "22px", "important");
+}
+
 const appendRefMsg = (text, role) => {
   const wrap = document.createElement("div");
   wrap.className = `ref-message ${role === "user" ? "user-msg" : "ref-msg"}`;
@@ -3111,13 +3117,13 @@ const askTheRef = async () => {
 
     let answer = data?.content?.[0]?.text?.trim() || "The Ref couldn't make a call on that one.";
 
-    // Store assistant reply in history
-    refHistory.push({ role: "assistant", content: answer });
-
-    // Detect verdict
+    // Detect verdict BEFORE stripping so history stores clean text
     let verdict = null;
     if (/VERDICT:\s*GOOD/i.test(answer)) { verdict = "good"; answer = answer.replace(/VERDICT:\s*GOOD/i, "").trim(); }
     else if (/VERDICT:\s*BAD/i.test(answer)) { verdict = "bad"; answer = answer.replace(/VERDICT:\s*BAD/i, "").trim(); }
+
+    // Store clean answer in history (no VERDICT tag)
+    refHistory.push({ role: "assistant", content: answer });
 
     thinkWrap.classList.remove("thinking");
     thinkBubble.textContent = answer;
@@ -3128,6 +3134,12 @@ const askTheRef = async () => {
       badge.textContent = verdict === "good" ? "✅ Play stands!" : "❌ No good!";
       thinkWrap.appendChild(badge);
       triggerRefFlash(verdict);
+    } else {
+      // Fallback: detect ruling sentiment from answer text when model skips VERDICT tag
+      const goodSignals = /\b(count[s]?|stand[s]?|valid|legal|allowed|good|point[s]?|score[s]?|yes.{0,20}count|that.{0,10}score)\b/i;
+      const badSignals = /\b(doesn.t count|no good|not allowed|invalid|illegal|no point|doesn.t score|void|disallowed)\b/i;
+      if (badSignals.test(answer)) triggerRefFlash("bad");
+      else if (goodSignals.test(answer)) triggerRefFlash("good");
     }
 
   } catch (err) {
