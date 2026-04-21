@@ -353,29 +353,27 @@
       </section>
 
       <section class="card hidden" id="ref-section">
-        <div class="ask-ref-wrap" id="ask-ref-wrap">
-          <div class="ask-ref-header">
-            <span class="ask-ref-icon">🏛️</span>
-            <div>
-              <h3>Ask the Ref</h3>
-              <p class="status">Rules dispute? The Ref has the final word.</p>
+        <div class="ref-page">
+          <div class="ref-page-header">
+            <p class="ref-page-eyebrow">Official Ruling</p>
+            <h2 class="ref-page-title">🏛️ The Ref</h2>
+            <p class="ref-page-subtitle">Ask about gameplay. The Ref has the final word.</p>
+          </div>
+          <div class="ref-messages" id="ask-ref-messages">
+            <div class="ref-message ref-msg">
+              <span class="ref-bubble">Ready to settle disputes. What happened out there?</span>
             </div>
           </div>
-          <div class="ask-ref-messages" id="ask-ref-messages">
-            <div class="ask-ref-message ref-msg">
-              <span class="ask-ref-bubble">Ready to settle debates. What's your ruling question?</span>
-            </div>
-          </div>
-          <div class="ask-ref-input-row">
+          <div class="ref-input-bar">
             <input
               type="text"
               id="ask-ref-input"
-              placeholder="e.g. If the die hit the centerline, does that count?"
+              placeholder="Describe the play…"
               autocomplete="off"
               autocorrect="off"
               spellcheck="false"
             />
-            <button class="btn ask-ref-send" id="ask-ref-send" type="button">Ask</button>
+            <button class="btn ref-send-btn" id="ask-ref-send" type="button">Ask</button>
           </div>
         </div>
       </section>
@@ -487,10 +485,7 @@
          trapped inside a backdrop-filter stacking context -->
     <div class="leaderboard-fade-curtain" id="leaderboard-fade-curtain" aria-hidden="true"></div>
 
-    <!-- Help button — fixed top-left, visible on all mobile pages -->
     <button class="help-btn mobile-only hidden" id="help-btn" type="button" aria-label="Help">?</button>
-
-    <!-- Help modal -->
     <div class="help-modal hidden" id="help-modal" aria-hidden="true">
       <div class="help-modal-backdrop" id="help-modal-backdrop"></div>
       <div class="help-modal-sheet" role="dialog" aria-modal="true">
