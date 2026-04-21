@@ -2128,8 +2128,15 @@ body.mobile-app #ref-section {
   border-radius: 22px !important;
   -webkit-border-radius: 22px !important;
   min-height: 46px;
-  font-size: 16px !important; /* 16px prevents iOS auto-zoom on focus */
+  font-size: 16px !important;
   padding: 0 16px;
+}
+
+/* High-specificity override to beat global input and mobile-app input rules */
+body.mobile-app #ref-section .ref-input-bar input,
+body #ref-section .ref-input-bar input {
+  border-radius: 22px !important;
+  -webkit-border-radius: 22px !important;
 }
 
 .ref-input-bar input::placeholder { color: rgba(255,255,255,0.35); }
@@ -2247,7 +2254,7 @@ body.mobile-app .help-btn.mobile-only { display: flex; }
 }
 
 .input-clear-wrap input {
-  padding-right: 40px; /* room for the × button */
+  padding-right: 40px;
 }
 
 .input-clear-btn {
@@ -2259,11 +2266,13 @@ body.mobile-app .help-btn.mobile-only { display: flex; }
   height: 24px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.22);
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1rem;
+  font-weight: 700;
   line-height: 1;
   cursor: pointer;
+  /* Hidden by default — JS toggles display */
   display: none;
   align-items: center;
   justify-content: center;
@@ -2272,9 +2281,8 @@ body.mobile-app .help-btn.mobile-only { display: flex; }
   z-index: 2;
 }
 
-.input-clear-btn:hover { background: rgba(255,255,255,0.35); }
-
-/* Show × only when the paired input has content */
-.input-clear-wrap input:not(:placeholder-shown) ~ .input-clear-btn {
+.input-clear-btn.is-visible {
   display: flex;
 }
+
+.input-clear-btn:hover { background: rgba(255,255,255,0.40); }
