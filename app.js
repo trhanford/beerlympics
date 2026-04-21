@@ -2892,14 +2892,19 @@ const refreshState = () => {
   adminToggle.checked = isAdminMode;
   adminStatus.textContent = isAdminMode ? "Admin tools unlocked." : "Admin tools are locked.";
   adminPanel.classList.toggle("hidden", !isAdminMode);
-  hostPill.classList.toggle("hidden", !hostMode);
-  if (hostMode) {
-    modePill.textContent = "🎬 Host Mode";
-  } else if (isAdminMode) {
-    modePill.textContent = "🛠️ Admin Mode";
-  } else {
-    modePill.textContent = "🎈 Player Mode";
+
+  // Mobile pill management (desktop pill is managed by showDtModePill)
+  if (isMobileLayout()) {
+    hostPill.classList.toggle("hidden", !hostMode);
+    if (hostMode) {
+      modePill.textContent = "🎬 Host Mode";
+    } else if (isAdminMode) {
+      modePill.textContent = "🛠️ Admin Mode";
+    } else {
+      modePill.textContent = "🎈 Player Mode";
+    }
   }
+
   updateStepIndicator();
   document.body.classList.toggle("has-active-team", Boolean(getActiveTeamId()));
   updateMobileState();
@@ -2998,14 +3003,23 @@ const initDesktopLanding = () => {
   // If already in a session, skip landing
   if (getActiveGameCode() && getActiveTeamId()) {
     hideDtLanding();
+    showDtModePill(false); // player mode
     return;
   }
   if (getActiveGameCode() && isHost()) {
     hideDtLanding();
+    showDtModePill(true); // host mode
     return;
   }
 
-  // Join button
+  const step1 = document.getElementById("dt-step-1");
+  const step2 = document.getElementById("dt-step-2");
+  const dtCodeBadge = document.getElementById("dt-code-badge");
+  const dtGenerateBtn = document.getElementById("dt-generate-btn");
+  const dtGenerateStatus = document.getElementById("dt-generate-status");
+  const dtStartBtn2 = document.getElementById("dt-start-btn");
+
+  // ── Join button ───────────────────────────────────────────
   dtJoinBtn?.addEventListener("click", async () => {
     const code = normalizeGameCode(dtGameCodeInput?.value || "");
     const playerName = (dtPlayerNameInput?.value || "").trim();
@@ -3024,7 +3038,6 @@ const initDesktopLanding = () => {
       if (!game) { showDtHint(dtJoinStatus, "No game found for that code.", "error"); return; }
       setGameCodes(code);
       subscribeToGame(code);
-      // Copy values into the main form so registerTeam works
       playerNameInput.value = playerName;
       partnerNameInput.value = partnerName;
       countryInput.value = country;
@@ -3032,6 +3045,9 @@ const initDesktopLanding = () => {
       validateTeamInputs();
       await registerTeam({ playerName, country, partnerName });
       hideDtLanding();
+      showDtModePill(false); // player mode
+      // Show Play tab for players
+      document.querySelectorAll(".dt-play-tab").forEach(t => t.classList.remove("dt-host-hide"));
     } catch (err) {
       showDtHint(dtJoinStatus, `Error: ${err?.message || err}`, "error");
     } finally {
@@ -3039,26 +3055,33 @@ const initDesktopLanding = () => {
     }
   });
 
-  // Start (host) button — no name required, just generate code
-  dtStartBtn?.addEventListener("click", async () => {
-    setButtonLoadingDt(dtStartBtn, true, "Creating game...");
-    showDtHint(dtSetupStatus, "", "");
+  dtGameCodeInput?.addEventListener("keydown", (e) => { if (e.key === "Enter") dtJoinBtn?.click(); });
+
+  // ── Step 1 → Step 2: Generate code ────────────────────────
+  dtGenerateBtn?.addEventListener("click", async () => {
+    setButtonLoadingDt(dtGenerateBtn, true, "Generating...");
+    showDtHint(dtGenerateStatus, "", "");
     try {
       const newCode = await startNewGame();
-      showDtHint(dtSetupStatus, `Game created! Code: ${newCode}. Share this with players.`, "success");
-      showToast(`Game started! Code ${newCode}.`, "success");
-      hideDtLanding();
-      setView("leaderboard");
+      if (dtCodeBadge) dtCodeBadge.textContent = newCode;
+      // Transition to step 2
+      step1?.classList.add("hidden");
+      step2?.classList.remove("hidden");
     } catch (err) {
-      showDtHint(dtSetupStatus, `Failed: ${err?.message || err}`, "error");
+      showDtHint(dtGenerateStatus, `Failed: ${err?.message || err}`, "error");
     } finally {
-      setButtonLoadingDt(dtStartBtn, false);
+      setButtonLoadingDt(dtGenerateBtn, false);
     }
   });
 
-  // Enter key on code input
-  dtGameCodeInput?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") dtJoinBtn?.click();
+  // ── Step 2 → App: Let's play ──────────────────────────────
+  dtStartBtn2?.addEventListener("click", () => {
+    hideDtLanding();
+    showDtModePill(true); // host mode
+    // Hide Play tab — hosts view leaderboard/roster, not the play panel
+    document.querySelectorAll(".dt-play-tab").forEach(t => t.classList.add("dt-host-hide"));
+    setView("leaderboard");
+    showToast("Game is live! Share the code with your players.", "success");
   });
 };
 
@@ -3077,6 +3100,15 @@ const setButtonLoadingDt = (btn, loading, label) => {
   } else if (!loading && btn.dataset.origLabel) {
     btn.textContent = btn.dataset.origLabel;
   }
+};
+
+// Show/hide the mode pill in the desktop navbar (hidden until in-game)
+const showDtModePill = (hostMode) => {
+  const pill = document.getElementById("mode-pill");
+  if (!pill) return;
+  if (isMobileLayout()) return; // mobile handles its own pill
+  pill.classList.add("dt-visible");
+  pill.textContent = hostMode ? "🎬 Host Mode" : "🎈 Player Mode";
 };
 // ── END DESKTOP LANDING ────────────────────────────────────────────────────
 
