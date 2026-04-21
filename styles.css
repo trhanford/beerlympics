@@ -2016,7 +2016,7 @@ body.mobile-app #ref-section {
 }
 
 .ref-message.ref-msg .ref-bubble {
-  background: rgba(12, 9, 4, 0.72);
+  background: rgba(8, 6, 2, 0.82);
   border: 1px solid rgba(216, 191, 124, 0.2);
   color: #f0ece2;
   border-bottom-left-radius: 5px;
@@ -2285,3 +2285,46 @@ body.mobile-app .help-btn.mobile-only { display: flex; }
 }
 
 .input-clear-btn:hover { background: rgba(0,0,0,0.28); }
+
+/* ── FLIPCUP CONFIRM MODAL ──────────────────────────────────── */
+.flipcup-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(4, 4, 4, 0.72);
+  backdrop-filter: blur(4px);
+  animation: modalFadeIn 180ms ease;
+}
+
+.flipcup-confirm-card {
+  background: linear-gradient(145deg, rgba(14,10,4,0.96), rgba(55,38,10,0.94));
+  border: 1px solid rgba(216,191,124,0.38);
+  border-radius: 22px;
+  padding: 26px 22px 22px;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+}
+
+.flipcup-confirm-card h3 {
+  color: #f7f1de;
+  font-size: 1.2rem;
+  margin: 0 0 10px;
+}
+
+.flipcup-confirm-card p {
+  color: rgba(247,241,222,0.75);
+  font-size: 0.9rem;
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.flipcup-confirm-actions {
+  display: grid;
+  gap: 10px;
+}
