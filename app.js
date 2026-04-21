@@ -1828,7 +1828,7 @@ const renderMatch = () => {
     );
     nextGameCard.innerHTML = hasPending
       ? `
-        <h3>Waiting on game stations ⏳</h3>
+        <h3><span class="hourglass-spin">⏳</span> Waiting on game stations</h3>
         <p class="status">All your remaining games are currently in play. Check back soon.</p>
       `
       : `
@@ -1988,12 +1988,13 @@ const renderMatch = () => {
         </div>`;
       document.body.appendChild(overlay);
 
-      document.getElementById("fc-confirm-yes").addEventListener("click", () => {
+      document.getElementById("fc-confirm-yes").addEventListener("click", async () => {
         overlay.remove();
         dismissMobileKeyboard();
-        // Report result: active team's side wins or loses
         const winnerSide = claimedWin ? "win" : "lose";
-        void recordResult(match.id, { flipCupFinalResult: winnerSide, activeTeamId });
+        await recordResult(match.id, { flipCupFinalResult: winnerSide, activeTeamId });
+        // Explicitly process any pending exit/pause now that the match is complete
+        void processPendingTeamAction();
       });
       document.getElementById("fc-confirm-no").addEventListener("click", () => overlay.remove());
     };
@@ -3127,10 +3128,18 @@ const askTheRef = async () => {
       triggerRefFlash(verdict);
     } else {
       // Fallback: detect ruling sentiment from answer text when model skips VERDICT tag
-      const goodSignals = /\b(count[s]?|stand[s]?|valid|legal|allowed|good|point[s]?|score[s]?|yes.{0,20}count|that.{0,10}score)\b/i;
+      const goodSignals = /\b(count[s]?|stand[s]?|valid|legal|allowed|point[s]?|score[s]?|yes.{0,20}count|that.{0,10}score)\b/i;
       const badSignals = /\b(doesn.t count|no good|not allowed|invalid|illegal|no point|doesn.t score|void|disallowed)\b/i;
-      if (badSignals.test(answer)) triggerRefFlash("bad");
-      else if (goodSignals.test(answer)) triggerRefFlash("good");
+      let fallbackVerdict = null;
+      if (badSignals.test(answer)) fallbackVerdict = "bad";
+      else if (goodSignals.test(answer)) fallbackVerdict = "good";
+      if (fallbackVerdict) {
+        const badge = document.createElement("span");
+        badge.className = `ref-verdict ${fallbackVerdict}`;
+        badge.textContent = fallbackVerdict === "good" ? "✅ Play stands!" : "❌ No good!";
+        thinkWrap.appendChild(badge);
+        triggerRefFlash(fallbackVerdict);
+      }
     }
 
   } catch (err) {
