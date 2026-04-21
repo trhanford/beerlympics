@@ -1424,9 +1424,9 @@ body.mobile-app .mobile-access-panel .mobile-panel-header {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-body.mobile-app .mobile-play-panel .game-card { color: #1b2340; }
+body.mobile-app .mobile-play-panel .game-card { color: #f0ece2; }
 
-body.mobile-app .mobile-play-panel .game-card .status { color: #566180; }
+body.mobile-app .mobile-play-panel .game-card .status { color: rgba(240, 236, 226, 0.78); }
 
 body.mobile-app .mobile-play-panel .matchup-subtitle {
   color: #f7f1de;
@@ -1910,6 +1910,86 @@ body.mobile-app #ref-section .ask-ref-wrap {
   margin-top: 0;
 }
 
+/* ── PRE-GAME POWERUP SCREEN ─────────────────────────────────── */
+
+.pre-game-card {
+  background: linear-gradient(145deg, rgba(14, 10, 4, 0.92), rgba(60, 40, 10, 0.88));
+  border: 1px solid rgba(216, 191, 124, 0.45);
+  border-radius: 18px;
+  padding: 22px 18px 20px;
+  text-align: center;
+}
+
+.pre-game-card .pre-game-kicker {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #c9a860;
+  margin: 0 0 8px;
+}
+
+.pre-game-card .pre-game-title {
+  font-size: clamp(1.4rem, 5.5vw, 1.9rem);
+  font-weight: 800;
+  color: #f7f1de;
+  margin: 0 0 10px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.pre-game-card .pre-game-question {
+  font-size: 0.95rem;
+  color: rgba(247, 241, 222, 0.82);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.pre-game-timer-ring {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 4px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pre-game-timer-ring svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+
+.ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 5;
+}
+
+.ring-fill {
+  fill: none;
+  stroke: #c9a860;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 163;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1s linear, stroke 0.4s ease;
+}
+
+.ring-fill.urgent {
+  stroke: #e05c5c;
+}
+
+.pre-game-timer-label {
+  position: relative;
+  z-index: 1;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #f7f1de;
+  line-height: 1;
+}
+
 /* ── ONBOARDING TIP BANNERS ─────────────────────────────────── */
 
 .onboarding-tip {
@@ -1921,10 +2001,10 @@ body.mobile-app #ref-section .ask-ref-wrap {
   background: rgba(216, 191, 124, 0.14);
   border: 1px solid rgba(216, 191, 124, 0.32);
   font-size: 0.84rem;
-  line-height: 1.45;
-  color: rgba(255, 255, 255, 0.88);
-  transition: opacity 0.5s ease, max-height 0.5s ease;
-  max-height: 120px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+  transition: opacity 0.6s ease, max-height 0.6s ease, padding 0.6s ease, margin 0.6s ease, border 0.6s ease;
+  max-height: 140px;
   overflow: hidden;
 }
 
@@ -1934,7 +2014,7 @@ body.mobile-app #ref-section .ask-ref-wrap {
   padding-top: 0;
   padding-bottom: 0;
   margin: 0;
-  border: none;
+  border-width: 0;
 }
 
 .onboarding-tip-icon {
@@ -1943,10 +2023,138 @@ body.mobile-app #ref-section .ask-ref-wrap {
   margin-top: 1px;
 }
 
+/* ── HELP BUTTON ─────────────────────────────────────────────── */
+
+.help-btn {
+  position: fixed;
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  left: 16px;
+  z-index: 1098;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  background: rgba(20, 14, 6, 0.65);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.help-btn:hover {
+  background: rgba(40, 28, 10, 0.80);
+  border-color: rgba(216, 191, 124, 0.5);
+}
+
+body.mobile-app .help-btn.mobile-only {
+  display: flex;
+}
+
+/* ── HELP MODAL ──────────────────────────────────────────────── */
+
+.help-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  align-items: end;
+  animation: modalFadeIn 180ms ease;
+}
+
+.help-modal.hidden { display: none; }
+
+.help-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 4, 4, 0.6);
+  backdrop-filter: blur(3px);
+}
+
+.help-modal-sheet {
+  position: relative;
+  width: min(560px, 100%);
+  margin: 0 auto;
+  background: rgba(14, 10, 4, 0.97);
+  border-radius: 24px 24px 0 0;
+  padding: 24px 20px calc(32px + env(safe-area-inset-bottom, 0px));
+  border: 1px solid rgba(216, 191, 124, 0.22);
+  border-bottom: none;
+  box-shadow: 0 -18px 44px rgba(0, 0, 0, 0.4);
+  animation: modalSlideIn 220ms ease;
+  display: grid;
+  gap: 16px;
+}
+
+.help-modal-close {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.help-modal-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #c9a860;
+}
+
+.help-tip-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(216, 191, 124, 0.1);
+  border: 1px solid rgba(216, 191, 124, 0.22);
+}
+
+.help-tip-icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.help-tip-row p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.88);
+}
+
 /* ── JOIN LINK BUTTON ROW ───────────────────────────────────── */
 .join-link-buttons {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   margin-top: 2px;
+}
+
+/* ── REF SECTION ────────────────────────────────────────────── */
+body.mobile-app #ref-section {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
 }
