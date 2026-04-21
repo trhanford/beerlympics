@@ -78,6 +78,7 @@ const joinQrEl = document.getElementById("join-qr");
 const joinLinkEl = document.getElementById("join-link");
 const joinDomainEl = document.getElementById("join-domain");
 const copyJoinLinkButton = document.getElementById("copy-join-link");
+const shareJoinLinkButton = document.getElementById("share-join-link");
 const currentMatchesEl = document.getElementById("current-matches");
 const newGameButton = document.getElementById("new-game");
 const resetGameButton = document.getElementById("reset-game");
@@ -493,6 +494,17 @@ const setMobileOnboardingStep = (step) => {
   mobileOnboardingTeamCard.classList.toggle("is-visible", !showCode);
   if (showCode) {
     resetJoinButtonLabels();
+    // Auto-dismiss the code-page tip after 5 seconds
+    const tip = document.getElementById("onboarding-tip-code");
+    if (tip && !tip.classList.contains("is-dismissed")) {
+      setTimeout(() => tip.classList.add("is-dismissed"), 5000);
+    }
+  } else {
+    // Auto-dismiss the team-page tip after 5 seconds
+    const tip = document.getElementById("onboarding-tip-team");
+    if (tip && !tip.classList.contains("is-dismissed")) {
+      setTimeout(() => tip.classList.add("is-dismissed"), 5000);
+    }
   }
 };
 
@@ -592,6 +604,11 @@ const runMobileWelcome = () => {
   document.documentElement.classList.add("mobile-app-bg");
   const state = computeMobileState();
   setMobileState(state);
+  // Auto-dismiss the first-page tip for fresh sessions
+  if (state === "onboarding-code") {
+    const tip = document.getElementById("onboarding-tip-code");
+    if (tip) setTimeout(() => tip.classList.add("is-dismissed"), 5000);
+  }
 };
 
 const runMobileSplash = () => {
@@ -1810,15 +1827,10 @@ const renderMatch = () => {
     return;
   }
 
-  const opponents = (match.teamIds || [])
-    .filter((id) => id !== activeTeamId)
-    .map((id) => teams.find((team) => team.id === id))
-    .filter(Boolean);
-
   const gameType = GAME_TYPES.find((entry) => entry.id === match.gameType);
 
   // ── PRE-GAME POWERUP DECISION ──────────────────────────────────────────────
-  // Show INSTEAD of the match card — takes over the whole screen until decided.
+  // Shown INSTEAD of the match card — takes over the whole screen until decided.
   const alreadyDoubledDown = Boolean(match.doubleDown?.[activeTeamId]);
   const needsPreGameDecision =
     match.status !== "complete" &&
@@ -1831,7 +1843,6 @@ const renderMatch = () => {
     const TIMER_SECS = 30;
     const circumference = 163;
 
-    // Replace the match card entirely with the pre-game screen
     nextGameCard.innerHTML = `
       <div class="pre-game-card">
         <p class="pre-game-kicker">Up next</p>
@@ -1851,7 +1862,6 @@ const renderMatch = () => {
         </div>
       </div>
     `;
-
     scoreActions.innerHTML = "";
 
     if (hasPowerup) {
@@ -1884,11 +1894,9 @@ const renderMatch = () => {
     skipBtn.addEventListener("click", commitSkip);
     scoreActions.appendChild(skipBtn);
 
-    // 30-second countdown — auto-skips on expiry
     let secsLeft = TIMER_SECS;
     const ringFill = document.getElementById("pre-game-ring-fill");
     const timerLabel = document.getElementById("pre-game-timer-label");
-
     if (preGameTimerInterval) clearInterval(preGameTimerInterval);
     preGameTimerInterval = setInterval(() => {
       secsLeft -= 1;
@@ -1909,6 +1917,11 @@ const renderMatch = () => {
     return;
   }
   // ── END PRE-GAME ───────────────────────────────────────────────────────────
+
+  const opponents = (match.teamIds || [])
+    .filter((id) => id !== activeTeamId)
+    .map((id) => teams.find((team) => team.id === id))
+    .filter(Boolean);
 
   const opponentSummary = opponents.length
     ? opponents
@@ -2821,6 +2834,27 @@ if (copyJoinLinkButton) {
     } catch (error) {
       console.error("Unable to copy join link.", error);
       showToast("Could not copy the link on this device.", "warning");
+    }
+  });
+}
+
+if (shareJoinLinkButton) {
+  shareJoinLinkButton.addEventListener("click", async () => {
+    const code = getActiveGameCode();
+    if (!code) {
+      showToast("Start or join a game first.", "warning");
+      return;
+    }
+    const joinUrl = getJoinUrl(code);
+    const shareText = `🍻 Join our Beerlympics game! Use code ${code} or tap the link to jump straight in: ${joinUrl}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: shareText });
+      } catch (err) {
+        if (err.name !== "AbortError") showToast("Could not open share sheet.", "warning");
+      }
+    } else {
+      window.open(`sms:?body=${encodeURIComponent(shareText)}`, "_blank");
     }
   });
 }
