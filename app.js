@@ -3151,9 +3151,19 @@ document.querySelectorAll(".input-clear-wrap").forEach((wrap) => {
   const input = wrap.querySelector("input");
   const btn = wrap.querySelector(".input-clear-btn");
   if (!input || !btn) return;
+
+  const sync = () => btn.classList.toggle("is-visible", input.value.length > 0);
+
+  input.addEventListener("input", sync);
+  input.addEventListener("change", sync);
+  // Check on focus in case value was set programmatically
+  input.addEventListener("focus", sync);
+  sync(); // run once on init
+
   btn.addEventListener("click", () => {
     input.value = "";
     input.focus();
+    sync();
     input.dispatchEvent(new Event("input", { bubbles: true }));
   });
 });
