@@ -486,14 +486,31 @@
     <!-- Leaderboard fade curtain — lives directly in <body> so it is never
          trapped inside a backdrop-filter stacking context -->
     <div class="leaderboard-fade-curtain" id="leaderboard-fade-curtain" aria-hidden="true"></div>
+
+    <!-- Help button — fixed top-left, visible on all mobile pages -->
+    <button class="help-btn mobile-only hidden" id="help-btn" type="button" aria-label="Help">?</button>
+
+    <!-- Help modal -->
+    <div class="help-modal hidden" id="help-modal" aria-hidden="true">
+      <div class="help-modal-backdrop" id="help-modal-backdrop"></div>
+      <div class="help-modal-sheet" role="dialog" aria-modal="true">
+        <button class="help-modal-close" id="help-modal-close" type="button" aria-label="Close">×</button>
+        <p class="help-modal-kicker">Good to know</p>
+        <div class="help-tip-row">
+          <span class="help-tip-icon">💡</span>
+          <p>You can leave the app mid-game — as long as it stays running in the background, we'll remember exactly where you left off.</p>
+        </div>
+        <div class="help-tip-row">
+          <span class="help-tip-icon">🔁</span>
+          <p>Played before? Just enter the same name, partner, and country and we'll reunite you with your team and stats instantly.</p>
+        </div>
+      </div>
+    </div>
+
     <nav class="mobile-bottom-nav mobile-only hidden" id="mobile-bottom-nav" aria-label="Mobile navigation">
       <button class="mobile-bottom-nav__tab is-active" id="mobile-nav-game" type="button" data-view="player">
         <span aria-hidden="true">🎮</span>
         <span>Game</span>
-      </button>
-      <button class="mobile-bottom-nav__tab" id="mobile-nav-rules" type="button" data-view="rules">
-        <span aria-hidden="true">📜</span>
-        <span>Rules</span>
       </button>
       <button class="mobile-bottom-nav__tab" id="mobile-nav-ref" type="button" data-view="ref">
         <span aria-hidden="true">🏛️</span>
@@ -502,6 +519,10 @@
       <button class="mobile-bottom-nav__tab" id="mobile-nav-leaderboard" type="button" data-view="leaderboard">
         <span aria-hidden="true">🏆</span>
         <span>Scores</span>
+      </button>
+      <button class="mobile-bottom-nav__tab" id="mobile-nav-rules" type="button" data-view="rules">
+        <span aria-hidden="true">📜</span>
+        <span>Rules</span>
       </button>
     </nav>
     <div class="install-modal hidden" id="install-modal" aria-hidden="true">
