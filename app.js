@@ -1016,6 +1016,8 @@ function subscribeToGame(code) {
     state.matches = snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
     renderLeaderboard();
     renderMatch();
+    updateDisputeButton();
+    checkNullifyState();
   });
 }
 
@@ -2033,9 +2035,10 @@ const renderMatch = () => {
   // ── END FLIP CUP ─────────────────────────────────────────────────────────
 
   updateStepIndicator({ hasCoreInfo: true, hasCode: true });
+  updateDisputeButton();
 };
 
-async function toggleDoubleDown(teamId, matchId) {
+(teamId, matchId) {
   const activeGameCode = getActiveGameCode();
   if (!activeGameCode) return;
   let toastMessage = null;
@@ -2218,7 +2221,364 @@ async function recordResult(matchId, payload) {
   }
 }
 
-const setView = (view) => {
+// ── DISPUTE SYSTEM ────────────────────────────────────────────────────────────
+
+const getLastCompletedMatch = () => {
+  const activeTeamId = getActiveTeamId();
+  if (!activeTeamId) return null;
+  const completed = getMatches()
+    .filter(m => m.status === "complete" && m.teamIds?.includes(activeTeamId))
+    .sort((a, b) => {
+      const ta = a.completedAt?.toMillis?.() ?? 0;
+      const tb = b.completedAt?.toMillis?.() ?? 0;
+      return tb - ta;
+    });
+  return completed[0] || null;
+};
+
+// Show/hide the dispute button based on whether there's a disputable match
+const updateDisputeButton = () => {
+  const btn = document.getElementById("dispute-last-result");
+  if (!btn) return;
+  const match = getLastCompletedMatch();
+  const hasMatch = Boolean(match && match.result && !match.result.nullified);
+  btn.style.display = hasMatch && isMobileLayout() ? "block" : "none";
+};
+
+// Open the dispute modal
+const openDisputeModal = () => {
+  const activeTeamId = getActiveTeamId();
+  const match = getLastCompletedMatch();
+  if (!match || !activeTeamId) return;
+
+  const modal = document.getElementById("dispute-modal");
+  const switchBtn = document.getElementById("dispute-switch-loss");
+  const desc = document.getElementById("dispute-modal-desc");
+  const gameType = match.gameType?.replace("_", " ") || "last game";
+
+  // Show "switch to loss" only if this team was the reported winner
+  const result = match.result || {};
+  const activeTeamWon =
+    result.winnerTeamId === activeTeamId ||
+    (Array.isArray(result.winnerIds) && result.winnerIds.includes(activeTeamId));
+  const activeTeamReported =
+    result.winnerTeamId === activeTeamId ||  // for regular games, reporter IS the winner
+    result.reportedByTeamId === activeTeamId; // for flip cup
+
+  if (switchBtn) {
+    switchBtn.style.display = (activeTeamWon && activeTeamReported) ? "block" : "none";
+  }
+
+  const gameName = (match.gameType || "").replace(/_/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+  if (desc) desc.textContent = `Last game: ${gameName}. What would you like to do?`;
+
+  modal?.classList.remove("hidden");
+  modal?.setAttribute("aria-hidden", "false");
+};
+
+const closeDisputeModal = () => {
+  const modal = document.getElementById("dispute-modal");
+  modal?.classList.add("hidden");
+  modal?.setAttribute("aria-hidden", "true");
+};
+
+// Swap winner/loser on the last match
+const processSwitchToLoss = async () => {
+  const activeGameCode = getActiveGameCode();
+  const activeTeamId = getActiveTeamId();
+  const match = getLastCompletedMatch();
+  if (!match || !activeGameCode || !activeTeamId) return;
+
+  const result = match.result || {};
+  const oldWinnerId = result.winnerTeamId || (result.winnerIds?.[0]);
+  const oldLoserId = result.loserTeamId || match.teamIds?.find(id => id !== oldWinnerId);
+  if (!oldWinnerId || !oldLoserId) { showToast("Can't parse that result. Ask the host to fix it.", "warning"); return; }
+
+  closeDisputeModal();
+  showToast("Switching result...", "info");
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const matchRef = doc(matchesCollection(activeGameCode), match.id);
+      const winnerRef = doc(teamsCollection(activeGameCode), oldWinnerId);
+      const loserRef  = doc(teamsCollection(activeGameCode), oldLoserId);
+      const [matchSnap, winnerSnap, loserSnap] = await Promise.all([
+        transaction.get(matchRef),
+        transaction.get(winnerRef),
+        transaction.get(loserRef),
+      ]);
+      if (!matchSnap.exists() || !winnerSnap.exists() || !loserSnap.exists()) return;
+      const winnerData = winnerSnap.data();
+      const loserData  = loserSnap.data();
+
+      // Recalculate points difference
+      const oldWinPts  = calculatePoints(oldWinnerId, true,  match);
+      const oldLosePts = calculatePoints(oldLoserId,  false, match);
+      const newWinPts  = calculatePoints(oldLoserId,  true,  match);
+      const newLosePts = calculatePoints(oldWinnerId, false, match);
+
+      // Old winner becomes the loser
+      transaction.update(winnerRef, {
+        wins:   Math.max(0, (winnerData.wins   || 0) - 1),
+        losses: (winnerData.losses || 0) + 1,
+        points: Math.max(0, (winnerData.points || 0) - oldWinPts + newLosePts),
+      });
+      // Old loser becomes the winner
+      transaction.update(loserRef, {
+        wins:   (loserData.wins   || 0) + 1,
+        losses: Math.max(0, (loserData.losses || 0) - 1),
+        points: Math.max(0, (loserData.points || 0) - oldLosePts + newWinPts),
+      });
+      // Update match result
+      transaction.update(matchRef, {
+        result: { ...matchSnap.data().result, winnerTeamId: oldLoserId, loserTeamId: oldWinnerId, corrected: true },
+      });
+    });
+    showToast("Result corrected. Leaderboard updated.", "success");
+  } catch (err) {
+    console.error("Switch to loss failed:", err);
+    showToast("Could not update the result. Try again.", "warning");
+  }
+};
+
+// Initiate a nullify request
+const processNullifyRequest = async () => {
+  const activeGameCode = getActiveGameCode();
+  const activeTeamId = getActiveTeamId();
+  const match = getLastCompletedMatch();
+  if (!match || !activeGameCode || !activeTeamId) return;
+
+  closeDisputeModal();
+
+  const activeTeam = getTeams().find(t => t.id === activeTeamId);
+  const requesterName = activeTeam?.playerName || "Someone";
+
+  try {
+    await updateDoc(doc(matchesCollection(activeGameCode), match.id), {
+      nullifyRequest: {
+        requestedBy: activeTeamId,
+        requesterName,
+        agreedBy: [activeTeamId], // requester auto-agrees
+        declinedBy: [],
+        status: "pending",
+        requestedAt: serverTimestamp(),
+      },
+    });
+    showToast("Nullify request sent. Waiting for others to respond.", "info");
+  } catch (err) {
+    console.error("Nullify request failed:", err);
+    showToast("Could not send nullify request.", "warning");
+  }
+};
+
+// Execute the actual nullify (called when majority agrees)
+const executeNullify = async (match) => {
+  const activeGameCode = getActiveGameCode();
+  if (!activeGameCode || !match) return;
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const matchRef = doc(matchesCollection(activeGameCode), match.id);
+      const teamRefs = match.teamIds.map(id => doc(teamsCollection(activeGameCode), id));
+      const [matchSnap, ...teamSnaps] = await Promise.all([
+        transaction.get(matchRef),
+        ...teamRefs.map(r => transaction.get(r)),
+      ]);
+      if (!matchSnap.exists()) return;
+
+      const result = matchSnap.data().result || {};
+      const PARTICIPATION_PTS = 2;
+
+      teamSnaps.forEach((snap, i) => {
+        if (!snap.exists()) return;
+        const team = snap.data();
+        const isWinner =
+          result.winnerTeamId === match.teamIds[i] ||
+          (Array.isArray(result.winnerIds) && result.winnerIds.includes(match.teamIds[i]));
+        const isLoser = !isWinner;
+
+        const oldWinPts  = isWinner ? calculatePoints(match.teamIds[i], true,  match) : 0;
+        const oldLosePts = isLoser  ? calculatePoints(match.teamIds[i], false, match) : 0;
+        const pointAdjust = PARTICIPATION_PTS - oldWinPts - oldLosePts;
+
+        transaction.update(teamRefs[i], {
+          wins:   isWinner ? Math.max(0, (team.wins   || 0) - 1) : (team.wins   || 0),
+          losses: isLoser  ? Math.max(0, (team.losses || 0) - 1) : (team.losses || 0),
+          points: Math.max(0, (team.points || 0) + pointAdjust),
+        });
+      });
+
+      transaction.update(matchRef, {
+        "result.nullified": true,
+        "nullifyRequest.status": "approved",
+      });
+    });
+    dismissNullifyOverlay();
+    showToast("Game nullified. Everyone gets 2 participation points.", "success");
+  } catch (err) {
+    console.error("Nullify execution failed:", err);
+    showToast("Nullify failed. Try again.", "warning");
+  }
+};
+
+let nullifyOverlayMatchId = null;
+
+const showNullifyOverlay = (match) => {
+  const overlay = document.getElementById("nullify-overlay");
+  if (!overlay) return;
+  nullifyOverlayMatchId = match.id;
+
+  const req = match.nullifyRequest || {};
+  const total = match.teamIds?.length || 2;
+  const agreed = (req.agreedBy || []).length;
+  const needed = Math.ceil(total * 0.5) + (total % 2 === 0 ? 0 : 0); // majority = > 50%
+  const majority = Math.floor(total / 2) + 1;
+
+  const titleEl = document.getElementById("nullify-requester-name");
+  const bodyEl  = document.getElementById("nullify-body");
+  const countEl = document.getElementById("nullify-count");
+
+  if (titleEl) titleEl.textContent = `${req.requesterName || "Someone"} wants to nullify`;
+  if (bodyEl)  bodyEl.textContent  = `the last game result. If ${majority} out of ${total} players agree, that result will be removed and everyone gets 2 participation points instead.`;
+  if (countEl) countEl.textContent = `${agreed} / ${majority} agreed so far`;
+
+  overlay.classList.remove("hidden");
+  overlay.setAttribute("aria-hidden", "false");
+};
+
+const dismissNullifyOverlay = () => {
+  const overlay = document.getElementById("nullify-overlay");
+  overlay?.classList.add("hidden");
+  overlay?.setAttribute("aria-hidden", "true");
+  nullifyOverlayMatchId = null;
+};
+
+// Check on every match snapshot if there's a pending/approved nullify
+const checkNullifyState = () => {
+  const activeTeamId = getActiveTeamId();
+  if (!activeTeamId || !isMobileLayout()) return;
+
+  const match = getLastCompletedMatch();
+  if (!match?.nullifyRequest) { dismissNullifyOverlay(); return; }
+
+  const req = match.nullifyRequest;
+  const alreadyActed =
+    (req.agreedBy || []).includes(activeTeamId) ||
+    (req.declinedBy || []).includes(activeTeamId);
+
+  if (req.status === "approved") { dismissNullifyOverlay(); return; }
+  if (req.status === "rejected") { dismissNullifyOverlay(); return; }
+
+  // Show overlay to players who haven't responded yet (except the requester who already auto-agreed)
+  if (req.requestedBy !== activeTeamId && !alreadyActed) {
+    showNullifyOverlay(match);
+  } else if (req.requestedBy === activeTeamId && !alreadyActed) {
+    // Shouldn't happen — requester auto-agrees — but just in case
+    showNullifyOverlay(match);
+  } else {
+    // Already acted — show waiting state if still pending
+    if (req.status === "pending") {
+      const overlay = document.getElementById("nullify-overlay");
+      const agreed  = (req.agreedBy  || []).length;
+      const total   = match.teamIds?.length || 2;
+      const majority = Math.floor(total / 2) + 1;
+      const countEl = document.getElementById("nullify-count");
+      if (countEl) countEl.textContent = `${agreed} / ${majority} agreed so far`;
+      // Show waiting message without agree/decline buttons
+      const agreBtn = document.getElementById("nullify-agree-btn");
+      const declBtn = document.getElementById("nullify-decline-btn");
+      if (agreBtn) agreBtn.style.display = "none";
+      if (declBtn) declBtn.textContent = "Dismiss";
+      overlay?.classList.remove("hidden");
+    }
+  }
+};
+
+// Wire up dispute and nullify button listeners
+const initDisputeSystem = () => {
+  const disputeBtn = document.getElementById("dispute-last-result");
+  const backdrop   = document.getElementById("dispute-modal-backdrop");
+  const closeBtn   = document.getElementById("dispute-modal-close");
+  const switchBtn  = document.getElementById("dispute-switch-loss");
+  const nullifyBtn = document.getElementById("dispute-nullify");
+  const agreeBtn   = document.getElementById("nullify-agree-btn");
+  const declineBtn = document.getElementById("nullify-decline-btn");
+
+  disputeBtn?.addEventListener("click", openDisputeModal);
+  backdrop?.addEventListener("click", closeDisputeModal);
+  closeBtn?.addEventListener("click", closeDisputeModal);
+
+  switchBtn?.addEventListener("click", () => { void processSwitchToLoss(); });
+  nullifyBtn?.addEventListener("click", () => { void processNullifyRequest(); });
+
+  agreeBtn?.addEventListener("click", async () => {
+    const activeGameCode = getActiveGameCode();
+    const activeTeamId   = getActiveTeamId();
+    const match = getLastCompletedMatch();
+    if (!match || !activeGameCode || !activeTeamId) return;
+
+    const req = match.nullifyRequest || {};
+    const newAgreed = [...new Set([...(req.agreedBy || []), activeTeamId])];
+    const majority  = Math.floor((match.teamIds?.length || 2) / 2) + 1;
+
+    if (newAgreed.length >= majority) {
+      // Majority reached — nullify!
+      await updateDoc(doc(matchesCollection(activeGameCode), match.id), {
+        "nullifyRequest.agreedBy": newAgreed,
+        "nullifyRequest.status": "approved",
+      });
+      await executeNullify(match);
+    } else {
+      await updateDoc(doc(matchesCollection(activeGameCode), match.id), {
+        "nullifyRequest.agreedBy": newAgreed,
+      });
+      dismissNullifyOverlay();
+      showToast("You agreed to nullify. Waiting for others.", "info");
+    }
+  });
+
+  declineBtn?.addEventListener("click", async () => {
+    const activeGameCode = getActiveGameCode();
+    const activeTeamId   = getActiveTeamId();
+    const match = getLastCompletedMatch();
+    if (!match || !activeGameCode || !activeTeamId) { dismissNullifyOverlay(); return; }
+
+    const req = match.nullifyRequest || {};
+    if (req.requestedBy === activeTeamId || (req.agreedBy || []).includes(activeTeamId)) {
+      // This was the dismiss button for waiters
+      dismissNullifyOverlay();
+      return;
+    }
+
+    const newDeclined = [...new Set([...(req.declinedBy || []), activeTeamId])];
+    const total = match.teamIds?.length || 2;
+    const majority = Math.floor(total / 2) + 1;
+    const agreedCount = (req.agreedBy || []).length;
+    const remainingCanAgree = total - newDeclined.length - agreedCount;
+
+    // If remaining agreeable players can't reach majority, reject
+    if (agreedCount + remainingCanAgree < majority) {
+      await updateDoc(doc(matchesCollection(activeGameCode), match.id), {
+        "nullifyRequest.declinedBy": newDeclined,
+        "nullifyRequest.status": "rejected",
+      });
+      dismissNullifyOverlay();
+      showToast("Nullify rejected. The original result stands.", "info");
+      // Notify the requester via toast (they'll see it on next render)
+    } else {
+      await updateDoc(doc(matchesCollection(activeGameCode), match.id), {
+        "nullifyRequest.declinedBy": newDeclined,
+      });
+      dismissNullifyOverlay();
+      showToast("You declined the nullify request.", "info");
+    }
+  });
+};
+
+// ── END DISPUTE SYSTEM ────────────────────────────────────────────────────────
+
+
   const sections = {
     player: playerSection,
     rules: rulesSection,
@@ -2978,10 +3338,13 @@ const init = async () => {
   refreshState();
   validateTeamInputs();
 
-  // Desktop landing init
+  // Desktop landing
   if (!isMobileLayout()) {
     initDesktopLanding();
   }
+
+  // Mobile dispute system
+  initDisputeSystem();
 };
 
 // ── DESKTOP LANDING ────────────────────────────────────────────────────────
