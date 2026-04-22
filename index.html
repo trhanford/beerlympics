@@ -389,6 +389,9 @@
               <p class="status">Register to unlock your matchup.</p>
             </div>
             <div class="score-actions" id="score-actions"></div>
+            <button class="btn ghost mobile-only" type="button" id="dispute-last-result" style="display:none;">
+              🚩 Dispute last result
+            </button>
             <button class="btn ghost mobile-only" type="button" id="mobile-exit-game-btn">
               Exit Game
             </button>
@@ -673,6 +676,39 @@
         <div class="dt-leave-actions">
           <button class="dt-btn dt-btn-gold" type="button" id="dt-leave-confirm">Yes, take me back</button>
           <button class="dt-btn dt-btn-ghost" type="button" id="dt-leave-cancel">Stay in the game</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dispute modal -->
+    <div class="install-modal hidden" id="dispute-modal" aria-hidden="true">
+      <div class="install-modal-backdrop" id="dispute-modal-backdrop"></div>
+      <div class="install-modal-sheet dispute-sheet" role="dialog" aria-modal="true">
+        <button class="install-modal-close" id="dispute-modal-close" type="button" aria-label="Close">×</button>
+        <p class="install-kicker">🚩 Dispute Last Result</p>
+        <h2 id="dispute-modal-title">What happened?</h2>
+        <p class="status" id="dispute-modal-desc">Choose how to resolve the last game.</p>
+        <div class="exit-options" id="dispute-options">
+          <button class="btn secondary" type="button" id="dispute-switch-loss" style="display:none;">
+            😬 Honest mistake — that was actually a loss
+          </button>
+          <button class="btn ghost" type="button" id="dispute-nullify">
+            ⚖️ Can't agree? Nullify that game
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nullify request full-screen overlay -->
+    <div class="nullify-overlay hidden" id="nullify-overlay" aria-hidden="true">
+      <div class="nullify-overlay-inner">
+        <div class="nullify-icon">⚖️</div>
+        <h2 class="nullify-title" id="nullify-requester-name">A teammate wants to nullify</h2>
+        <p class="nullify-body" id="nullify-body">wants to nullify the last game. If the majority agrees, that result will be removed and everyone gets 2 participation points.</p>
+        <p class="nullify-count" id="nullify-count"></p>
+        <div class="nullify-actions">
+          <button class="btn" type="button" id="nullify-agree-btn">✅ I agree — nullify it</button>
+          <button class="btn secondary" type="button" id="nullify-decline-btn">❌ No, the result stands</button>
         </div>
       </div>
     </div>
