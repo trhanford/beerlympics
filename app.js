@@ -2580,7 +2580,7 @@ const initDisputeSystem = () => {
 
 // ── END DISPUTE SYSTEM ────────────────────────────────────────────────────────
 
-
+const setView = (view) => {
   const sections = {
     player: playerSection,
     rules: rulesSection,
