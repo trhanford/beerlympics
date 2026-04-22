@@ -2238,12 +2238,29 @@ const getLastCompletedMatch = () => {
   return completed[0] || null;
 };
 
-// Show/hide the dispute button based on whether there's a disputable match
+// Find any completed match involving the active team that has a pending nullify request
+const getMatchWithPendingNullify = () => {
+  const activeTeamId = getActiveTeamId();
+  if (!activeTeamId) return null;
+  return getMatches().find(m =>
+    m.status === "complete" &&
+    m.teamIds?.includes(activeTeamId) &&
+    m.nullifyRequest?.status === "pending"
+  ) || null;
+};
+
+// Show/hide the dispute button — only for most recent undisputed completed match
 const updateDisputeButton = () => {
   const btn = document.getElementById("dispute-last-result");
   if (!btn) return;
   const match = getLastCompletedMatch();
-  const hasMatch = Boolean(match && match.result && !match.result.nullified);
+  const hasMatch = Boolean(
+    match &&
+    match.result &&
+    !match.result.nullified &&
+    !match.result.corrected &&
+    !match.nullifyRequest  // hide once any nullify request exists (pending or resolved)
+  );
   btn.style.display = hasMatch && isMobileLayout() ? "block" : "none";
 };
 
@@ -2256,16 +2273,14 @@ const openDisputeModal = () => {
   const modal = document.getElementById("dispute-modal");
   const switchBtn = document.getElementById("dispute-switch-loss");
   const desc = document.getElementById("dispute-modal-desc");
-  const gameType = match.gameType?.replace("_", " ") || "last game";
 
-  // Show "switch to loss" only if this team was the reported winner
   const result = match.result || {};
   const activeTeamWon =
     result.winnerTeamId === activeTeamId ||
     (Array.isArray(result.winnerIds) && result.winnerIds.includes(activeTeamId));
   const activeTeamReported =
-    result.winnerTeamId === activeTeamId ||  // for regular games, reporter IS the winner
-    result.reportedByTeamId === activeTeamId; // for flip cup
+    result.winnerTeamId === activeTeamId ||
+    result.reportedByTeamId === activeTeamId;
 
   if (switchBtn) {
     switchBtn.style.display = (activeTeamWon && activeTeamReported) ? "block" : "none";
@@ -2314,25 +2329,21 @@ const processSwitchToLoss = async () => {
       const winnerData = winnerSnap.data();
       const loserData  = loserSnap.data();
 
-      // Recalculate points difference
       const oldWinPts  = calculatePoints(oldWinnerId, true,  match);
       const oldLosePts = calculatePoints(oldLoserId,  false, match);
       const newWinPts  = calculatePoints(oldLoserId,  true,  match);
       const newLosePts = calculatePoints(oldWinnerId, false, match);
 
-      // Old winner becomes the loser
       transaction.update(winnerRef, {
         wins:   Math.max(0, (winnerData.wins   || 0) - 1),
         losses: (winnerData.losses || 0) + 1,
         points: Math.max(0, (winnerData.points || 0) - oldWinPts + newLosePts),
       });
-      // Old loser becomes the winner
       transaction.update(loserRef, {
         wins:   (loserData.wins   || 0) + 1,
         losses: Math.max(0, (loserData.losses || 0) - 1),
         points: Math.max(0, (loserData.points || 0) - oldLosePts + newWinPts),
       });
-      // Update match result
       transaction.update(matchRef, {
         result: { ...matchSnap.data().result, winnerTeamId: oldLoserId, loserTeamId: oldWinnerId, corrected: true },
       });
@@ -2426,7 +2437,8 @@ const executeNullify = async (match) => {
 
 let nullifyOverlayMatchId = null;
 
-const showNullifyOverlay = (match) => {
+// Show the nullify overlay — two modes: requester (waiting) vs respondent (agree/decline)
+const showNullifyOverlay = (match, isRequester = false) => {
   const overlay = document.getElementById("nullify-overlay");
   if (!overlay) return;
   nullifyOverlayMatchId = match.id;
@@ -2434,16 +2446,29 @@ const showNullifyOverlay = (match) => {
   const req = match.nullifyRequest || {};
   const total = match.teamIds?.length || 2;
   const agreed = (req.agreedBy || []).length;
-  const needed = Math.ceil(total * 0.5) + (total % 2 === 0 ? 0 : 0); // majority = > 50%
   const majority = Math.floor(total / 2) + 1;
 
   const titleEl = document.getElementById("nullify-requester-name");
   const bodyEl  = document.getElementById("nullify-body");
   const countEl = document.getElementById("nullify-count");
+  const agreeBtn = document.getElementById("nullify-agree-btn");
+  const declineBtn = document.getElementById("nullify-decline-btn");
 
-  if (titleEl) titleEl.textContent = `${req.requesterName || "Someone"} wants to nullify`;
-  if (bodyEl)  bodyEl.textContent  = `the last game result. If ${majority} out of ${total} players agree, that result will be removed and everyone gets 2 participation points instead.`;
-  if (countEl) countEl.textContent = `${agreed} / ${majority} agreed so far`;
+  if (isRequester) {
+    // Requester waiting view
+    if (titleEl) titleEl.textContent = "Hang tight ⏳";
+    if (bodyEl)  bodyEl.textContent  = `Your nullify request is out there. ${majority} out of ${total} players need to agree for it to go through.`;
+    if (countEl) countEl.textContent = `${agreed} / ${majority} agreed so far`;
+    if (agreeBtn) agreeBtn.style.display = "none";
+    if (declineBtn) { declineBtn.style.display = "block"; declineBtn.textContent = "Dismiss"; }
+  } else {
+    // Respondent view
+    if (titleEl) titleEl.textContent = `${req.requesterName || "A teammate"} wants to nullify`;
+    if (bodyEl)  bodyEl.textContent  = `the last game result. If ${majority} out of ${total} players agree, that result is removed and everyone gets 2 participation points instead.`;
+    if (countEl) countEl.textContent = `${agreed} / ${majority} agreed so far`;
+    if (agreeBtn) agreeBtn.style.display = "block";
+    if (declineBtn) { declineBtn.style.display = "block"; declineBtn.textContent = "❌ No, the result stands"; }
+  }
 
   overlay.classList.remove("hidden");
   overlay.setAttribute("aria-hidden", "false");
@@ -2456,44 +2481,32 @@ const dismissNullifyOverlay = () => {
   nullifyOverlayMatchId = null;
 };
 
-// Check on every match snapshot if there's a pending/approved nullify
+// Check on every match snapshot for a pending nullify — search ALL matches, not just the last one
 const checkNullifyState = () => {
   const activeTeamId = getActiveTeamId();
   if (!activeTeamId || !isMobileLayout()) return;
 
-  const match = getLastCompletedMatch();
-  if (!match?.nullifyRequest) { dismissNullifyOverlay(); return; }
+  // Look for any completed match involving this team with a pending nullify request
+  const match = getMatchWithPendingNullify();
+  if (!match) { dismissNullifyOverlay(); return; }
 
   const req = match.nullifyRequest;
+  const isRequester = req.requestedBy === activeTeamId;
   const alreadyActed =
     (req.agreedBy || []).includes(activeTeamId) ||
     (req.declinedBy || []).includes(activeTeamId);
 
-  if (req.status === "approved") { dismissNullifyOverlay(); return; }
-  if (req.status === "rejected") { dismissNullifyOverlay(); return; }
+  if (req.status === "approved" || req.status === "rejected") {
+    dismissNullifyOverlay();
+    return;
+  }
 
-  // Show overlay to players who haven't responded yet (except the requester who already auto-agreed)
-  if (req.requestedBy !== activeTeamId && !alreadyActed) {
-    showNullifyOverlay(match);
-  } else if (req.requestedBy === activeTeamId && !alreadyActed) {
-    // Shouldn't happen — requester auto-agrees — but just in case
-    showNullifyOverlay(match);
+  if (!alreadyActed) {
+    // Haven't responded yet — show the appropriate view
+    showNullifyOverlay(match, isRequester);
   } else {
-    // Already acted — show waiting state if still pending
-    if (req.status === "pending") {
-      const overlay = document.getElementById("nullify-overlay");
-      const agreed  = (req.agreedBy  || []).length;
-      const total   = match.teamIds?.length || 2;
-      const majority = Math.floor(total / 2) + 1;
-      const countEl = document.getElementById("nullify-count");
-      if (countEl) countEl.textContent = `${agreed} / ${majority} agreed so far`;
-      // Show waiting message without agree/decline buttons
-      const agreBtn = document.getElementById("nullify-agree-btn");
-      const declBtn = document.getElementById("nullify-decline-btn");
-      if (agreBtn) agreBtn.style.display = "none";
-      if (declBtn) declBtn.textContent = "Dismiss";
-      overlay?.classList.remove("hidden");
-    }
+    // Already acted (requester auto-agrees, so they land here immediately)
+    showNullifyOverlay(match, true); // show waiting state
   }
 };
 
@@ -2517,7 +2530,8 @@ const initDisputeSystem = () => {
   agreeBtn?.addEventListener("click", async () => {
     const activeGameCode = getActiveGameCode();
     const activeTeamId   = getActiveTeamId();
-    const match = getLastCompletedMatch();
+    // Use the match with a pending nullify, not just the last completed match
+    const match = getMatchWithPendingNullify();
     if (!match || !activeGameCode || !activeTeamId) return;
 
     const req = match.nullifyRequest || {};
@@ -2525,7 +2539,6 @@ const initDisputeSystem = () => {
     const majority  = Math.floor((match.teamIds?.length || 2) / 2) + 1;
 
     if (newAgreed.length >= majority) {
-      // Majority reached — nullify!
       await updateDoc(doc(matchesCollection(activeGameCode), match.id), {
         "nullifyRequest.agreedBy": newAgreed,
         "nullifyRequest.status": "approved",
@@ -2543,12 +2556,13 @@ const initDisputeSystem = () => {
   declineBtn?.addEventListener("click", async () => {
     const activeGameCode = getActiveGameCode();
     const activeTeamId   = getActiveTeamId();
-    const match = getLastCompletedMatch();
+    const match = getMatchWithPendingNullify();
     if (!match || !activeGameCode || !activeTeamId) { dismissNullifyOverlay(); return; }
 
     const req = match.nullifyRequest || {};
-    if (req.requestedBy === activeTeamId || (req.agreedBy || []).includes(activeTeamId)) {
-      // This was the dismiss button for waiters
+
+    // If this is the dismiss button (requester or already-agreed), just close
+    if ((req.agreedBy || []).includes(activeTeamId)) {
       dismissNullifyOverlay();
       return;
     }
@@ -2559,7 +2573,6 @@ const initDisputeSystem = () => {
     const agreedCount = (req.agreedBy || []).length;
     const remainingCanAgree = total - newDeclined.length - agreedCount;
 
-    // If remaining agreeable players can't reach majority, reject
     if (agreedCount + remainingCanAgree < majority) {
       await updateDoc(doc(matchesCollection(activeGameCode), match.id), {
         "nullifyRequest.declinedBy": newDeclined,
@@ -2567,7 +2580,6 @@ const initDisputeSystem = () => {
       });
       dismissNullifyOverlay();
       showToast("Nullify rejected. The original result stands.", "info");
-      // Notify the requester via toast (they'll see it on next render)
     } else {
       await updateDoc(doc(matchesCollection(activeGameCode), match.id), {
         "nullifyRequest.declinedBy": newDeclined,
@@ -2577,6 +2589,8 @@ const initDisputeSystem = () => {
     }
   });
 };
+
+// ── END DISPUTE SYSTEM ────────────────────────────────────────────────────────
 
 // ── END DISPUTE SYSTEM ────────────────────────────────────────────────────────
 
