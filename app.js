@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
 import { HOUSE_RULES } from "./house-rules.js";
 import {
   getFirestore,
@@ -1016,8 +1016,10 @@ function subscribeToGame(code) {
     state.matches = snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
     renderLeaderboard();
     renderMatch();
-    updateDisputeButton();
-    checkNullifyState();
+    // Dispute functions are defined later in the file — call via window check to avoid
+    // "not defined" errors if this snapshot fires before the module fully executes
+    if (typeof updateDisputeButton === "function") updateDisputeButton();
+    if (typeof checkNullifyState  === "function") checkNullifyState();
   });
 }
 
@@ -2035,10 +2037,10 @@ const renderMatch = () => {
   // ── END FLIP CUP ─────────────────────────────────────────────────────────
 
   updateStepIndicator({ hasCoreInfo: true, hasCode: true });
-  updateDisputeButton();
+  if (typeof updateDisputeButton === "function") updateDisputeButton();
 };
 
-(teamId, matchId) {
+async function toggleDoubleDown(teamId, matchId) {
   const activeGameCode = getActiveGameCode();
   if (!activeGameCode) return;
   let toastMessage = null;
