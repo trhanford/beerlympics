@@ -2879,3 +2879,80 @@ body:not(.mobile-app) .dt-play-tab.dt-host-hide { display: none; }
   box-shadow: none;
 }
 .dt-btn-ghost:hover { background: rgba(255,255,255,0.10); }
+
+/* ── DISPUTE MODAL ────────────────────────────────────────── */
+.dispute-sheet {
+  background: rgba(14, 10, 4, 0.97) !important;
+  color: #f0ece2 !important;
+  border-top: 1px solid rgba(216,191,124,0.22);
+}
+.dispute-sheet h2, .dispute-sheet .install-kicker { color: #f7f1de; }
+.dispute-sheet .status { color: rgba(240,236,226,0.65); }
+
+/* Dispute button on game page */
+#dispute-last-result {
+  border-color: rgba(220,100,60,0.35);
+  color: rgba(220,130,80,0.9);
+  font-size: 0.82rem;
+  min-height: 36px;
+  padding: 6px 12px;
+  margin-top: 4px;
+}
+
+/* ── NULLIFY OVERLAY ──────────────────────────────────────── */
+.nullify-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(6, 4, 2, 0.94);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: modalFadeIn 280ms ease;
+}
+
+.nullify-overlay.hidden { display: none; }
+
+.nullify-overlay-inner {
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  display: grid;
+  gap: 16px;
+}
+
+.nullify-icon {
+  font-size: 3.5rem;
+  line-height: 1;
+  animation: pulse 1.5s ease infinite;
+}
+
+.nullify-title {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #f7f1de;
+  letter-spacing: -0.02em;
+}
+
+.nullify-body {
+  margin: 0;
+  color: rgba(240,236,226,0.72);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.nullify-count {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #c9a860;
+}
+
+.nullify-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+}
