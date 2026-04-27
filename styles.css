@@ -2994,3 +2994,24 @@ body:not(.mobile-app) .dt-nav-logo {
   background-color: transparent !important;
   -webkit-appearance: none;
 }
+
+/* ── TEST SIMULATOR LAUNCH BUTTON (desktop only) ────────── */
+.dt-sim-btn {
+  appearance: none;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 140ms, border-color 140ms;
+  flex-shrink: 0;
+}
+.dt-sim-btn:hover {
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(216,191,124,0.3);
+}
