@@ -514,9 +514,9 @@ body:not(.mobile-app) #ref-section .ref-page {
 body:not(.mobile-app) .game-card,
 body:not(.mobile-app) .leaderboard-card,
 body:not(.mobile-app) .roster-team {
-  background: rgba(0,0,0,0.38);
-  border-color: rgba(216,191,124,0.18);
-  color: #f0ece2;
+  background: rgba(0,0,0,0.55) !important;
+  border-color: rgba(216,191,124,0.18) !important;
+  color: #f0ece2 !important;
 }
 
 body:not(.mobile-app) .access-card {
@@ -550,7 +550,8 @@ body:not(.mobile-app) .section-title h3 { color: #f7f1de; }
 
 /* Roster */
 body:not(.mobile-app) .roster-group h3 { color: #c9a860; }
-body:not(.mobile-app) .roster-team strong { color: #f0ece2; }
+body:not(.mobile-app) .roster-team strong { color: #f0ece2 !important; }
+body:not(.mobile-app) .roster-team .flag-avatar { background: rgba(255,255,255,0.08); }
 
 /* Leaderboard stage */
 body:not(.mobile-app) .leaderboard-stage {
@@ -2955,4 +2956,41 @@ body:not(.mobile-app) .dt-play-tab.dt-host-hide { display: none; }
   display: grid;
   gap: 10px;
   margin-top: 4px;
+}
+
+/* ── DESKTOP CARD OVERRIDES — beats --surface-solid and #fff base styles ── */
+body:not(.mobile-app) .current-match-card,
+body:not(.mobile-app) .game-card {
+  background: rgba(0, 0, 0, 0.52) !important;
+  border-color: rgba(216, 191, 124, 0.18) !important;
+  color: #f0ece2 !important;
+}
+
+body:not(.mobile-app) .current-match-team,
+body:not(.mobile-app) .opponent-pill {
+  background: rgba(216, 191, 124, 0.12) !important;
+  border-color: rgba(216, 191, 124, 0.22) !important;
+  color: #f0ece2 !important;
+}
+
+body:not(.mobile-app) .current-match-header {
+  color: rgba(240, 236, 226, 0.65) !important;
+}
+
+body:not(.mobile-app) .stat-pill {
+  background: rgba(216, 191, 124, 0.1) !important;
+  border-color: rgba(216, 191, 124, 0.22) !important;
+  color: #f0ece2 !important;
+}
+
+/* Logo — mix-blend-mode handles white PNG backgrounds gracefully */
+body:not(.mobile-app) .dt-nav-logo {
+  mix-blend-mode: luminosity;
+  opacity: 0.95;
+}
+
+/* Ensure logo button has no background bleed */
+.dt-logo-btn {
+  background-color: transparent !important;
+  -webkit-appearance: none;
 }
