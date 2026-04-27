@@ -1,9 +1,10 @@
-const CACHE_NAME = "beerlympics-static-v7";
+const CACHE_NAME = "beerlympics-static-v8";
 const CORE_ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./house-rules.js",
   "./manifest.webmanifest",
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",
