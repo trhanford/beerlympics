@@ -222,16 +222,25 @@
     }
 
     function clearPhone(i){
-      const f=document.getElementById(`iframe-${i}`);
-      const ov=document.getElementById(`loading-${i}`);
+      // Delete all namespaced keys for this simulated phone from both stores
+      var ns = "__sim" + i + "__";
+      [localStorage, sessionStorage].forEach(function(store) {
+        var toRemove = [];
+        for (var j = 0; j < store.length; j++) {
+          var k = store.key(j);
+          if (k && k.indexOf(ns) === 0) toRemove.push(k);
+        }
+        toRemove.forEach(function(k) { store.removeItem(k); });
+      });
+      // Now reload with a fresh timestamp so the app starts clean
+      var f=document.getElementById("iframe-"+i);
+      var ov=document.getElementById("loading-"+i);
       if(!f)return;
       if(ov)ov.classList.remove("done");
-      // Navigate to blank then back to app — wipes the iframe's sessionStorage
-      f.src="about:blank";
+      f.src=APP_URL+"?sim="+i+"&t="+Date.now();
       loadedCount=Math.max(0,loadedCount-1);
       updateCount();
-      setTimeout(()=>{ f.src=`${APP_URL}?sim=${i}&t=${Date.now()}`; },100);
-      showToast(`Phone ${i+1} session cleared`);
+      showToast("Phone "+(i+1)+" session cleared");
     }
 
     function popOut(i){
@@ -245,20 +254,23 @@
     }
 
     function resetAll(){
-      loadedCount=0; updateCount();
-      for(let i=0;i<NUM_PHONES;i++){
-        const f=document.getElementById(`iframe-${i}`);
-        const ov=document.getElementById(`loading-${i}`);
-        if(ov)ov.classList.remove("done");
-        if(f)f.src="about:blank";
-      }
-      const ts=Date.now();
-      setTimeout(()=>{
-        for(let i=0;i<NUM_PHONES;i++){
-          const f=document.getElementById(`iframe-${i}`);
-          if(f)f.src=`${APP_URL}?sim=${i}&t=${ts}`;
+      // Clear all __simN__ namespaced keys from both stores
+      [localStorage, sessionStorage].forEach(function(store) {
+        var toRemove = [];
+        for (var i = 0; i < store.length; i++) {
+          var k = store.key(i);
+          if (k && k.indexOf("__sim") === 0) toRemove.push(k);
         }
-      },150);
+        toRemove.forEach(function(k) { store.removeItem(k); });
+      });
+      loadedCount=0; updateCount();
+      var ts=Date.now();
+      for(var i=0;i<NUM_PHONES;i++){
+        var f=document.getElementById("iframe-"+i);
+        var ov=document.getElementById("loading-"+i);
+        if(ov)ov.classList.remove("done");
+        if(f)f.src=APP_URL+"?sim="+i+"&t="+ts;
+      }
       showToast("All sessions cleared and reloading...");
     }
 
