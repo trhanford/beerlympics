@@ -1706,11 +1706,17 @@ const renderRoster = () => {
     return;
   }
 
-  rosterEdit.classList.remove("hidden");
-  rosterEditTitle.textContent = isAdmin ? "Edit roster entry" : "Your roster entry";
-  rosterEditDescription.textContent = isAdmin
-    ? "Admins can update any team entry from this device."
-    : "Edit or remove only your own team details.";
+  // On desktop, hide the edit panel if there's no active team (host-only view)
+  const canEdit = Boolean(activeTeamId) || isAdmin;
+  if (!canEdit && !isMobileLayout()) {
+    rosterEdit.classList.add("hidden");
+  } else {
+    rosterEdit.classList.remove("hidden");
+    rosterEditTitle.textContent = isAdmin ? "Edit roster entry" : "Your roster entry";
+    rosterEditDescription.textContent = isAdmin
+      ? "Admins can update any team entry from this device."
+      : "Edit or remove only your own team details.";
+  }
   const grouped = teams.reduce((acc, team) => {
     const key = team.country || "Unknown";
     if (!acc[key]) acc[key] = [];
@@ -3354,9 +3360,12 @@ const init = async () => {
   refreshState();
   validateTeamInputs();
 
-  // Desktop landing
+  // Desktop landing and leave modal
   if (!isMobileLayout()) {
     initDesktopLanding();
+    // Wire leave modal unconditionally — must run even when session is already active
+    const logoBtn = document.getElementById("dt-logo-btn");
+    initDtLeaveModal(logoBtn);
   }
 
   // Mobile dispute system
@@ -3379,14 +3388,18 @@ const hideDtLanding = () => dtLanding?.classList.add("hidden");
 const initDesktopLanding = () => {
   if (!dtLanding) return;
 
-  // If already in a session, skip landing
+  const logoBtn = document.getElementById("dt-logo-btn");
+
+  // If already in a session, skip landing but ensure logo is clickable
   if (getActiveGameCode() && getActiveTeamId()) {
     hideDtLanding();
+    logoBtn?.classList.remove("dt-landing-active");
     showDtModePill(false);
     return;
   }
   if (getActiveGameCode() && isHost()) {
     hideDtLanding();
+    logoBtn?.classList.remove("dt-landing-active");
     showDtModePill(true);
     return;
   }
@@ -3400,7 +3413,6 @@ const initDesktopLanding = () => {
   const dtRejoinBtn = document.getElementById("dt-rejoin-btn");
   const dtRejoinInput = document.getElementById("dt-rejoin-code");
   const dtRejoinStatus = document.getElementById("dt-rejoin-status");
-  const logoBtn = document.getElementById("dt-logo-btn");
 
   // Logo is non-interactive while on landing
   logoBtn?.classList.add("dt-landing-active");
@@ -3495,9 +3507,6 @@ const initDesktopLanding = () => {
     setView("leaderboard");
     showToast("Game is live! Share the code with your players.", "success");
   });
-
-  // ── Logo leave button (only active after past landing) ─────
-  initDtLeaveModal(logoBtn);
 };
 
 // Map game checkbox IDs → rule value prefixes to show/hide
