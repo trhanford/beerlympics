@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Beerlympics — 10-Phone Simulator</title>
+  <style>
+    :root {
+      --bg:#0a0804;--surface:rgba(14,10,4,0.88);--border:rgba(216,191,124,0.18);
+      --gold:#c9a860;--gold-hi:#f7f1de;--text:#f0ece2;--muted:rgba(240,236,226,0.52);
+      --phone-w:393px;--phone-h:852px;--radius:48px;--bar:64px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;background:var(--bg);color:var(--text);
+      font-family:-apple-system,"SF Pro Display","Helvetica Neue",sans-serif;overflow:hidden}
+    .header{position:fixed;top:0;left:0;right:0;height:var(--bar);
+      background:rgba(8,5,2,0.95);border-bottom:1px solid var(--border);
+      backdrop-filter:blur(20px);display:flex;align-items:center;gap:16px;
+      padding:0 24px;z-index:100}
+    .header-logo{font-size:1.1rem;font-weight:800;letter-spacing:-.02em;color:var(--gold-hi)}
+    .header-logo span{color:var(--gold)}
+    .header-sep{width:1px;height:24px;background:var(--border)}
+    .header-info{font-size:0.78rem;color:var(--muted);flex:1}
+    .header-controls{display:flex;gap:8px;align-items:center}
+    .pill-btn{appearance:none;border:1px solid var(--border);background:rgba(255,255,255,0.06);
+      color:var(--text);border-radius:999px;padding:6px 14px;font:inherit;font-size:0.78rem;
+      font-weight:600;cursor:pointer;transition:background 140ms,border-color 140ms;white-space:nowrap}
+    .pill-btn:hover{background:rgba(255,255,255,0.12);border-color:rgba(216,191,124,0.35)}
+    .pill-btn.gold{background:linear-gradient(135deg,#d8bf7c,#f7f1de 52%,#b89146);
+      color:#1a0d00;border-color:transparent}
+    .pill-btn.gold:hover{opacity:.88}
+    .pill-btn.danger{border-color:rgba(255,80,80,0.35);color:rgba(255,130,130,0.9)}
+    .pill-btn.danger:hover{background:rgba(255,60,60,0.12)}
+    .stage{position:fixed;top:var(--bar);left:0;right:0;bottom:0;overflow:auto;
+      padding:28px 24px 48px;display:flex;gap:20px;align-items:flex-start;flex-wrap:nowrap}
+    .phone-slot{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:10px}
+    .phone-label{display:flex;align-items:center;gap:8px;font-size:0.72rem;font-weight:700;
+      letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .phone-num{display:inline-flex;align-items:center;justify-content:center;width:20px;
+      height:20px;border-radius:50%;background:rgba(216,191,124,0.14);
+      border:1px solid var(--border);font-size:0.68rem;font-weight:800;color:var(--gold)}
+    .phone-shell{width:var(--phone-w);height:var(--phone-h);border-radius:var(--radius);
+      background:#111;position:relative;
+      box-shadow:0 0 0 2px #2a2a2a,0 0 0 4px #1a1a1a,
+        0 32px 64px rgba(0,0,0,0.7),inset 0 0 0 1px rgba(255,255,255,0.06);overflow:hidden}
+    .phone-shell::before{content:"";position:absolute;top:14px;left:50%;transform:translateX(-50%);
+      width:120px;height:34px;background:#0a0a0a;border-radius:20px;z-index:10;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,0.08)}
+    .phone-shell::after{content:"";position:absolute;top:22px;left:calc(50% + 34px);
+      transform:translateX(-50%);width:12px;height:12px;background:#1a1a1a;
+      border-radius:50%;z-index:11;box-shadow:inset 0 0 0 3px #0d0d0d,0 0 0 1px rgba(255,255,255,0.06)}
+    .phone-side-btn{position:absolute;background:#222;border-radius:2px}
+    .btn-vol-up{top:140px;left:-3px;width:3px;height:38px}
+    .btn-vol-down{top:190px;left:-3px;width:3px;height:38px}
+    .btn-silent{top:108px;left:-3px;width:3px;height:22px}
+    .btn-power{top:175px;right:-3px;width:3px;height:56px}
+    .phone-home-bar{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+      width:120px;height:5px;background:rgba(255,255,255,0.25);border-radius:3px;z-index:10}
+    .phone-iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none;
+      border-radius:var(--radius)}
+    .phone-status{position:absolute;top:0;left:0;right:0;height:54px;z-index:9;
+      display:flex;align-items:flex-start;padding:16px 28px 0;justify-content:space-between;
+      pointer-events:none}
+    .status-time{font-size:0.82rem;font-weight:700;color:rgba(255,255,255,0.9);letter-spacing:-.01em}
+    .status-icons{display:flex;align-items:center;gap:5px;font-size:0.72rem;color:rgba(255,255,255,0.9)}
+    .phone-loading{position:absolute;inset:0;background:#0a0804;border-radius:var(--radius);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+      z-index:20;transition:opacity 400ms ease}
+    .phone-loading.done{opacity:0;pointer-events:none}
+    .loading-logo{font-size:2.4rem;animation:pulse 1.4s ease infinite}
+    .loading-bar-track{width:120px;height:3px;background:rgba(255,255,255,0.1);
+      border-radius:2px;overflow:hidden}
+    .loading-bar-fill{height:100%;width:40%;
+      background:linear-gradient(90deg,#c9a860,#f7f1de);border-radius:2px;
+      animation:loadingSlide 1.2s ease infinite}
+    @keyframes loadingSlide{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.65;transform:scale(.92)}}
+    .phone-controls{display:flex;gap:6px}
+    .phone-ctrl-btn{appearance:none;border:1px solid var(--border);
+      background:rgba(255,255,255,0.05);color:var(--muted);border-radius:8px;
+      padding:4px 10px;font:inherit;font-size:0.7rem;cursor:pointer;transition:all 120ms}
+    .phone-ctrl-btn:hover{color:var(--text);background:rgba(255,255,255,0.10)}
+    #sim-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);
+      background:rgba(14,10,4,0.97);border:1px solid var(--border);border-radius:12px;
+      padding:10px 18px;font-size:0.83rem;color:var(--text);white-space:nowrap;z-index:999;
+      transition:transform 300ms ease;pointer-events:none}
+    #sim-toast.show{transform:translateX(-50%) translateY(0)}
+    .stage::-webkit-scrollbar{height:6px}
+    .stage::-webkit-scrollbar-track{background:transparent}
+    .stage::-webkit-scrollbar-thumb{background:rgba(216,191,124,0.2);border-radius:3px}
+    .legend{position:fixed;bottom:16px;right:20px;font-size:0.7rem;color:var(--muted);
+      text-align:right;line-height:1.7}
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-logo">BEER<span>LYMPICS</span></div>
+    <div class="header-sep"></div>
+    <div class="header-info">10 isolated phone sessions &nbsp;·&nbsp; <span id="loaded-count">0</span>/10 loaded</div>
+    <div class="header-controls">
+      <button class="pill-btn" onclick="reloadAll()">&#x21BA; Reload all</button>
+      <button class="pill-btn" onclick="resetAll()">&#x21BA; Clear &amp; reload all</button>
+      <button class="pill-btn gold" onclick="scrollToPhone(0)">&larr; Phone 1</button>
+      <button class="pill-btn danger" onclick="closeSimulator()">&#x2715; Close</button>
+    </div>
+  </header>
+
+  <div class="stage" id="stage"></div>
+  <div id="sim-toast"></div>
+  <div class="legend">Each phone has its own session — fully isolated.<br>Scroll right · Drag to pan</div>
+
+  <script>
+    const APP_URL = "./index.html";
+    const NUM_PHONES = 10;
+    const NAMES = ["Jordan","Sam","Alex","Taylor","Morgan","Casey","Riley","Jamie","Quinn","Avery"];
+    let loadedCount = 0;
+
+    function updateCount(){ document.getElementById("loaded-count").textContent = loadedCount; }
+
+    function makeSVGSignal(){
+      return `<svg width="17" height="12" viewBox="0 0 17 12" fill="none" style="opacity:.85">
+        <rect x="0" y="3" width="3" height="9" rx="1" fill="white"/>
+        <rect x="4.5" y="2" width="3" height="10" rx="1" fill="white"/>
+        <rect x="9" y="0.5" width="3" height="11.5" rx="1" fill="white"/>
+        <rect x="13.5" y="0" width="3" height="12" rx="1" fill="rgba(255,255,255,0.3)"/>
+      </svg>`;
+    }
+    function makeSVGWifi(){
+      return `<svg width="16" height="12" viewBox="0 0 16 12" fill="none" style="opacity:.85">
+        <path d="M8 2.5C10.5 2.5 12.7 3.6 14.2 5.3L15.5 4C13.6 2 11 0.7 8 0.7C5 0.7 2.4 2 0.5 4L1.8 5.3C3.3 3.6 5.5 2.5 8 2.5Z" fill="white"/>
+        <path d="M8 5.5C9.8 5.5 11.4 6.3 12.5 7.5L13.8 6.2C12.3 4.8 10.3 3.9 8 3.9C5.7 3.9 3.7 4.8 2.2 6.2L3.5 7.5C4.6 6.3 6.2 5.5 8 5.5Z" fill="white"/>
+        <circle cx="8" cy="10.5" r="1.5" fill="white"/>
+      </svg>`;
+    }
+
+    function buildPhones(){
+      const stage = document.getElementById("stage");
+      stage.innerHTML = "";
+      loadedCount = 0;
+      updateCount();
+      const ts = Date.now();
+
+      for(let i=0;i<NUM_PHONES;i++){
+        const slot = document.createElement("div");
+        slot.className = "phone-slot";
+        slot.id = `slot-${i}`;
+
+        const label = document.createElement("div");
+        label.className = "phone-label";
+        label.innerHTML = `<span class="phone-num">${i+1}</span> Phone ${i+1} · ${NAMES[i]}`;
+        slot.appendChild(label);
+
+        const shell = document.createElement("div");
+        shell.className = "phone-shell";
+
+        ["btn-silent","btn-vol-up","btn-vol-down","btn-power"].forEach(c=>{
+          const b=document.createElement("div");
+          b.className=`phone-side-btn ${c}`;
+          shell.appendChild(b);
+        });
+
+        const now = new Date();
+        const statusBar = document.createElement("div");
+        statusBar.className = "phone-status";
+        statusBar.innerHTML = `<span class="status-time">${now.getHours()}:${String(now.getMinutes()).padStart(2,"0")}</span>
+          <span class="status-icons">${makeSVGSignal()}${makeSVGWifi()}<span style="font-size:.72rem;font-weight:700">92</span></span>`;
+        shell.appendChild(statusBar);
+
+        const loading = document.createElement("div");
+        loading.className = "phone-loading";
+        loading.id = `loading-${i}`;
+        loading.innerHTML = `<div class="loading-logo">&#127866;</div><div class="loading-bar-track"><div class="loading-bar-fill"></div></div>`;
+        shell.appendChild(loading);
+
+        const homeBar = document.createElement("div");
+        homeBar.className = "phone-home-bar";
+        shell.appendChild(homeBar);
+
+        const iframe = document.createElement("iframe");
+        iframe.className = "phone-iframe";
+        iframe.id = `iframe-${i}`;
+        iframe.name = `beerlympics-phone-${i}`;
+        iframe.title = `Phone ${i+1} — ${NAMES[i]}`;
+        iframe.setAttribute("loading","eager");
+        // Each iframe gets a unique ?sim=N param so browsers treat them as distinct resources.
+        // sessionStorage is per browsing context so each iframe has its own isolated session.
+        iframe.src = `${APP_URL}?sim=${i}&t=${ts}`;
+        iframe.addEventListener("load",()=>{
+          loadedCount++;
+          updateCount();
+          const ov=document.getElementById(`loading-${i}`);
+          if(ov) ov.classList.add("done");
+        });
+        shell.appendChild(iframe);
+        slot.appendChild(shell);
+
+        const controls = document.createElement("div");
+        controls.className = "phone-controls";
+
+        [["&#x21BA; Reload",()=>reloadPhone(i)],
+         ["&#x21BA; Clear session",()=>clearPhone(i)],
+         ["&#x2924; Pop out",()=>popOut(i)]].forEach(([txt,fn])=>{
+          const b=document.createElement("button");
+          b.className="phone-ctrl-btn";
+          b.innerHTML=txt;
+          b.addEventListener("click",fn);
+          controls.appendChild(b);
+        });
+        slot.appendChild(controls);
+        stage.appendChild(slot);
+      }
+    }
+
+    function reloadPhone(i){
+      const f=document.getElementById(`iframe-${i}`);
+      const ov=document.getElementById(`loading-${i}`);
+      if(!f)return;
+      if(ov)ov.classList.remove("done");
+      f.src=`${APP_URL}?sim=${i}&t=${Date.now()}`;
+      loadedCount=Math.max(0,loadedCount-1);
+      updateCount();
+    }
+
+    function clearPhone(i){
+      const f=document.getElementById(`iframe-${i}`);
+      const ov=document.getElementById(`loading-${i}`);
+      if(!f)return;
+      if(ov)ov.classList.remove("done");
+      // Navigate to blank then back to app — wipes the iframe's sessionStorage
+      f.src="about:blank";
+      loadedCount=Math.max(0,loadedCount-1);
+      updateCount();
+      setTimeout(()=>{ f.src=`${APP_URL}?sim=${i}&t=${Date.now()}`; },100);
+      showToast(`Phone ${i+1} session cleared`);
+    }
+
+    function popOut(i){
+      window.open(`${APP_URL}?sim=${i}`,`_blank_ph_${i}`,"width=393,height=852");
+    }
+
+    function reloadAll(){
+      loadedCount=0; updateCount();
+      for(let i=0;i<NUM_PHONES;i++) reloadPhone(i);
+      showToast("Reloading all 10 phones...");
+    }
+
+    function resetAll(){
+      loadedCount=0; updateCount();
+      for(let i=0;i<NUM_PHONES;i++){
+        const f=document.getElementById(`iframe-${i}`);
+        const ov=document.getElementById(`loading-${i}`);
+        if(ov)ov.classList.remove("done");
+        if(f)f.src="about:blank";
+      }
+      const ts=Date.now();
+      setTimeout(()=>{
+        for(let i=0;i<NUM_PHONES;i++){
+          const f=document.getElementById(`iframe-${i}`);
+          if(f)f.src=`${APP_URL}?sim=${i}&t=${ts}`;
+        }
+      },150);
+      showToast("All sessions cleared and reloading...");
+    }
+
+    function scrollToPhone(i){
+      const s=document.getElementById(`slot-${i}`);
+      if(s)s.scrollIntoView({behavior:"smooth",inline:"start",block:"nearest"});
+    }
+
+    function closeSimulator(){ window.close(); }
+
+    let toastTimer=null;
+    function showToast(msg){
+      const el=document.getElementById("sim-toast");
+      el.textContent=msg;
+      el.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer=setTimeout(()=>el.classList.remove("show"),2400);
+    }
+
+    // Drag-to-pan the stage
+    const stage=document.getElementById("stage");
+    let dragging=false,startX=0,scrollLeft=0;
+    stage.addEventListener("mousedown",e=>{
+      if(e.target.tagName==="IFRAME")return;
+      dragging=true;startX=e.pageX-stage.offsetLeft;scrollLeft=stage.scrollLeft;
+      stage.style.cursor="grabbing";
+    });
+    document.addEventListener("mousemove",e=>{
+      if(!dragging)return;
+      e.preventDefault();
+      stage.scrollLeft=scrollLeft-(e.pageX-stage.offsetLeft-startX);
+    });
+    document.addEventListener("mouseup",()=>{ dragging=false; stage.style.cursor=""; });
+
+    // Clock ticks
+    setInterval(()=>{
+      const now=new Date();
+      const t=`${now.getHours()}:${String(now.getMinutes()).padStart(2,"0")}`;
+      document.querySelectorAll(".status-time").forEach(el=>el.textContent=t);
+    },10000);
+
+    buildPhones();
+  </script>
+</body>
+</html>
