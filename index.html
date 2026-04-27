@@ -4,6 +4,71 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#050505" />
+    <!-- ── TEST SIMULATOR STORAGE SHIM ──────────────────────────────────────────
+         Only activates when ?sim=N is in the URL (loaded by test-simulator.html).
+         Namespaces all localStorage + sessionStorage keys with __simN__ so each
+         simulated phone is completely isolated despite sharing the same origin.
+         Real users are never affected — the param is never present in normal use.
+    ──────────────────────────────────────────────────────────────────────────── -->
+    <script>
+      (function () {
+        var simId = new URLSearchParams(location.search).get("sim");
+        if (simId === null) return;
+        var ns = "__sim" + simId + "__";
+
+        // Capture real storage objects BEFORE any proxy wrapping
+        var realLocal   = Object.getOwnPropertyDescriptor(window, "localStorage")   ? null : window.localStorage;
+        var realSession = Object.getOwnPropertyDescriptor(window, "sessionStorage")  ? null : window.sessionStorage;
+
+        // Use the prototype-based getters to get the real underlying objects
+        try { realLocal   = Object.getPrototypeOf(window).__lookupGetter__("localStorage").call(window);   } catch(e) {}
+        try { realSession = Object.getPrototypeOf(window).__lookupGetter__("sessionStorage").call(window); } catch(e) {}
+        if (!realLocal)   realLocal   = window.localStorage;
+        if (!realSession) realSession = window.sessionStorage;
+
+        function makeProxy(store) {
+          return {
+            get length() {
+              var n = 0;
+              for (var i = 0; i < store.length; i++) {
+                if ((store.key(i) || "").indexOf(ns) === 0) n++;
+              }
+              return n;
+            },
+            getItem:    function(k) { return store.getItem(ns + k); },
+            setItem:    function(k, v) { store.setItem(ns + k, v); },
+            removeItem: function(k) { store.removeItem(ns + k); },
+            key: function(i) {
+              var keys = [];
+              for (var j = 0; j < store.length; j++) {
+                var raw = store.key(j);
+                if (raw && raw.indexOf(ns) === 0) keys.push(raw.slice(ns.length));
+              }
+              return keys[i] !== undefined ? keys[i] : null;
+            },
+            clear: function() {
+              var toRemove = [];
+              for (var i = 0; i < store.length; i++) {
+                var raw = store.key(i);
+                if (raw && raw.indexOf(ns) === 0) toRemove.push(raw);
+              }
+              toRemove.forEach(function(k) { store.removeItem(k); });
+            }
+          };
+        }
+
+        var localProxy   = makeProxy(realLocal);
+        var sessionProxy = makeProxy(realSession);
+
+        try {
+          Object.defineProperty(window, "localStorage",   { get: function() { return localProxy;   }, configurable: true });
+          Object.defineProperty(window, "sessionStorage", { get: function() { return sessionProxy; }, configurable: true });
+        } catch(e) {
+          window.localStorage   = localProxy;
+          window.sessionStorage = sessionProxy;
+        }
+      })();
+    </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Beerlympics" />
@@ -147,11 +212,6 @@
           <div class="mode-pill dt-mode-pill hidden" id="mode-pill">🎈 Player Mode</div>
           <div class="mode-pill host hidden" id="host-pill">🎬 Host Mode</div>
           <button id="install-app-btn" class="btn ghost install-app-btn hidden" type="button">Install App</button>
-          <button class="dt-sim-btn desktop-only" type="button"
-            title="Open 10-phone test simulator"
-            onclick="window.open('./test-simulator.html','_blank','width=1440,height=920,noopener')">
-            🧪
-          </button>
         </div>
       </nav>
     </header>
