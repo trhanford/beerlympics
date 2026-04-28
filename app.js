@@ -1276,7 +1276,7 @@ const findMatchingTeam = (teams, playerName, partnerName, country) => {
 const hasRecentOpponent = (team, opponentId) =>
   (team.lastOpponents || []).includes(opponentId);
 
-// ── NEW MATCHMAKING ENGINE ────────────────────────────────────────────────────
+// ── MATCHMAKING ENGINE v3 ─────────────────────────────────────────────────────
 //
 // Priority ladder (1 = strictest, 5 = last resort):
 //
@@ -1288,19 +1288,21 @@ const hasRecentOpponent = (team, opponentId) =>
 //   | P4: not the IMMEDIATE last opp.   | P4: repeat ok if consecutive < 2        |
 //   | P5: anything goes (safety valve)  | P5: anything goes                       |
 //
-// Sort order: longest-waiting first (lastCompletedAt ascending),
-//             tiebroken by fewest total games played.
+// Pair scoring: waitTime × 1/(1+facedCount) — longer wait and fewer prior
+// meetings both increase the score. Highest-scoring valid pair wins.
 //
-// Adding new games: just add an entry to GAME_TYPES. teams:2 = pair, teams:4 = group.
+// Patience: scaled by team count so larger pools get faster responses.
+// Flip cup: gets a 90-second assembly window before 2-team games steal the pool.
+//
+// Adding new games: add an entry to GAME_TYPES. teams:2 = pair, teams:4 = group.
+// facedTeams is ONLY tracked for 2-team games (flip cup excluded by design).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const sortTeamsForMatch = (teams) =>
   [...teams].sort((a, b) => {
-    // Primary: who has waited longest (lower timestamp = been waiting longer)
     const ta = a.lastCompletedAt?.toMillis?.() ?? 0;
     const tb = b.lastCompletedAt?.toMillis?.() ?? 0;
     if (ta !== tb) return ta - tb;
-    // Tiebreak: who has played fewer total games
     return (a.gamesPlayed || 0) - (b.gamesPlayed || 0);
   });
 
@@ -1309,9 +1311,8 @@ const gameTypeAllowed = (team, gameTypeId, priority) => {
   if (priority >= 5) return true;
   const isRepeat = team.lastGameType === gameTypeId;
   if (!isRepeat) return true;
-  // Priority 2 or 4: allow a repeat only if they haven't done it twice in a row yet
   if (priority === 2 || priority === 4) return (team.consecutiveGameType || 0) < 2;
-  return false; // Priority 1 or 3: strict — no repeating the same game type
+  return false;
 };
 
 // Can these two teams face each other at the given priority level?
@@ -1319,32 +1320,52 @@ const opponentAllowed = (teamA, teamB, priority) => {
   if (priority >= 5) return true;
   const oppsA = teamA.lastOpponents || [];
   const oppsB = teamB.lastOpponents || [];
-  if (priority <= 2) {
-    // Strict: B must not appear in A's last 2 opponents, and vice versa
+  if (priority <= 2)
     return !oppsA.slice(0, 2).includes(teamB.id) && !oppsB.slice(0, 2).includes(teamA.id);
-  }
-  // Priority 3 or 4: allow rematches from earlier, but never the IMMEDIATE last opponent
   return oppsA[0] !== teamB.id && oppsB[0] !== teamA.id;
 };
 
-// Try to find a valid 2-team pair at exactly this priority level.
+// Score a potential pairing: higher = more desirable.
+// Combines wait time with a face-count recency penalty.
+// facedTeams is only populated for 2-team games; flip cup bypasses this.
+const pairScore = (a, b) => {
+  const now = Date.now();
+  const waitA = now - (a.lastCompletedAt?.toMillis?.() ?? 0);
+  const waitB = now - (b.lastCompletedAt?.toMillis?.() ?? 0);
+  // The pair's combined wait = the minimum (the more recent finisher is the bottleneck)
+  const waitScore = Math.min(waitA, waitB);
+  const facedCount = (a.facedTeams?.[b.id] || 0);
+  const recencyPenalty = 1 / (1 + facedCount);
+  return waitScore * recencyPenalty;
+};
+
+// Find the HIGHEST-SCORING valid pair at exactly this priority level.
+// (replaces the old "first valid" greedy pick)
 const attemptPairPick = (available, gameTypeId, priority) => {
   const pool = sortTeamsForMatch(
     available.filter((t) => !t.paused && gameTypeAllowed(t, gameTypeId, priority))
   );
   if (pool.length < 2) return null;
-  for (const teamA of pool) {
-    const teamB = pool.find(
-      (t) => t.id !== teamA.id && opponentAllowed(teamA, t, priority)
-    );
-    if (teamB) return [teamA, teamB];
+
+  let bestPair = null;
+  let bestScore = -Infinity;
+
+  for (let i = 0; i < pool.length; i++) {
+    for (let j = i + 1; j < pool.length; j++) {
+      const a = pool[i], b = pool[j];
+      if (!opponentAllowed(a, b, priority)) continue;
+      const score = pairScore(a, b);
+      if (score > bestScore) {
+        bestScore = score;
+        bestPair = [a, b];
+      }
+    }
   }
-  return null;
+  return bestPair;
 };
 
-// Try to find a valid N-team group at exactly this priority level.
-// Uses a greedy build: start with the longest-waiting eligible team,
-// keep adding the next eligible team that is mutually compatible.
+// Find a valid N-team group (greedy, wait-time sorted, opponent-constrained).
+// Face-count scoring is not applied to groups — flip cup is excluded from tracking.
 const attemptGroupPick = (available, gameTypeId, size, priority) => {
   const pool = sortTeamsForMatch(
     available.filter((t) => !t.paused && gameTypeAllowed(t, gameTypeId, priority))
@@ -1352,10 +1373,7 @@ const attemptGroupPick = (available, gameTypeId, size, priority) => {
   if (pool.length < size) return null;
   const group = [];
   for (const candidate of pool) {
-    const compatibleWithGroup = group.every(
-      (existing) => opponentAllowed(candidate, existing, priority)
-    );
-    if (compatibleWithGroup) {
+    if (group.every((existing) => opponentAllowed(candidate, existing, priority))) {
       group.push(candidate);
       if (group.length === size) return group;
     }
@@ -1363,63 +1381,39 @@ const attemptGroupPick = (available, gameTypeId, size, priority) => {
   return null;
 };
 
-// Public pair-picker: walks the priority ladder until a pair is found.
-const pickPair = (available, gameTypeId) => {
-  for (let p = 1; p <= 5; p++) {
-    const result = attemptPairPick(available, gameTypeId, p);
-    if (result) return result;
-  }
-  return null;
-};
-
-// Public group-picker (flip cup / any 4-team game): same ladder.
-const pickFlipCupGroup = (available) => {
-  for (let p = 1; p <= 5; p++) {
-    const result = attemptGroupPick(available, "flip_cup", 4, p);
-    if (result) return result;
-  }
-  return null;
-};
-
 // Sort game types so the least-recently-played globally comes first.
-// This ensures variety across the whole session without per-team tracking.
 const sortGameTypesForFill = (allMatches) => {
   const lastPlayedIndex = {};
-  allMatches.forEach((m, i) => {
-    lastPlayedIndex[m.gameType] = i; // higher index = more recent
-  });
-  return [...GAME_TYPES].sort((a, b) => {
-    const ia = lastPlayedIndex[a.id] ?? -1; // never played = highest priority
-    const ib = lastPlayedIndex[b.id] ?? -1;
-    return ia - ib; // least recently played first
-  });
+  allMatches.forEach((m, i) => { lastPlayedIndex[m.gameType] = i; });
+  return [...GAME_TYPES].sort((a, b) => (lastPlayedIndex[a.id] ?? -1) - (lastPlayedIndex[b.id] ?? -1));
 };
 
-// ── PATIENT MATCHING CONSTANTS ────────────────────────────────────────────────
-// How long (ms) a team can wait before we relax the "need a better pool" rule.
-// Set to 4 minutes — roughly half a typical game duration.
-const PATIENCE_MS = 4 * 60 * 1000;
+// ── PATIENCE & FLIP CUP CONSTANTS ─────────────────────────────────────────────
+// Base patience: 4 minutes, scaled down as team count grows.
+// Flip cup hold: 90 seconds — window to assemble a flip cup group before
+// giving up and running 2-team games instead.
+const BASE_PATIENCE_MS  = 4 * 60 * 1000;
+const FLIP_CUP_HOLD_MS  = 90 * 1000;
 
-// Minimum quality threshold: only make a match at P3+ if the waiting team has
-// been sitting for at least PATIENCE_MS, OR if a P1/P2 match is actually possible.
-// This prevents immediately rematching two teams just because no one else is free.
+const getPatience = () => {
+  const activePlaying = getTeams().filter((t) => !t.paused).length;
+  const scale = Math.max(0.5, Math.min(1, 4 / Math.max(activePlaying, 1)));
+  return BASE_PATIENCE_MS * scale;
+};
+
 const teamHasBeenWaitingLongEnough = (team) => {
   const completedAt = team.lastCompletedAt?.toMillis?.() ?? 0;
-  if (completedAt === 0) return true; // brand new team, always eligible
-  return Date.now() - completedAt >= PATIENCE_MS;
+  if (completedAt === 0) return true;
+  return Date.now() - completedAt >= getPatience();
 };
 
-// Would a P1 or P2 match exist for this team if we had a better pool?
-// Used to decide whether to wait vs commit to a lower-priority match.
-const canGetQualityMatch = (team, pool, gameTypeId) => {
-  const others = pool.filter((t) => t.id !== team.id);
-  return others.some(
+const canGetQualityMatch = (team, pool, gameTypeId) =>
+  pool.filter((t) => t.id !== team.id).some(
     (opp) =>
       (opponentAllowed(team, opp, 1) || opponentAllowed(team, opp, 2)) &&
       (gameTypeAllowed(team, gameTypeId, 1) || gameTypeAllowed(team, gameTypeId, 2)) &&
       (gameTypeAllowed(opp,  gameTypeId, 1) || gameTypeAllowed(opp,  gameTypeId, 2))
   );
-};
 
 async function fillMatches(gameCode) {
   if (!isHost()) return;
@@ -1440,41 +1434,64 @@ async function fillMatches(gameCode) {
   while (madeMatch && available.length >= 2) {
     madeMatch = false;
 
-    let bestMatch = null;
+    // ── FLIP CUP ASSEMBLY WINDOW ──────────────────────────────────────────────
+    // When 4+ teams are free and flip cup isn't running, try to assemble a
+    // flip cup group before committing to 2-team games.
+    if (!activeGameTypes.has("flip_cup") && available.length >= 4) {
+      // Try a high-quality flip cup group first (P1 or P2)
+      const flipGroup =
+        attemptGroupPick(available, "flip_cup", 4, 1) ||
+        attemptGroupPick(available, "flip_cup", 4, 2);
+
+      if (flipGroup) {
+        // Perfect or near-perfect group found — take it immediately
+        await createMatchForTeams(gameCode, "flip_cup", flipGroup);
+        activeGameTypes.add("flip_cup");
+        available = available.filter((t) => !flipGroup.some((m) => m.id === t.id));
+        madeMatch = true;
+        continue;
+      }
+
+      // Flip cup not quite P1/P2 yet. If exactly 4 teams free, hold briefly
+      // rather than immediately splitting them into 2-team games.
+      if (available.length === 4) {
+        const oldestWaitMs = Math.max(
+          ...available.map((t) => Date.now() - (t.lastCompletedAt?.toMillis?.() ?? 0))
+        );
+        if (oldestWaitMs < FLIP_CUP_HOLD_MS) {
+          // Still within the assembly window — don't make 2-team games yet.
+          break;
+        }
+        // Hold expired: fall through to 2-team matching.
+      }
+    }
+    // ── END FLIP CUP ASSEMBLY WINDOW ─────────────────────────────────────────
+
+    // Find the best 2-team match across all eligible game types.
+    let bestMatch    = null;
     let bestPriority = 6;
     let bestGameType = null;
 
     for (const gameType of orderedTypes) {
       if (activeGameTypes.has(gameType.id)) continue;
       const teamsNeeded = gameType.teams || 2;
+      if (teamsNeeded !== 2) continue; // non-2-team games handled above
       if (available.length < teamsNeeded) continue;
 
       for (let p = 1; p < bestPriority; p++) {
-        const match =
-          teamsNeeded === 2
-            ? attemptPairPick(available, gameType.id, p)
-            : attemptGroupPick(available, gameType.id, teamsNeeded, p);
-
+        const match = attemptPairPick(available, gameType.id, p);
         if (!match) continue;
 
-        // ── PATIENCE CHECK ──────────────────────────────────────────────────
-        // If this match required P3+ (relaxed constraints), verify that every
-        // team in the match either:
-        //   (a) has waited long enough (≥ PATIENCE_MS), OR
-        //   (b) has no possible quality match anyway (pool won't improve)
-        // This prevents immediately rematching two teams when a better pairing
-        // is likely once other games finish.
+        // Patience check: P3+ matches only allowed if teams have waited long
+        // enough or no quality match will ever be possible from this pool.
         if (p >= 3) {
           const allPatient = match.every(
-            (t) =>
-              teamHasBeenWaitingLongEnough(t) ||
-              !canGetQualityMatch(t, available, gameType.id)
+            (t) => teamHasBeenWaitingLongEnough(t) || !canGetQualityMatch(t, available, gameType.id)
           );
-          if (!allPatient) continue; // skip — they should wait for a better pool
+          if (!allPatient) continue;
         }
-        // ── END PATIENCE CHECK ──────────────────────────────────────────────
 
-        bestMatch = match;
+        bestMatch    = match;
         bestPriority = p;
         bestGameType = gameType.id;
         break;
@@ -1492,6 +1509,7 @@ async function fillMatches(gameCode) {
   }
 }
 // ── END MATCHMAKING ENGINE ────────────────────────────────────────────────────
+
 
 async function createMatchForTeams(code, gameTypeId, teams) {
   const matchRef = doc(matchesCollection(code));
@@ -2257,6 +2275,10 @@ async function recordResult(matchId, payload) {
           : team.powerupsRemaining ?? 3;
         if (shouldCharge) doubleDownCharged[team.id] = true;
         const opponents = team.id === winnerTeamId ? [loserTeamId] : [winnerTeamId];
+        const opponentId = opponents[0];
+        // Bidirectional face-count: both teams get each other's count incremented
+        // in the same transaction, so the map is always symmetric.
+        const existingFaced = team.facedTeams || {};
         transaction.update(doc(teamsCollection(activeGameCode), team.id), {
           wins: (team.wins || 0) + (isWinner ? 1 : 0),
           losses: (team.losses || 0) + (isWinner ? 0 : 1),
@@ -2270,6 +2292,7 @@ async function recordResult(matchId, payload) {
           lastCompletedAt: serverTimestamp(),
           flipCupStreak: 0,
           powerupsRemaining,
+          facedTeams: { ...existingFaced, [opponentId]: (existingFaced[opponentId] || 0) + 1 },
         });
       });
       transaction.update(matchRef, {
