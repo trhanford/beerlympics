@@ -920,12 +920,29 @@ const ensureCountryLookup = async () => {
 };
 
 const getCountryIso2 = (country) => {
-  if (!country) return null;
+  if (!country || !countryLookup) return null;
   const normalized = normalizeCountry(country);
   if (!normalized) return null;
-  const alias = COUNTRY_ALIASES[normalizeText(country)];
+
+  // 1. Try alias first (e.g. "usa" → "united states")
+  const aliasKey = normalizeText(country);
+  const alias = COUNTRY_ALIASES[aliasKey];
   const finalKey = alias ? normalizeCountry(alias) : normalized;
-  return countryLookup?.[finalKey] || null;
+
+  // 2. Exact match
+  if (countryLookup[finalKey]) return countryLookup[finalKey];
+
+  // 3. Fuzzy fallback — find the closest key within tolerance
+  let bestCode = null;
+  let bestDist = Infinity;
+  for (const key of Object.keys(countryLookup)) {
+    const dist = levenshtein(normalized, key);
+    if (dist < bestDist) { bestDist = dist; bestCode = countryLookup[key]; }
+  }
+  // Allow 1 typo per 5 characters (same ratio as areCountriesClose), min 1
+  const maxLen = Math.max(normalized.length, 1);
+  const threshold = Math.max(1, Math.floor(maxLen / 5));
+  return bestDist <= threshold ? bestCode : null;
 };
 
 const getFlagUrl = (iso2) =>
