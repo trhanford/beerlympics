@@ -2482,16 +2482,16 @@ const showNullifyOverlay = (match, isRequester = false) => {
   if (isRequester) {
     // Requester waiting view
     if (titleEl) titleEl.textContent = "Hang tight ⏳";
-    if (bodyEl)  bodyEl.textContent  = `Your nullify request is out there. ${majority} out of ${total} players need to agree for it to go through.`;
-    if (countEl) countEl.textContent = `${agreed} / ${majority} agreed so far`;
+    if (bodyEl)  bodyEl.textContent  = `Your nullify request is out there. ${majority} out of ${total} teams need to agree for it to go through.`;
+    if (countEl) countEl.textContent = `${agreed} / ${majority} teams agreed so far`;
     if (agreeBtn) agreeBtn.style.display = "none";
     if (declineBtn) { declineBtn.style.display = "block"; declineBtn.textContent = "Dismiss"; }
   } else {
     // Respondent view
     if (titleEl) titleEl.textContent = `${req.requesterName || "A teammate"} wants to nullify`;
-    if (bodyEl)  bodyEl.textContent  = `the last game result. If ${majority} out of ${total} players agree, that result is removed and everyone gets 2 participation points instead.`;
-    if (countEl) countEl.textContent = `${agreed} / ${majority} agreed so far`;
-    if (agreeBtn) agreeBtn.style.display = "block";
+    if (bodyEl)  bodyEl.textContent  = `the last game result. If ${majority} out of ${total} teams agree, that result is removed and everyone gets 2 participation points instead.`;
+    if (countEl) countEl.textContent = `${agreed} / ${majority} teams agreed so far`;
+    if (agreeBtn) { agreeBtn.style.display = "block"; agreeBtn.textContent = "✅ My team agrees — nullify it"; }
     if (declineBtn) { declineBtn.style.display = "block"; declineBtn.textContent = "❌ No, the result stands"; }
   }
 
@@ -2511,27 +2511,38 @@ const checkNullifyState = () => {
   const activeTeamId = getActiveTeamId();
   if (!activeTeamId || !isMobileLayout()) return;
 
-  // Look for any completed match involving this team with a pending nullify request
   const match = getMatchWithPendingNullify();
   if (!match) { dismissNullifyOverlay(); return; }
 
   const req = match.nullifyRequest;
-  const isRequester = req.requestedBy === activeTeamId;
-  const alreadyActed =
-    (req.agreedBy || []).includes(activeTeamId) ||
-    (req.declinedBy || []).includes(activeTeamId);
-
   if (req.status === "approved" || req.status === "rejected") {
     dismissNullifyOverlay();
     return;
   }
 
-  if (!alreadyActed) {
-    // Haven't responded yet — show the appropriate view
-    showNullifyOverlay(match, isRequester);
+  const isRequester = req.requestedBy === activeTeamId;
+  const alreadyAgreed  = (req.agreedBy  || []).includes(activeTeamId);
+  const alreadyDeclined = (req.declinedBy || []).includes(activeTeamId);
+  const alreadyActed = alreadyAgreed || alreadyDeclined;
+
+  if (alreadyActed && !isRequester) {
+    // Teammate already voted on our behalf — clear the overlay
+    dismissNullifyOverlay();
+    return;
+  }
+
+  const wasAlreadyVisible = !document.getElementById("nullify-overlay")?.classList.contains("hidden");
+
+  if (isRequester) {
+    // Show "hang tight" state to requester's whole team
+    showNullifyOverlay(match, true);
   } else {
-    // Already acted (requester auto-agrees, so they land here immediately)
-    showNullifyOverlay(match, true); // show waiting state
+    // Respondent who hasn't acted yet
+    showNullifyOverlay(match, false);
+    // Vibrate on first appearance only
+    if (!wasAlreadyVisible && navigator.vibrate) {
+      navigator.vibrate([300, 100, 300]);
+    }
   }
 };
 
@@ -3352,8 +3363,18 @@ const init = async () => {
   const joinFromUrl = normalizeGameCode(params.get("join") || params.get("code") || "");
   if (joinFromUrl) {
     gameCodeInput.value = joinFromUrl;
-  } else {
-    gameCodeInput.value = "";
+    // Also pre-fill the mobile welcome card code input and advance to team info step
+    if (mobileGameCodeInput) {
+      mobileGameCodeInput.value = joinFromUrl;
+      mobileGameCodeInput.dispatchEvent(new Event("input", { bubbles: true }));
+      // Advance to team-info card so user only needs to enter their name
+      const codeCard = document.getElementById("mobile-onboarding-code-card");
+      const teamCard = document.getElementById("mobile-onboarding-team-card");
+      if (codeCard && teamCard) {
+        codeCard.classList.remove("is-visible");
+        teamCard.classList.add("is-visible");
+      }
+    }
   }
   const code = joinFromUrl || getActiveGameCode();
   if (code) {
