@@ -1,4 +1,4 @@
-const CACHE_NAME = "beerlympics-static-v8";
+const CACHE_NAME = "beerlympics-static-v9";
 const CORE_ASSETS = [
   "./",
   "./index.html",
