@@ -1453,16 +1453,15 @@ async function fillMatches(gameCode) {
       }
 
       // Flip cup not quite P1/P2 yet. Only hold if a flip cup group is
-      // actually possible at some priority level (P3-P5) — i.e. the constraints
-      // will relax soon. If no flip cup group is possible at any level, skip
-      // the hold entirely and proceed to 2-team matching immediately.
+      // genuinely close to viable — possible at P3 or P4. Do NOT check P5
+      // ("anything goes") — it always returns a group and would make the hold
+      // fire permanently, blocking all 2-team games.
       if (available.length === 4) {
-        const flipPossibleAtAll =
+        const flipCloseToViable =
           attemptGroupPick(available, "flip_cup", 4, 3) ||
-          attemptGroupPick(available, "flip_cup", 4, 4) ||
-          attemptGroupPick(available, "flip_cup", 4, 5);
+          attemptGroupPick(available, "flip_cup", 4, 4);
 
-        if (flipPossibleAtAll) {
+        if (flipCloseToViable) {
           const oldestWaitMs = Math.max(
             ...available.map((t) => Date.now() - (t.lastCompletedAt?.toMillis?.() ?? 0))
           );
@@ -1472,7 +1471,7 @@ async function fillMatches(gameCode) {
           }
           // Hold expired: fall through to 2-team matching.
         }
-        // If no flip cup group is possible at any priority, fall through immediately.
+        // If flip cup is only P5-viable or not viable at all, skip hold entirely.
       }
     }
     // ── END FLIP CUP ASSEMBLY WINDOW ─────────────────────────────────────────
@@ -1498,18 +1497,17 @@ async function fillMatches(gameCode) {
         // pool has no quality option AND that no teams are in active matches
         // (i.e. no one is about to finish and join the pool).
         if (p >= 3) {
-          const teamsInActiveMatches = getTeams().filter(
-            (t) => t.currentMatchId && !t.paused
+          // Count teams not in the CURRENT available pool as "effectively in matches".
+          // We derive this from `available` (updated each loop iteration) rather than
+          // getTeams().currentMatchId (stale cache — doesn't reflect matches just created
+          // within this same fillMatches call).
+          const allNonPaused = getTeams().filter((t) => !t.paused && t.id !== pendingTeamId);
+          const teamsInActiveMatches = allNonPaused.filter(
+            (t) => !available.some((a) => a.id === t.id)
           ).length;
           const allPatient = match.every((t) => {
             if (teamHasBeenWaitingLongEnough(t)) return true;
-            // Only bypass patience if truly no better match is EVER coming:
-            // nobody in active matches who could free up, and no quality
-            // pairing exists in the current pool either.
-            if (
-              teamsInActiveMatches === 0 &&
-              !canGetQualityMatch(t, available, gameType.id)
-            )
+            if (teamsInActiveMatches === 0 && !canGetQualityMatch(t, available, gameType.id))
               return true;
             return false;
           });
