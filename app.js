@@ -1865,8 +1865,9 @@ const renderMatch = () => {
 
   // ── PRE-GAME POWERUP DECISION ─────────────────────────────────────────────
   const alreadyDoubledDown = Boolean(match.doubleDown?.[activeTeamId]);
+  const alreadySkipped = Boolean(match.preGameSkipped?.[activeTeamId]);
   const needsPreGameDecision =
-    match.status !== "complete" && !alreadyDoubledDown && !preGameDecided.has(match.id);
+    match.status !== "complete" && !alreadyDoubledDown && !alreadySkipped && !preGameDecided.has(match.id);
 
   if (needsPreGameDecision) {
     const powerupsRemaining = activeTeam.powerupsRemaining ?? 0;
@@ -1903,8 +1904,13 @@ const renderMatch = () => {
     skipBtn.type = "button"; skipBtn.className = "btn ghost";
     skipBtn.textContent = hasPowerup ? "Nah, just play" : "Let's go! 🏃";
     skipBtn.addEventListener("click", () => {
-      dismissMobileKeyboard(); clearInterval(preGameTimerInterval); preGameTimerInterval = null;
-      preGameDecided.add(match.id); renderMatch();
+      dismissMobileKeyboard();
+      clearInterval(preGameTimerInterval); preGameTimerInterval = null;
+      preGameDecided.add(match.id);
+      // Write to Firestore so teammate's device also exits the pre-game screen
+      const _code = getActiveGameCode();
+      if (_code) void updateDoc(doc(matchesCollection(_code), match.id), { [`preGameSkipped.${activeTeamId}`]: true });
+      renderMatch();
     });
     scoreActions.appendChild(skipBtn);
     let secsLeft = TIMER_SECS;
@@ -1915,7 +1921,13 @@ const renderMatch = () => {
       const ring = document.getElementById("pre-game-ring-fill");
       if (label) label.textContent = secsLeft;
       if (ring) { ring.style.strokeDashoffset = circumference * (1 - secsLeft / TIMER_SECS); if (secsLeft <= 10) ring.classList.add("urgent"); }
-      if (secsLeft <= 0) { clearInterval(preGameTimerInterval); preGameTimerInterval = null; preGameDecided.add(match.id); renderMatch(); }
+      if (secsLeft <= 0) {
+        clearInterval(preGameTimerInterval); preGameTimerInterval = null;
+        preGameDecided.add(match.id);
+        const _code = getActiveGameCode();
+        if (_code) void updateDoc(doc(matchesCollection(_code), match.id), { [`preGameSkipped.${activeTeamId}`]: true });
+        renderMatch();
+      }
     }, 1000);
     updateStepIndicator({ hasCoreInfo: true, hasCode: true });
     return;
