@@ -214,7 +214,7 @@
           <button id="install-app-btn" class="btn ghost install-app-btn hidden" type="button">Install App</button>
           <button class="dt-sim-btn desktop-only" type="button"
             title="Open 10-phone test simulator"
-            onclick="window.open('./test-simulator.html','_blank','width=1440,height=920,noopener')">🧪</button>
+            onclick="(function(){var p=prompt('Admin password:');if(p===null)return;if(btoa(p)==='YmVlcmx5bXBpY3M='){window.open('./test-simulator.html','_blank','width=1440,height=920,noopener');}else{alert('Wrong password.');}})()">🧪</button>
         </div>
       </nav>
     </header>
@@ -457,12 +457,14 @@
               <p class="status">Register to unlock your matchup.</p>
             </div>
             <div class="score-actions" id="score-actions"></div>
-            <button class="btn ghost mobile-only" type="button" id="dispute-last-result" style="display:none;">
-              🚩 Dispute last result
-            </button>
-            <button class="btn ghost mobile-only" type="button" id="mobile-exit-game-btn">
-              Exit Game
-            </button>
+            <div class="mobile-game-action-row">
+              <button class="btn ghost mobile-only" type="button" id="dispute-last-result" style="display:none;">
+                🚩 Dispute
+              </button>
+              <button class="btn ghost mobile-only" type="button" id="mobile-exit-game-btn">
+                Exit Game
+              </button>
+            </div>
             <button
               class="btn ghost mobile-only hidden"
               type="button"
