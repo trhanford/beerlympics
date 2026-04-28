@@ -3117,3 +3117,89 @@ body.mobile-app .dispute-sheet .install-modal-close {
 body:not(.mobile-app) .dt-navbar { height: 72px; }
 body:not(.mobile-app) .dt-nav-logo { height: 62px !important; }
 body:not(.mobile-app) .dt-landing { top: 72px; }
+
+/* ── CURRENT MATCHES — SPACING & CONTRAST REFRESH ────────── */
+
+/* More breathing room between subtitle and first card */
+body.mobile-app #current-matches,
+body:not(.mobile-app) #current-matches {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* Card itself — slightly taller padding */
+body.mobile-app .current-match-card {
+  padding: 14px 14px 12px !important;
+  gap: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Game title row */
+body.mobile-app .current-match-header {
+  margin-bottom: 10px;
+}
+
+body.mobile-app .current-match-header strong {
+  font-size: 0.97rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #f7e79a;           /* bright warm gold — pops against dark card */
+  text-shadow: 0 0 12px rgba(247, 225, 100, 0.35);
+}
+
+body.mobile-app .current-match-header .status {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.38);
+  font-weight: 500;
+}
+
+/* Team pills — filled gold gradient instead of transparent */
+body.mobile-app .current-match-teams {
+  display: grid;
+  gap: 7px;
+}
+
+body.mobile-app .current-match-team {
+  background: linear-gradient(135deg,
+    rgba(216, 185, 100, 0.18) 0%,
+    rgba(216, 185, 100, 0.10) 100%) !important;
+  border: 1px solid rgba(216, 185, 100, 0.35) !important;
+  border-radius: 12px !important;
+  padding: 10px 13px !important;
+  color: #f7f1de !important;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+/* Desktop current-match-card matching treatment */
+body:not(.mobile-app) .current-match-card {
+  padding: 14px 16px 12px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+body:not(.mobile-app) .current-match-header strong {
+  color: #f7e79a !important;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+body:not(.mobile-app) .current-match-team {
+  background: linear-gradient(135deg,
+    rgba(216, 185, 100, 0.18) 0%,
+    rgba(216, 185, 100, 0.10) 100%) !important;
+  border: 1px solid rgba(216, 185, 100, 0.35) !important;
+  border-radius: 12px !important;
+  color: #f7f1de !important;
+  font-weight: 600;
+}
+
+/* Gap between "Live battles happening right now." and first match card */
+.current-matches-grid {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+}
