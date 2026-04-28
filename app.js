@@ -1057,8 +1057,8 @@ async function processPendingTeamAction(force = false) {
     return;
   }
 
-  // When called from a just-completed transaction (force=true), skip the
-  // currentMatchId check because local state hasn't been updated by onSnapshot yet.
+  // When called with force=true (from inside recordResult, right after a transaction),
+  // skip the currentMatchId check — the local cache hasn't been updated by onSnapshot yet.
   if (!force && targetTeam.currentMatchId) return;
 
   pendingTeamActionInFlight = true;
@@ -1086,9 +1086,13 @@ async function processPendingTeamAction(force = false) {
       console.warn("Unknown pending action; clearing.", pendingAction.type);
     }
 
+    // Clear BEFORE fillMatches so the pending team is still excluded from the pool
+    // when fillMatches reads getPendingTeamAction(). Then clearPendingTeamAction removes
+    // the exclusion only after the match assignments are committed.
+    // NOTE: fillMatches is called by recordResult AFTER this returns, so we do NOT
+    // call scheduleFillMatches here — that would double-fill and race.
     clearPendingTeamAction();
     refreshState();
-    scheduleFillMatches(activeGameCode);
   } catch (error) {
     console.error("Unable to process pending team action.", error);
   } finally {
@@ -1391,6 +1395,32 @@ const sortGameTypesForFill = (allMatches) => {
   });
 };
 
+// ── PATIENT MATCHING CONSTANTS ────────────────────────────────────────────────
+// How long (ms) a team can wait before we relax the "need a better pool" rule.
+// Set to 4 minutes — roughly half a typical game duration.
+const PATIENCE_MS = 4 * 60 * 1000;
+
+// Minimum quality threshold: only make a match at P3+ if the waiting team has
+// been sitting for at least PATIENCE_MS, OR if a P1/P2 match is actually possible.
+// This prevents immediately rematching two teams just because no one else is free.
+const teamHasBeenWaitingLongEnough = (team) => {
+  const completedAt = team.lastCompletedAt?.toMillis?.() ?? 0;
+  if (completedAt === 0) return true; // brand new team, always eligible
+  return Date.now() - completedAt >= PATIENCE_MS;
+};
+
+// Would a P1 or P2 match exist for this team if we had a better pool?
+// Used to decide whether to wait vs commit to a lower-priority match.
+const canGetQualityMatch = (team, pool, gameTypeId) => {
+  const others = pool.filter((t) => t.id !== team.id);
+  return others.some(
+    (opp) =>
+      (opponentAllowed(team, opp, 1) || opponentAllowed(team, opp, 2)) &&
+      (gameTypeAllowed(team, gameTypeId, 1) || gameTypeAllowed(team, gameTypeId, 2)) &&
+      (gameTypeAllowed(opp,  gameTypeId, 1) || gameTypeAllowed(opp,  gameTypeId, 2))
+  );
+};
+
 async function fillMatches(gameCode) {
   if (!isHost()) return;
 
@@ -1404,23 +1434,18 @@ async function fillMatches(gameCode) {
     getTeams().filter((t) => !t.currentMatchId && !t.paused && t.id !== pendingTeamId)
   );
 
-  // Ordered list of game types — least recently played first for global variety.
   const orderedTypes = sortGameTypesForFill(getMatches());
 
-  // Keep creating matches until nothing more can be made.
   let madeMatch = true;
   while (madeMatch && available.length >= 2) {
     madeMatch = false;
 
-    // Find the single best match available right now across all eligible game types.
-    // "Best" = lowest priority number (fewest constraint relaxations needed).
-    // Among ties, the first in orderedTypes wins (least recently played game type).
     let bestMatch = null;
-    let bestPriority = 6; // sentinel
+    let bestPriority = 6;
     let bestGameType = null;
 
     for (const gameType of orderedTypes) {
-      if (activeGameTypes.has(gameType.id)) continue; // one instance per type at a time
+      if (activeGameTypes.has(gameType.id)) continue;
       const teamsNeeded = gameType.teams || 2;
       if (available.length < teamsNeeded) continue;
 
@@ -1429,15 +1454,32 @@ async function fillMatches(gameCode) {
           teamsNeeded === 2
             ? attemptPairPick(available, gameType.id, p)
             : attemptGroupPick(available, gameType.id, teamsNeeded, p);
-        if (match) {
-          bestMatch = match;
-          bestPriority = p;
-          bestGameType = gameType.id;
-          break; // can't do better than this for this game type
+
+        if (!match) continue;
+
+        // ── PATIENCE CHECK ──────────────────────────────────────────────────
+        // If this match required P3+ (relaxed constraints), verify that every
+        // team in the match either:
+        //   (a) has waited long enough (≥ PATIENCE_MS), OR
+        //   (b) has no possible quality match anyway (pool won't improve)
+        // This prevents immediately rematching two teams when a better pairing
+        // is likely once other games finish.
+        if (p >= 3) {
+          const allPatient = match.every(
+            (t) =>
+              teamHasBeenWaitingLongEnough(t) ||
+              !canGetQualityMatch(t, available, gameType.id)
+          );
+          if (!allPatient) continue; // skip — they should wait for a better pool
         }
+        // ── END PATIENCE CHECK ──────────────────────────────────────────────
+
+        bestMatch = match;
+        bestPriority = p;
+        bestGameType = gameType.id;
+        break;
       }
 
-      // Short-circuit: Priority 1 is perfect, no need to check remaining types
       if (bestPriority === 1) break;
     }
 
