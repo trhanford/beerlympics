@@ -3015,3 +3015,105 @@ body:not(.mobile-app) .dt-nav-logo {
   background: rgba(255,255,255,0.14);
   border-color: rgba(216,191,124,0.3);
 }
+
+/* ── ROSTER DESKTOP OVERRIDES (beat #fff base) ──────────── */
+body:not(.mobile-app) .roster-group,
+body:not(.mobile-app) .roster-group > * {
+  background: rgba(0,0,0,0.55) !important;
+  border-color: rgba(216,191,124,0.2) !important;
+  color: #f0ece2 !important;
+}
+
+body:not(.mobile-app) .roster-team {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(216,191,124,0.18) !important;
+}
+
+/* ── SIM BUTTON — no white box ────────────────────────────── */
+.dt-sim-btn {
+  border: none !important;
+  background: transparent !important;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: opacity 140ms;
+}
+.dt-sim-btn:hover { opacity: 0.7; background: transparent !important; }
+
+/* ── DISPUTE MODAL DARK OVERRIDE ─────────────────────────── */
+body.mobile-app .dispute-sheet,
+body.mobile-app .dispute-sheet * {
+  background: rgba(14,10,4,0.98) !important;
+  color: #f0ece2 !important;
+  border-color: rgba(216,191,124,0.22) !important;
+}
+body.mobile-app .dispute-sheet h2 { color: #f7f1de !important; font-size: 1.2rem; }
+body.mobile-app .dispute-sheet .install-kicker { color: #c9a860 !important; }
+body.mobile-app .dispute-sheet .status { color: rgba(240,236,226,0.65) !important; }
+body.mobile-app .dispute-sheet .btn {
+  background: rgba(255,255,255,0.08) !important;
+  color: #f0ece2 !important;
+  border-color: rgba(255,255,255,0.15) !important;
+}
+body.mobile-app .dispute-sheet .btn.secondary {
+  background: rgba(220,80,60,0.15) !important;
+  color: rgba(255,160,130,0.95) !important;
+  border-color: rgba(220,80,60,0.3) !important;
+}
+body.mobile-app .dispute-sheet .install-modal-close {
+  background: rgba(255,255,255,0.1) !important;
+  color: #f0ece2 !important;
+  border-color: rgba(255,255,255,0.15) !important;
+}
+
+/* ── MOBILE GAME ACTION ROW (dispute + exit side-by-side) ── */
+.mobile-game-action-row {
+  display: flex;
+  gap: 8px;
+  padding: 0 0 4px;
+}
+.mobile-game-action-row .btn {
+  flex: 1;
+  min-height: 42px;
+  font-size: 0.82rem;
+}
+/* When dispute button is hidden, exit takes full width */
+.mobile-game-action-row #dispute-last-result[style*="none"] + #mobile-exit-game-btn,
+.mobile-game-action-row #dispute-last-result:not([style]) + #mobile-exit-game-btn {
+  flex: 1;
+}
+
+/* ── FLIP CUP SIDE DISPLAY ───────────────────────────────── */
+.flip-sides {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.flip-side {
+  flex: 1;
+  min-width: 120px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.flip-side--you { border-color: rgba(216,191,124,0.35); background: rgba(216,191,124,0.08); }
+.flip-side-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #c9a860; }
+.flip-side-teams { font-size: 0.82rem; color: #f0ece2; line-height: 1.4; }
+.flip-side-vs { font-size: 0.75rem; font-weight: 700; color: rgba(240,236,226,0.4); flex-shrink: 0; }
+
+/* ── DESKTOP NAVBAR LOGO — LARGER ────────────────────────── */
+body:not(.mobile-app) .dt-navbar { height: 72px; }
+body:not(.mobile-app) .dt-nav-logo { height: 62px !important; }
+body:not(.mobile-app) .dt-landing { top: 72px; }
