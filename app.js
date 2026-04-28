@@ -1141,8 +1141,11 @@ async function closeMatchForRemoval(code, match, removedTeamId = null) {
       const teamRef = doc(teamsCollection(code), teamId);
       const teamSnap = await transaction.get(teamRef);
       if (!teamSnap.exists()) continue;
+      // Write lastCompletedAt so the freed team enters the wait-time queue
+      // at the correct position rather than inheriting a stale old timestamp.
       transaction.update(teamRef, {
         currentMatchId: null,
+        lastCompletedAt: serverTimestamp(),
       });
     }
     transaction.update(matchRef, {
@@ -1269,111 +1272,184 @@ const findMatchingTeam = (teams, playerName, partnerName, country) => {
 const hasRecentOpponent = (team, opponentId) =>
   (team.lastOpponents || []).includes(opponentId);
 
+// ── NEW MATCHMAKING ENGINE ────────────────────────────────────────────────────
+//
+// Priority ladder (1 = strictest, 5 = last resort):
+//
+//   | Opponent constraint               | Game-type constraint                    |
+//   |-----------------------------------|-----------------------------------------|
+//   | P1: not in last 2 opponents       | P1: no repeat at all                    |
+//   | P2: not in last 2 opponents       | P2: repeat ok if consecutive < 2        |
+//   | P3: not the IMMEDIATE last opp.   | P3: no repeat at all                    |
+//   | P4: not the IMMEDIATE last opp.   | P4: repeat ok if consecutive < 2        |
+//   | P5: anything goes (safety valve)  | P5: anything goes                       |
+//
+// Sort order: longest-waiting first (lastCompletedAt ascending),
+//             tiebroken by fewest total games played.
+//
+// Adding new games: just add an entry to GAME_TYPES. teams:2 = pair, teams:4 = group.
+// ─────────────────────────────────────────────────────────────────────────────
+
 const sortTeamsForMatch = (teams) =>
   [...teams].sort((a, b) => {
-    if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
-    if ((b.points || 0) !== (a.points || 0)) return (b.points || 0) - (a.points || 0);
-    return (a.losses || 0) - (b.losses || 0);
+    // Primary: who has waited longest (lower timestamp = been waiting longer)
+    const ta = a.lastCompletedAt?.toMillis?.() ?? 0;
+    const tb = b.lastCompletedAt?.toMillis?.() ?? 0;
+    if (ta !== tb) return ta - tb;
+    // Tiebreak: who has played fewer total games
+    return (a.gamesPlayed || 0) - (b.gamesPlayed || 0);
   });
 
-const countFreshTeamsForType = (teams, gameType) => {
-  const fresh = teams.filter((team) => team.lastGameType !== gameType.id).length;
-  return fresh;
+// Can this team play this game type at the given priority level?
+const gameTypeAllowed = (team, gameTypeId, priority) => {
+  if (priority >= 5) return true;
+  const isRepeat = team.lastGameType === gameTypeId;
+  if (!isRepeat) return true;
+  // Priority 2 or 4: allow a repeat only if they haven't done it twice in a row yet
+  if (priority === 2 || priority === 4) return (team.consecutiveGameType || 0) < 2;
+  return false; // Priority 1 or 3: strict — no repeating the same game type
 };
 
-const pickPair = (teams, gameTypeId) => {
-  // Strict rules (requested):
-  // - No team can play the same GAME twice in a row.
-  // - No team can play the same OPPONENT twice in a row.
-  // If no legal pairing exists for this game type, return null so
-  // fillMatches() can try another game type (or wait for more teams).
-
-  const immediateOpponentId = (team) => (team.lastOpponents || [])[0] || null;
-  const isImmediateOpponentPair = (a, b) =>
-    immediateOpponentId(a) === b.id || immediateOpponentId(b) === a.id;
-
-  // Hard filter: no one repeating this game type.
-  const eligible = teams.filter((t) => !t.paused && t.lastGameType !== gameTypeId);
-  if (eligible.length < 2) return null;
-
-  const pool = sortTeamsForMatch(eligible);
-  for (const team of pool) {
-    const opponents = pool.filter((candidate) => candidate.id !== team.id);
-    if (!opponents.length) continue;
-
-    // Prefer: not an immediate rematch.
-    let opponent = opponents.find((candidate) => !isImmediateOpponentPair(team, candidate));
-    if (opponent) return [team, opponent];
-
-    // If every possible opponent is an immediate rematch, we must WAIT.
-    // (This prevents two teams from instantly re-playing each other when
-    // only they become available.)
-    return null;
+// Can these two teams face each other at the given priority level?
+const opponentAllowed = (teamA, teamB, priority) => {
+  if (priority >= 5) return true;
+  const oppsA = teamA.lastOpponents || [];
+  const oppsB = teamB.lastOpponents || [];
+  if (priority <= 2) {
+    // Strict: B must not appear in A's last 2 opponents, and vice versa
+    return !oppsA.slice(0, 2).includes(teamB.id) && !oppsB.slice(0, 2).includes(teamA.id);
   }
+  // Priority 3 or 4: allow rematches from earlier, but never the IMMEDIATE last opponent
+  return oppsA[0] !== teamB.id && oppsB[0] !== teamA.id;
+};
 
+// Try to find a valid 2-team pair at exactly this priority level.
+const attemptPairPick = (available, gameTypeId, priority) => {
+  const pool = sortTeamsForMatch(
+    available.filter((t) => !t.paused && gameTypeAllowed(t, gameTypeId, priority))
+  );
+  if (pool.length < 2) return null;
+  for (const teamA of pool) {
+    const teamB = pool.find(
+      (t) => t.id !== teamA.id && opponentAllowed(teamA, t, priority)
+    );
+    if (teamB) return [teamA, teamB];
+  }
   return null;
 };
 
-const pickFlipCupGroup = (teams) => {
-  const unpausedTeams = teams.filter((t) => !t.paused);
-  // Hard block: nobody can exceed a streak of 2
-  const hardAllowed = unpausedTeams.filter((t) => (t.flipCupStreak || 0) < 2);
-  const working = hardAllowed.length >= 4 ? hardAllowed : unpausedTeams;
+// Try to find a valid N-team group at exactly this priority level.
+// Uses a greedy build: start with the longest-waiting eligible team,
+// keep adding the next eligible team that is mutually compatible.
+const attemptGroupPick = (available, gameTypeId, size, priority) => {
+  const pool = sortTeamsForMatch(
+    available.filter((t) => !t.paused && gameTypeAllowed(t, gameTypeId, priority))
+  );
+  if (pool.length < size) return null;
+  const group = [];
+  for (const candidate of pool) {
+    const compatibleWithGroup = group.every(
+      (existing) => opponentAllowed(candidate, existing, priority)
+    );
+    if (compatibleWithGroup) {
+      group.push(candidate);
+      if (group.length === size) return group;
+    }
+  }
+  return null;
+};
 
-  const nonRepeat = working.filter((t) => t.lastGameType !== "flip_cup");
-  const repeatOk = working.filter(
-    (t) => t.lastGameType === "flip_cup" && (t.flipCupStreak || 0) < 2
+// Public pair-picker: walks the priority ladder until a pair is found.
+const pickPair = (available, gameTypeId) => {
+  for (let p = 1; p <= 5; p++) {
+    const result = attemptPairPick(available, gameTypeId, p);
+    if (result) return result;
+  }
+  return null;
+};
+
+// Public group-picker (flip cup / any 4-team game): same ladder.
+const pickFlipCupGroup = (available) => {
+  for (let p = 1; p <= 5; p++) {
+    const result = attemptGroupPick(available, "flip_cup", 4, p);
+    if (result) return result;
+  }
+  return null;
+};
+
+// Sort game types so the least-recently-played globally comes first.
+// This ensures variety across the whole session without per-team tracking.
+const sortGameTypesForFill = (allMatches) => {
+  const lastPlayedIndex = {};
+  allMatches.forEach((m, i) => {
+    lastPlayedIndex[m.gameType] = i; // higher index = more recent
+  });
+  return [...GAME_TYPES].sort((a, b) => {
+    const ia = lastPlayedIndex[a.id] ?? -1; // never played = highest priority
+    const ib = lastPlayedIndex[b.id] ?? -1;
+    return ia - ib; // least recently played first
+  });
+};
+
+async function fillMatches(gameCode) {
+  if (!isHost()) return;
+
+  const activeMatches = getMatches().filter((m) => m.status === "in_progress");
+  const activeGameTypes = new Set(activeMatches.map((m) => m.gameType));
+
+  const pendingAction = getPendingTeamAction();
+  const pendingTeamId = pendingAction?.gameCode === gameCode ? pendingAction.teamId : null;
+
+  let available = sortTeamsForMatch(
+    getTeams().filter((t) => !t.currentMatchId && !t.paused && t.id !== pendingTeamId)
   );
 
-  // Prefer 0 repeat teams; if not possible, allow at most 1 repeat team.
-  const candidatePools = [
-    nonRepeat,
-    [...nonRepeat, ...repeatOk],
-  ];
+  // Ordered list of game types — least recently played first for global variety.
+  const orderedTypes = sortGameTypesForFill(getMatches());
 
-  for (const pool of candidatePools) {
-    if (pool.length < 4) continue;
+  // Keep creating matches until nothing more can be made.
+  let madeMatch = true;
+  while (madeMatch && available.length >= 2) {
+    madeMatch = false;
 
-    const sorted = sortTeamsForMatch(pool);
-    const group = [];
-    let repeatCount = 0;
+    // Find the single best match available right now across all eligible game types.
+    // "Best" = lowest priority number (fewest constraint relaxations needed).
+    // Among ties, the first in orderedTypes wins (least recently played game type).
+    let bestMatch = null;
+    let bestPriority = 6; // sentinel
+    let bestGameType = null;
 
-    for (const team of sorted) {
-      const isRepeat = team.lastGameType === "flip_cup";
-      if (isRepeat && repeatCount >= 1) continue;
+    for (const gameType of orderedTypes) {
+      if (activeGameTypes.has(gameType.id)) continue; // one instance per type at a time
+      const teamsNeeded = gameType.teams || 2;
+      if (available.length < teamsNeeded) continue;
 
-      if (
-        group.every(
-          (existing) =>
-            !hasRecentOpponent(team, existing.id) &&
-            !hasRecentOpponent(existing, team.id)
-        )
-      ) {
-        group.push(team);
-        if (isRepeat) repeatCount += 1;
+      for (let p = 1; p < bestPriority; p++) {
+        const match =
+          teamsNeeded === 2
+            ? attemptPairPick(available, gameType.id, p)
+            : attemptGroupPick(available, gameType.id, teamsNeeded, p);
+        if (match) {
+          bestMatch = match;
+          bestPriority = p;
+          bestGameType = gameType.id;
+          break; // can't do better than this for this game type
+        }
       }
-      if (group.length === 4) break;
+
+      // Short-circuit: Priority 1 is perfect, no need to check remaining types
+      if (bestPriority === 1) break;
     }
 
-    // Fallback fill (still respecting repeat cap + streak cap)
-    if (group.length < 4) {
-      for (const team of sorted) {
-        if (group.some((g) => g.id === team.id)) continue;
-        const isRepeat = team.lastGameType === "flip_cup";
-        if (isRepeat && repeatCount >= 1) continue;
-        if ((team.flipCupStreak || 0) >= 2) continue;
-
-        group.push(team);
-        if (isRepeat) repeatCount += 1;
-        if (group.length === 4) break;
-      }
+    if (bestMatch && bestGameType) {
+      await createMatchForTeams(gameCode, bestGameType, bestMatch);
+      activeGameTypes.add(bestGameType);
+      available = available.filter((t) => !bestMatch.some((m) => m.id === t.id));
+      madeMatch = true;
     }
-
-    if (group.length === 4) return group;
   }
-
-  return null;
-};
+}
+// ── END MATCHMAKING ENGINE ────────────────────────────────────────────────────
 
 async function createMatchForTeams(code, gameTypeId, teams) {
   const matchRef = doc(matchesCollection(code));
@@ -1399,57 +1475,7 @@ async function createMatchForTeams(code, gameTypeId, teams) {
   });
 }
 
-async function fillMatches(gameCode) {
-  if (!isHost()) return;
-  // 1) Build sets
-  const activeMatches = getMatches().filter(
-    (match) => match.status === "in_progress"
-  );
-  const activeByType = new Set(activeMatches.map((match) => match.gameType));
 
-  // Read pending action once — teams with a pending exit/pause must not be
-  // given new matches, otherwise processPendingTeamAction will never fire.
-  const pendingAction = getPendingTeamAction();
-  const pendingTeamId = pendingAction?.gameCode === gameCode ? pendingAction.teamId : null;
-
-  let availableTeams = sortTeamsForMatch(
-    getTeams().filter((team) => !team.currentMatchId && !team.paused && team.id !== pendingTeamId)
-  );
-
-  // 2) Flip Cup first (optional, but keeps everyone playing)
-  if (!activeByType.has("flip_cup") && availableTeams.length >= 4) {
-    const group = pickFlipCupGroup(availableTeams);
-    if (group) {
-      await createMatchForTeams(gameCode, "flip_cup", group);
-      availableTeams = availableTeams.filter(
-        (team) => !group.some((member) => member.id === team.id)
-      );
-    }
-  }
-
-  // 3) Rotate 2-team games so Beer Pong isn't always first
-  const twoTeamTypes = GAME_TYPES.filter(
-    (gameType) => gameType.teams === 2 && !activeByType.has(gameType.id)
-  );
-  if (!twoTeamTypes.length) return;
-
-  const rotation = getMatches().length % twoTeamTypes.length;
-  const rotatedTwoTeamTypes = [
-    ...twoTeamTypes.slice(rotation),
-    ...twoTeamTypes.slice(0, rotation),
-  ];
-
-  // 4) Create as many 2-team matches as possible, using different game types first
-  for (const gameType of rotatedTwoTeamTypes) {
-    if (availableTeams.length < 2) break;
-    const pair = pickPair(availableTeams, gameType.id);
-    if (!pair) continue;
-    await createMatchForTeams(gameCode, gameType.id, pair);
-    availableTeams = availableTeams.filter(
-      (team) => !pair.some((member) => member.id === team.id)
-    );
-  }
-}
 
 const computeStandings = (teams) =>
   [...teams].sort((a, b) => {
@@ -2196,6 +2222,10 @@ async function recordResult(matchId, payload) {
           currentMatchId: null,
           lastOpponents: [...opponents, ...(team.lastOpponents || [])].slice(0, 3),
           lastGameType: match.gameType,
+          consecutiveGameType: team.lastGameType === match.gameType
+            ? (team.consecutiveGameType || 0) + 1 : 1,
+          gamesPlayed: (team.gamesPlayed || 0) + 1,
+          lastCompletedAt: serverTimestamp(),
           flipCupStreak: 0,
           powerupsRemaining,
         });
@@ -2243,6 +2273,10 @@ async function recordResult(matchId, payload) {
         currentMatchId: null,
         lastOpponents: match.teamIds.filter((id) => id !== team.id).slice(0, 3),
         lastGameType: match.gameType,
+        consecutiveGameType: team.lastGameType === match.gameType
+          ? (team.consecutiveGameType || 0) + 1 : 1,
+        gamesPlayed: (team.gamesPlayed || 0) + 1,
+        lastCompletedAt: serverTimestamp(),
         flipCupStreak: team.lastGameType === "flip_cup"
           ? Math.min((team.flipCupStreak || 0) + 1, 2) : 1,
         powerupsRemaining,
