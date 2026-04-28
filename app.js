@@ -1483,11 +1483,26 @@ async function fillMatches(gameCode) {
         if (!match) continue;
 
         // Patience check: P3+ matches only allowed if teams have waited long
-        // enough or no quality match will ever be possible from this pool.
+        // enough OR no better match will ever be possible from this pool.
+        // Crucially: "no better match possible" requires BOTH that the current
+        // pool has no quality option AND that no teams are in active matches
+        // (i.e. no one is about to finish and join the pool).
         if (p >= 3) {
-          const allPatient = match.every(
-            (t) => teamHasBeenWaitingLongEnough(t) || !canGetQualityMatch(t, available, gameType.id)
-          );
+          const teamsInActiveMatches = getTeams().filter(
+            (t) => t.currentMatchId && !t.paused
+          ).length;
+          const allPatient = match.every((t) => {
+            if (teamHasBeenWaitingLongEnough(t)) return true;
+            // Only bypass patience if truly no better match is EVER coming:
+            // nobody in active matches who could free up, and no quality
+            // pairing exists in the current pool either.
+            if (
+              teamsInActiveMatches === 0 &&
+              !canGetQualityMatch(t, available, gameType.id)
+            )
+              return true;
+            return false;
+          });
           if (!allPatient) continue;
         }
 
