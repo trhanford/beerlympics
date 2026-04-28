@@ -1452,17 +1452,27 @@ async function fillMatches(gameCode) {
         continue;
       }
 
-      // Flip cup not quite P1/P2 yet. If exactly 4 teams free, hold briefly
-      // rather than immediately splitting them into 2-team games.
+      // Flip cup not quite P1/P2 yet. Only hold if a flip cup group is
+      // actually possible at some priority level (P3-P5) — i.e. the constraints
+      // will relax soon. If no flip cup group is possible at any level, skip
+      // the hold entirely and proceed to 2-team matching immediately.
       if (available.length === 4) {
-        const oldestWaitMs = Math.max(
-          ...available.map((t) => Date.now() - (t.lastCompletedAt?.toMillis?.() ?? 0))
-        );
-        if (oldestWaitMs < FLIP_CUP_HOLD_MS) {
-          // Still within the assembly window — don't make 2-team games yet.
-          break;
+        const flipPossibleAtAll =
+          attemptGroupPick(available, "flip_cup", 4, 3) ||
+          attemptGroupPick(available, "flip_cup", 4, 4) ||
+          attemptGroupPick(available, "flip_cup", 4, 5);
+
+        if (flipPossibleAtAll) {
+          const oldestWaitMs = Math.max(
+            ...available.map((t) => Date.now() - (t.lastCompletedAt?.toMillis?.() ?? 0))
+          );
+          if (oldestWaitMs < FLIP_CUP_HOLD_MS) {
+            // Still within the assembly window — don't make 2-team games yet.
+            break;
+          }
+          // Hold expired: fall through to 2-team matching.
         }
-        // Hold expired: fall through to 2-team matching.
+        // If no flip cup group is possible at any priority, fall through immediately.
       }
     }
     // ── END FLIP CUP ASSEMBLY WINDOW ─────────────────────────────────────────
