@@ -1985,12 +1985,31 @@ const renderMatch = () => {
   }
 
   // ── FLIP CUP: simple Win/Lose with best-of-3 confirmation ────────────────
-  const rounds = match.result?.rounds || [];
+  const pairings = getFlipCupPairings(match.teamIds);
+  const myPairing = pairings[0];
+  const mySide = myPairing.pairA.includes(activeTeamId) ? myPairing.pairA : myPairing.pairB;
+  const oppSide = myPairing.pairA.includes(activeTeamId) ? myPairing.pairB : myPairing.pairA;
+  const sideLabel = (ids) => ids.map(id => {
+    const t = teams.find(t => t.id === id);
+    return t ? `${t.playerName} + ${t.partnerName}` : "TBD";
+  }).join(" &amp; ");
+
   const roundCard = document.createElement("div");
   roundCard.className = "game-card";
   roundCard.innerHTML = `
     <h3>Flip Cup — Best of 3</h3>
-    <p class="status">Play all 3 rounds, then report your result below.</p>
+    <div class="flip-sides">
+      <div class="flip-side flip-side--you">
+        <span class="flip-side-label">Your side</span>
+        <span class="flip-side-teams">${sideLabel(mySide)}</span>
+      </div>
+      <div class="flip-side-vs">vs</div>
+      <div class="flip-side flip-side--them">
+        <span class="flip-side-label">Opponents</span>
+        <span class="flip-side-teams">${sideLabel(oppSide)}</span>
+      </div>
+    </div>
+    <p class="status" style="margin-top:10px">Play all 3 rounds, then report your result below.</p>
   `;
   scoreActions.appendChild(roundCard);
 
