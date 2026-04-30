@@ -1415,7 +1415,7 @@ const canGetQualityMatch = (team, pool, gameTypeId) =>
       (gameTypeAllowed(opp,  gameTypeId, 1) || gameTypeAllowed(opp,  gameTypeId, 2))
   );
 
-async function fillMatches(gameCode) {
+async function fillMatches(gameCode, justFinishedTeamIds = new Set()) {
   if (!isHost()) return;
 
   const activeMatches = getMatches().filter((m) => m.status === "in_progress");
@@ -1497,15 +1497,14 @@ async function fillMatches(gameCode) {
         // pool has no quality option AND that no teams are in active matches
         // (i.e. no one is about to finish and join the pool).
         if (p >= 3) {
-          // Count teams not in the CURRENT available pool as "effectively in matches".
-          // We derive this from `available` (updated each loop iteration) rather than
-          // getTeams().currentMatchId (stale cache — doesn't reflect matches just created
-          // within this same fillMatches call).
           const allNonPaused = getTeams().filter((t) => !t.paused && t.id !== pendingTeamId);
           const teamsInActiveMatches = allNonPaused.filter(
             (t) => !available.some((a) => a.id === t.id)
           ).length;
           const allPatient = match.every((t) => {
+            // Teams that JUST finished this call always count as not having waited —
+            // their lastCompletedAt in local state is stale (onSnapshot hasn't fired yet).
+            if (justFinishedTeamIds.has(t.id)) return false;
             if (teamHasBeenWaitingLongEnough(t)) return true;
             if (teamsInActiveMatches === 0 && !canGetQualityMatch(t, available, gameType.id))
               return true;
@@ -2385,7 +2384,10 @@ async function recordResult(matchId, payload) {
   await processPendingTeamAction(true);
 
   if (isHost()) {
-    await fillMatches(activeGameCode);
+    // Pass the IDs of teams that just finished so fillMatches doesn't use
+    // their stale lastCompletedAt from the local cache.
+    const justFinished = new Set(match.teamIds || []);
+    await fillMatches(activeGameCode, justFinished);
   }
 
   if (rewardPayload) {
