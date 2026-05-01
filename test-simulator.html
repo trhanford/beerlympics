@@ -138,6 +138,18 @@
           <div class="stats-block-title">🎮 Games Played per Team</div>
           <div id="gt-table"></div>
         </div>
+        <!-- Consecutive opponent -->
+        <div class="stats-block">
+          <div class="stats-block-title">🔁 Same Opponent Back-to-Back</div>
+          <div class="stats-sub">Times each team played the same opponent consecutively</div>
+          <div id="consec-opp-table"></div>
+        </div>
+        <!-- Consecutive game type -->
+        <div class="stats-block">
+          <div class="stats-block-title">🔁 Same Game Back-to-Back</div>
+          <div class="stats-sub">Times each team played the same game type consecutively</div>
+          <div id="consec-gt-table"></div>
+        </div>
         <!-- Wait time & priority log -->
         <div class="stats-block stats-block--wide">
           <div class="stats-block-title">⏱ Last 20 Matches</div>
@@ -213,10 +225,15 @@
 
     .stats-grids {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
       gap: 14px;
       overflow-y: auto;
       flex: 1;
+    }
+    .stats-sub {
+      font-size: 0.66rem;
+      color: var(--muted);
+      margin-bottom: 2px;
     }
 
     .stats-block { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -419,7 +436,78 @@
       gtHtml += `</tbody></table>`;
       document.getElementById("gt-table").innerHTML = gtHtml;
 
-      // ── MATCH LOG ───────────────────────────────────────────────────────
+      // ── CONSECUTIVE STATS ───────────────────────────────────────────────
+      // Build per-team match history sorted by completedAt ascending
+      const teamMatchHistory = {}; // teamId -> [{gameType, opponents}] in time order
+      teams.forEach(t => { teamMatchHistory[t.id] = []; });
+      [...completed]
+        .sort((a,b) => (a.completedAt?.toMillis?.()??0) - (b.completedAt?.toMillis?.()??0))
+        .forEach(m => {
+          const ids = m.teamIds || [];
+          ids.forEach(tid => {
+            if (!teamMatchHistory[tid]) return;
+            const opponents = ids.filter(id => id !== tid);
+            teamMatchHistory[tid].push({ gameType: m.gameType, opponents });
+          });
+        });
+
+      // Count consecutive same-opponent incidents per team
+      const consecOpp = {}; // teamId -> count
+      teams.forEach(t => { consecOpp[t.id] = 0; });
+      teams.forEach(t => {
+        const hist = teamMatchHistory[t.id];
+        for (let i = 1; i < hist.length; i++) {
+          const prevOpps = hist[i-1].opponents;
+          const currOpps = hist[i].opponents;
+          // Check if any opponent appears in both (covers 2-team and flip-cup)
+          if (currOpps.some(id => prevOpps.includes(id))) consecOpp[t.id]++;
+        }
+      });
+
+      // Count consecutive same-game-type incidents per team
+      const consecGT = {}; // teamId -> count
+      teams.forEach(t => { consecGT[t.id] = 0; });
+      teams.forEach(t => {
+        const hist = teamMatchHistory[t.id];
+        for (let i = 1; i < hist.length; i++) {
+          if (hist[i].gameType === hist[i-1].gameType) consecGT[t.id]++;
+        }
+      });
+
+      // Render consecutive opponent table
+      const maxCO = Math.max(0, ...teams.map(t => consecOpp[t.id] || 0));
+      let coHtml = `<table class="matrix-table"><thead><tr><th>Team</th><th>Count</th><th>Rate</th></tr></thead><tbody>`;
+      [...teams].sort((a,b) => (consecOpp[b.id]||0) - (consecOpp[a.id]||0)).forEach(t => {
+        const n = consecOpp[t.id] || 0;
+        const games = teamMatchHistory[t.id].length;
+        const rate = games > 1 ? ((n / (games - 1)) * 100).toFixed(0) + "%" : "—";
+        const cls = n === maxCO && maxCO > 0 ? "cell-hi" : (n === 0 ? "cell-zero" : "");
+        coHtml += `<tr>
+          <td title="${t.playerName||t.id}">${shortName(t)}</td>
+          <td class="${cls}">${n}</td>
+          <td style="color:var(--muted)">${rate}</td>
+        </tr>`;
+      });
+      coHtml += `</tbody></table>`;
+      document.getElementById("consec-opp-table").innerHTML = coHtml;
+
+      // Render consecutive game-type table
+      const maxCG = Math.max(0, ...teams.map(t => consecGT[t.id] || 0));
+      let cgHtml = `<table class="matrix-table"><thead><tr><th>Team</th><th>Count</th><th>Rate</th></tr></thead><tbody>`;
+      [...teams].sort((a,b) => (consecGT[b.id]||0) - (consecGT[a.id]||0)).forEach(t => {
+        const n = consecGT[t.id] || 0;
+        const games = teamMatchHistory[t.id].length;
+        const rate = games > 1 ? ((n / (games - 1)) * 100).toFixed(0) + "%" : "—";
+        const cls = n === maxCG && maxCG > 0 ? "cell-hi" : (n === 0 ? "cell-zero" : "");
+        cgHtml += `<tr>
+          <td title="${t.playerName||t.id}">${shortName(t)}</td>
+          <td class="${cls}">${n}</td>
+          <td style="color:var(--muted)">${rate}</td>
+        </tr>`;
+      });
+      cgHtml += `</tbody></table>`;
+      document.getElementById("consec-gt-table").innerHTML = cgHtml;
+      // ── END CONSECUTIVE STATS ──────────────────────────────────────────
       const recent = [...completed]
         .sort((a,b) => (b.completedAt?.toMillis?.()??0) - (a.completedAt?.toMillis?.()??0))
         .slice(0, 20);
