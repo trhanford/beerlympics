@@ -109,6 +109,343 @@
   <div id="sim-toast"></div>
   <div class="legend">Each phone has its own session — fully isolated.<br>Scroll right · Drag to pan</div>
 
+  <!-- ── STATS PANEL ──────────────────────────────────────────────────────── -->
+  <div class="stats-toggle" id="stats-toggle" onclick="toggleStats()">
+    📊 Matchmaking Stats
+    <span class="stats-caret" id="stats-caret">▲</span>
+  </div>
+
+  <div class="stats-panel" id="stats-panel">
+    <div class="stats-panel-inner">
+      <div class="stats-toolbar">
+        <div class="stats-code-wrap">
+          <label>Game code:</label>
+          <input id="stats-code-input" placeholder="e.g. 4291" maxlength="6"
+            oninput="onCodeInput(this.value)" />
+        </div>
+        <div class="stats-status" id="stats-status">Enter a game code to begin.</div>
+        <button class="pill-btn" onclick="clearStats()">Clear</button>
+      </div>
+
+      <div class="stats-grids" id="stats-grids" style="display:none">
+        <!-- Opponent matrix -->
+        <div class="stats-block">
+          <div class="stats-block-title">🤝 Head-to-Head (times faced)</div>
+          <div id="h2h-table"></div>
+        </div>
+        <!-- Game type matrix -->
+        <div class="stats-block">
+          <div class="stats-block-title">🎮 Games Played per Team</div>
+          <div id="gt-table"></div>
+        </div>
+        <!-- Wait time & priority log -->
+        <div class="stats-block stats-block--wide">
+          <div class="stats-block-title">⏱ Last 20 Matches</div>
+          <div id="match-log"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .stats-toggle {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 40px;
+      background: rgba(8,5,2,0.95);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--gold);
+      cursor: pointer;
+      z-index: 200;
+      letter-spacing: 0.04em;
+      user-select: none;
+    }
+    .stats-caret { font-size: 0.65rem; opacity: 0.7; }
+
+    .stats-panel {
+      position: fixed;
+      bottom: 40px; left: 0; right: 0;
+      height: 0;
+      overflow: hidden;
+      background: rgba(6,4,2,0.98);
+      border-top: 1px solid var(--border);
+      z-index: 199;
+      transition: height 280ms ease;
+    }
+    .stats-panel.open { height: 340px; }
+
+    .stats-panel-inner {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 12px 20px 8px;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .stats-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+    .stats-code-wrap {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.78rem; color: var(--muted);
+    }
+    .stats-code-wrap input {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font: inherit;
+      font-size: 0.82rem;
+      width: 80px;
+    }
+    .stats-status { font-size: 0.75rem; color: var(--muted); flex: 1; }
+
+    .stats-grids {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .stats-block { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .stats-block--wide { }
+    .stats-block-title {
+      font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--gold); flex-shrink: 0;
+    }
+
+    /* Matrix tables */
+    .matrix-table {
+      border-collapse: collapse;
+      font-size: 0.72rem;
+      width: 100%;
+    }
+    .matrix-table th {
+      color: var(--muted);
+      font-weight: 600;
+      padding: 3px 6px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 70px;
+    }
+    .matrix-table th:first-child { text-align: left; }
+    .matrix-table td {
+      padding: 3px 6px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: var(--text);
+    }
+    .matrix-table td:first-child { text-align: left; color: var(--muted); max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cell-zero { color: rgba(255,255,255,0.18) !important; }
+    .cell-hi { color: #ff9966 !important; font-weight: 700; }
+    .cell-self { color: rgba(255,255,255,0.08) !important; }
+
+    /* Match log */
+    .match-log-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      overflow-y: auto;
+      max-height: 240px;
+    }
+    .match-log-item {
+      display: flex;
+      gap: 8px;
+      align-items: baseline;
+      font-size: 0.72rem;
+      color: var(--text);
+      padding: 2px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .log-num { color: var(--muted); min-width: 22px; text-align: right; }
+    .log-type { color: var(--gold); font-weight: 600; min-width: 80px; }
+    .log-teams { flex: 1; }
+    .log-time { color: var(--muted); font-size: 0.66rem; white-space: nowrap; }
+  </style>
+
+  <script>
+    // ── FIREBASE SDK (loaded from CDN, same version as app.js) ─────────────
+    const FB_SDK = "https://www.gstatic.com/firebasejs/12.8.0";
+    let db = null, unsubTeams = null, unsubMatches = null;
+    let statsOpen = false;
+    let teamsData = [], matchesData = [];
+
+    async function initFirebase() {
+      if (db) return;
+      const { initializeApp } = await import(`${FB_SDK}/firebase-app.js`);
+      const { getFirestore, collection, onSnapshot } = await import(`${FB_SDK}/firebase-firestore.js`);
+      const config = {
+        apiKey: "AIzaSyAUcp4N3YQjpDBf9vUNZni12PiY4_cIgds",
+        authDomain: "beerlympics-2026-live.firebaseapp.com",
+        projectId: "beerlympics-2026-live",
+        storageBucket: "beerlympics-2026-live.firebasestorage.app",
+        messagingSenderId: "514383788804",
+        appId: "1:514383788804:web:2c2c00a39a1a925f79ae51"
+      };
+      const fbApp = initializeApp(config, "stats-panel");
+      db = getFirestore(fbApp);
+      window._fbFirestore = { collection, onSnapshot }; // stash for later
+    }
+
+    function onCodeInput(val) {
+      const code = val.trim().toUpperCase();
+      if (code.length >= 4) subscribeToGame(code);
+    }
+
+    async function subscribeToGame(code) {
+      await initFirebase();
+      const { collection, onSnapshot } = window._fbFirestore;
+      setStatus(`Connecting to game ${code}…`);
+
+      if (unsubTeams) { unsubTeams(); unsubTeams = null; }
+      if (unsubMatches) { unsubMatches(); unsubMatches = null; }
+
+      const gamesRef = collection(db, "games", code, "teams");
+      const matchesRef = collection(db, "games", code, "matches");
+
+      unsubTeams = onSnapshot(gamesRef, snap => {
+        teamsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderStats();
+      }, err => setStatus(`Error: ${err.message}`));
+
+      unsubMatches = onSnapshot(matchesRef, snap => {
+        matchesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderStats();
+      }, err => setStatus(`Error: ${err.message}`));
+
+      document.getElementById("stats-grids").style.display = "";
+    }
+
+    function setStatus(msg) {
+      document.getElementById("stats-status").textContent = msg;
+    }
+
+    function clearStats() {
+      if (unsubTeams) { unsubTeams(); unsubTeams = null; }
+      if (unsubMatches) { unsubMatches(); unsubMatches = null; }
+      teamsData = []; matchesData = [];
+      document.getElementById("stats-code-input").value = "";
+      document.getElementById("stats-grids").style.display = "none";
+      document.getElementById("h2h-table").innerHTML = "";
+      document.getElementById("gt-table").innerHTML = "";
+      document.getElementById("match-log").innerHTML = "";
+      setStatus("Enter a game code to begin.");
+    }
+
+    function toggleStats() {
+      statsOpen = !statsOpen;
+      document.getElementById("stats-panel").classList.toggle("open", statsOpen);
+      document.getElementById("stats-caret").textContent = statsOpen ? "▼" : "▲";
+    }
+
+    const GAME_NAMES = {
+      beer_pong: "Beer Pong", flip_cup: "Flip Cup",
+      beerio_kart: "Beerio Kart", die: "Die", drinkball: "Drinkball"
+    };
+
+    function renderStats() {
+      const completed = matchesData.filter(m => m.status === "complete" && !m.result?.abandoned);
+      const teams = teamsData;
+
+      setStatus(`${teams.length} team${teams.length!==1?"s":""} · ${completed.length} completed match${completed.length!==1?"es":""}`);
+
+      // ── H2H MATRIX ─────────────────────────────────────────────────────
+      const h2h = {}; // h2h[a][b] = count
+      teams.forEach(t => { h2h[t.id] = {}; teams.forEach(o => { if (o.id !== t.id) h2h[t.id][o.id] = 0; }); });
+      completed.forEach(m => {
+        const ids = m.teamIds || [];
+        if (ids.length === 2) {
+          const [a,b] = ids;
+          if (h2h[a] && h2h[b]) { h2h[a][b] = (h2h[a][b]||0)+1; h2h[b][a] = (h2h[b][a]||0)+1; }
+        }
+      });
+
+      const maxH2H = teams.length > 0 ? Math.max(...teams.flatMap(t => teams.filter(o=>o.id!==t.id).map(o => h2h[t.id]?.[o.id]||0))) : 0;
+      const shortName = t => (t.playerName||t.id).substring(0, 8);
+
+      let h2hHtml = `<table class="matrix-table"><thead><tr><th></th>${teams.map(t=>`<th title="${t.playerName||t.id}">${shortName(t)}</th>`).join("")}</tr></thead><tbody>`;
+      teams.forEach(rowT => {
+        h2hHtml += `<tr><td title="${rowT.playerName||rowT.id}">${shortName(rowT)}</td>`;
+        teams.forEach(colT => {
+          if (colT.id === rowT.id) { h2hHtml += `<td class="cell-self">—</td>`; return; }
+          const n = h2h[rowT.id]?.[colT.id] || 0;
+          const cls = n === 0 ? "cell-zero" : (n === maxH2H && maxH2H > 0 ? "cell-hi" : "");
+          h2hHtml += `<td class="${cls}">${n}</td>`;
+        });
+        h2hHtml += `</tr>`;
+      });
+      h2hHtml += `</tbody></table>`;
+      document.getElementById("h2h-table").innerHTML = h2hHtml;
+
+      // ── GAME TYPE MATRIX ────────────────────────────────────────────────
+      const gtIds = [...new Set(completed.map(m=>m.gameType))].sort();
+      const gtCounts = {}; // gtCounts[teamId][gameType] = count
+      teams.forEach(t => { gtCounts[t.id] = {}; gtIds.forEach(g => { gtCounts[t.id][g] = 0; }); });
+      completed.forEach(m => {
+        (m.teamIds||[]).forEach(tid => {
+          if (gtCounts[tid]) gtCounts[tid][m.gameType] = (gtCounts[tid][m.gameType]||0)+1;
+        });
+      });
+
+      const maxGT = teams.length > 0 ? Math.max(...teams.flatMap(t => gtIds.map(g => gtCounts[t.id]?.[g]||0))) : 0;
+
+      let gtHtml = `<table class="matrix-table"><thead><tr><th></th>${gtIds.map(g=>`<th title="${GAME_NAMES[g]||g}">${(GAME_NAMES[g]||g).substring(0,8)}</th>`).join("")}</tr></thead><tbody>`;
+      teams.forEach(t => {
+        gtHtml += `<tr><td title="${t.playerName||t.id}">${shortName(t)}</td>`;
+        gtIds.forEach(g => {
+          const n = gtCounts[t.id]?.[g] || 0;
+          const cls = n === 0 ? "cell-zero" : (n === maxGT && maxGT > 0 ? "cell-hi" : "");
+          gtHtml += `<td class="${cls}">${n}</td>`;
+        });
+        gtHtml += `</tr>`;
+      });
+      gtHtml += `</tbody></table>`;
+      document.getElementById("gt-table").innerHTML = gtHtml;
+
+      // ── MATCH LOG ───────────────────────────────────────────────────────
+      const recent = [...completed]
+        .sort((a,b) => (b.completedAt?.toMillis?.()??0) - (a.completedAt?.toMillis?.()??0))
+        .slice(0, 20);
+
+      const getName = id => { const t = teams.find(t=>t.id===id); return t ? (t.playerName||id).substring(0,10) : id.substring(0,8); };
+      const fmtTime = ts => { if (!ts?.toMillis) return ""; const d=new Date(ts.toMillis()); return `${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`; };
+
+      let logHtml = `<ul class="match-log-list">`;
+      recent.forEach((m, i) => {
+        const ids = m.teamIds || [];
+        const teams_str = ids.length === 2
+          ? `${getName(ids[0])} vs ${getName(ids[1])}`
+          : ids.map(getName).join(" + ");
+        const winner = m.result?.winnerTeamId ? `→ ${getName(m.result.winnerTeamId)} won` : (m.result?.nullified ? "→ nullified" : "");
+        logHtml += `<li class="match-log-item">
+          <span class="log-num">${i+1}</span>
+          <span class="log-type">${GAME_NAMES[m.gameType]||m.gameType||"?"}</span>
+          <span class="log-teams">${teams_str} ${winner ? `<span style="color:var(--muted)">${winner}</span>` : ""}</span>
+          <span class="log-time">${fmtTime(m.completedAt)}</span>
+        </li>`;
+      });
+      logHtml += `</ul>`;
+      document.getElementById("match-log").innerHTML = logHtml;
+    }
+  </script>
+
   <script>
     const APP_URL = "./index.html";
     const NUM_PHONES = 10;
