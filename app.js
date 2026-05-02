@@ -2029,7 +2029,7 @@ const renderMatch = () => {
     );
     nextGameCard.innerHTML = hasPending
       ? `
-        <h3><span class="hourglass-spin">⏳</span> Waiting on game stations</h3>
+        <h3><svg class="spin-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M5 3h14M5 21h14M12 3v3M12 21v-3M5 12h14M8.5 3.5 12 8l3.5-4.5M8.5 20.5 12 16l3.5 4.5"/></svg> Waiting on game stations</h3>
         <p class="status">All your remaining games are currently in play. Check back soon.</p>
       `
       : `
@@ -2153,7 +2153,7 @@ const renderMatch = () => {
     const winButton = document.createElement("button");
     winButton.type = "button";
     winButton.className = "btn";
-    winButton.textContent = "We won! 🏆";
+    winButton.textContent = "We Won";
     winButton.addEventListener("click", () => {
       dismissMobileKeyboard();
       triggerWinConfetti();
@@ -2214,7 +2214,7 @@ const renderMatch = () => {
           <h3>Best of 3 complete? 🏓</h3>
           <p>Make sure you've finished all 3 rounds before reporting. Have both teams played all their rounds?</p>
           <div class="flipcup-confirm-actions">
-            <button class="btn" id="fc-confirm-yes" type="button">Yes, all 3 done — ${claimedWin ? "We Won! 🏆" : "We Lost 😅"}</button>
+            <button class="btn" id="fc-confirm-yes" type="button">Yes, all 3 done — ${claimedWin ? "We Won" : "We Lost"}</button>
             <button class="btn ghost" id="fc-confirm-no" type="button">Not yet, go back</button>
           </div>
         </div>`;
@@ -2234,13 +2234,13 @@ const renderMatch = () => {
     const winButton = document.createElement("button");
     winButton.type = "button";
     winButton.className = "btn";
-    winButton.textContent = "We Won! 🏆";
+    winButton.textContent = "We Won";
     winButton.addEventListener("click", () => { dismissMobileKeyboard(); showFlipCupConfirm(true); });
 
     const loseButton = document.createElement("button");
     loseButton.type = "button";
     loseButton.className = "btn secondary";
-    loseButton.textContent = "We Lost 😅";
+    loseButton.textContent = "We Lost";
     loseButton.addEventListener("click", () => { dismissMobileKeyboard(); showFlipCupConfirm(false); });
 
     scoreActions.appendChild(winButton);
@@ -2692,7 +2692,7 @@ const showNullifyOverlay = (match, isRequester = false) => {
 
   if (isRequester) {
     // Requester waiting view
-    if (titleEl) titleEl.textContent = "Hang tight ⏳";
+    if (titleEl) titleEl.textContent = "Hang tight";
     if (bodyEl)  bodyEl.textContent  = `Your nullify request is out there. ${majority} out of ${total} teams need to agree for it to go through.`;
     if (countEl) countEl.textContent = `${agreed} / ${majority} teams agreed so far`;
     if (agreeBtn) agreeBtn.style.display = "none";
@@ -3598,8 +3598,21 @@ const init = async () => {
       state.matches = [];
     } else {
       subscribeToGame(code);
-      // If already in a game on desktop, hide the landing
-      if (!isMobileLayout()) hideDtLanding();
+      if (!isMobileLayout()) {
+        // Desktop session restore after hard refresh:
+        // hide landing and go straight to leaderboard.
+        hideDtLanding();
+        setView("leaderboard");
+        // Restore play tab visibility based on whether this was a host session
+        const wasHost = isHost();
+        document.querySelectorAll(".dt-play-tab").forEach(t => {
+          t.classList.toggle("dt-host-hide", wasHost);
+        });
+        // Show mode pill
+        const restoredTeamId = getActiveTeamId();
+        if (wasHost || !restoredTeamId) showDtModePill(true);
+        else showDtModePill(false);
+      }
     }
   }
   void ensureCountryLookup().then(() => {
