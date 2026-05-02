@@ -1429,8 +1429,8 @@ const getPatience = () => {
 };
 
 const teamHasBeenWaitingLongEnough = (team) => {
-  const completedAt = team.lastCompletedAt?.toMillis?.() ?? 0;
-  if (completedAt === 0) return true;
+  const completedAt = getActualCompletedAt(team);
+  if (completedAt === 0) return true; // brand new team, never finished a match
   return Date.now() - completedAt >= getPatience();
 };
 
@@ -1442,7 +1442,35 @@ const canGetQualityMatch = (team, pool, gameTypeId) =>
       (gameTypeAllowed(opp,  gameTypeId, 1) || gameTypeAllowed(opp,  gameTypeId, 2))
   );
 
-async function fillMatches(gameCode, justFinishedTeamIds = new Set()) {
+// ── RECENTLY FINISHED TRACKER ─────────────────────────────────────────────────
+// Stores the actual completion timestamp for teams that just finished a match.
+// Written synchronously in recordResult before any fillMatches call, so the
+// patience gate has accurate data even when Firestore's onSnapshot is stale.
+// Entries expire after 10 minutes (well past the patience window).
+const recentlyFinished = new Map(); // teamId → completedAt (ms)
+const RECENTLY_FINISHED_TTL = 10 * 60 * 1000;
+
+const markTeamFinished = (teamId) => {
+  recentlyFinished.set(teamId, Date.now());
+};
+
+const getActualCompletedAt = (team) => {
+  const tracked = recentlyFinished.get(team.id);
+  if (tracked && Date.now() - tracked < RECENTLY_FINISHED_TTL) return tracked;
+  return team.lastCompletedAt?.toMillis?.() ?? 0;
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Score a game type for a specific pair — lower score = more desired.
+// Uses the MINIMUM games each team has played of that type (the bottleneck).
+const gameTypeScoreForPair = (teamA, teamB, gameTypeId) => {
+  const countA = (teamA.gameTypeCounts?.[gameTypeId] || 0);
+  const countB = (teamB.gameTypeCounts?.[gameTypeId] || 0);
+  // The pair's exposure = the higher of the two (the one who's played it more)
+  return Math.max(countA, countB);
+};
+
+async function fillMatches(gameCode) {
   if (!isHost()) return;
 
   const activeMatches = getMatches().filter((m) => m.status === "in_progress");
@@ -1507,31 +1535,24 @@ async function fillMatches(gameCode, justFinishedTeamIds = new Set()) {
     let bestMatch    = null;
     let bestPriority = 6;
     let bestGameType = null;
+    let bestGTScore  = Infinity; // lower = this pair has played that type less
 
     for (const gameType of orderedTypes) {
       if (activeGameTypes.has(gameType.id)) continue;
       const teamsNeeded = gameType.teams || 2;
-      if (teamsNeeded !== 2) continue; // non-2-team games handled above
+      if (teamsNeeded !== 2) continue;
       if (available.length < teamsNeeded) continue;
 
       for (let p = 1; p < bestPriority; p++) {
         const match = attemptPairPick(available, gameType.id, p);
         if (!match) continue;
 
-        // Patience check: P3+ matches only allowed if teams have waited long
-        // enough OR no better match will ever be possible from this pool.
-        // Crucially: "no better match possible" requires BOTH that the current
-        // pool has no quality option AND that no teams are in active matches
-        // (i.e. no one is about to finish and join the pool).
         if (p >= 3) {
           const allNonPaused = getTeams().filter((t) => !t.paused && t.id !== pendingTeamId);
           const teamsInActiveMatches = allNonPaused.filter(
             (t) => !available.some((a) => a.id === t.id)
           ).length;
           const allPatient = match.every((t) => {
-            // Teams that JUST finished this call always count as not having waited —
-            // their lastCompletedAt in local state is stale (onSnapshot hasn't fired yet).
-            if (justFinishedTeamIds.has(t.id)) return false;
             if (teamHasBeenWaitingLongEnough(t)) return true;
             if (teamsInActiveMatches === 0 && !canGetQualityMatch(t, available, gameType.id))
               return true;
@@ -1540,13 +1561,20 @@ async function fillMatches(gameCode, justFinishedTeamIds = new Set()) {
           if (!allPatient) continue;
         }
 
-        bestMatch    = match;
-        bestPriority = p;
-        bestGameType = gameType.id;
+        // Among equally-prioritized matches, prefer the game type this specific
+        // pair has played least (per-team game type tracking).
+        const gtScore = gameTypeScoreForPair(match[0], match[1], gameType.id);
+        if (p < bestPriority || (p === bestPriority && gtScore < bestGTScore)) {
+          bestMatch    = match;
+          bestPriority = p;
+          bestGameType = gameType.id;
+          bestGTScore  = gtScore;
+        }
         break;
       }
 
-      if (bestPriority === 1) break;
+      // Short-circuit only if we have a perfect match (P1, never played this type together)
+      if (bestPriority === 1 && bestGTScore === 0) break;
     }
 
     if (bestMatch && bestGameType) {
@@ -2325,9 +2353,8 @@ async function recordResult(matchId, payload) {
         if (shouldCharge) doubleDownCharged[team.id] = true;
         const opponents = team.id === winnerTeamId ? [loserTeamId] : [winnerTeamId];
         const opponentId = opponents[0];
-        // Bidirectional face-count: both teams get each other's count incremented
-        // in the same transaction, so the map is always symmetric.
         const existingFaced = team.facedTeams || {};
+        const existingGTCounts = team.gameTypeCounts || {};
         transaction.update(doc(teamsCollection(activeGameCode), team.id), {
           wins: (team.wins || 0) + (isWinner ? 1 : 0),
           losses: (team.losses || 0) + (isWinner ? 0 : 1),
@@ -2342,6 +2369,7 @@ async function recordResult(matchId, payload) {
           flipCupStreak: 0,
           powerupsRemaining,
           facedTeams: { ...existingFaced, [opponentId]: (existingFaced[opponentId] || 0) + 1 },
+          gameTypeCounts: { ...existingGTCounts, [match.gameType]: (existingGTCounts[match.gameType] || 0) + 1 },
         });
       });
       transaction.update(matchRef, {
@@ -2380,6 +2408,7 @@ async function recordResult(matchId, payload) {
         ? Math.max((team.powerupsRemaining ?? 3) - 1, 0)
         : team.powerupsRemaining ?? 3;
       if (shouldCharge) doubleDownCharged[team.id] = true;
+      const existingGTCountsFC = team.gameTypeCounts || {};
       transaction.update(doc(teamsCollection(activeGameCode), team.id), {
         wins: (team.wins || 0) + (isWinner ? 1 : 0),
         losses: (team.losses || 0) + (isWinner ? 0 : 1),
@@ -2394,6 +2423,7 @@ async function recordResult(matchId, payload) {
         flipCupStreak: team.lastGameType === "flip_cup"
           ? Math.min((team.flipCupStreak || 0) + 1, 2) : 1,
         powerupsRemaining,
+        gameTypeCounts: { ...existingGTCountsFC, [match.gameType]: (existingGTCountsFC[match.gameType] || 0) + 1 },
       });
     });
     transaction.update(matchRef, {
@@ -2411,10 +2441,11 @@ async function recordResult(matchId, payload) {
   await processPendingTeamAction(true);
 
   if (isHost()) {
-    // Pass the IDs of teams that just finished so fillMatches doesn't use
-    // their stale lastCompletedAt from the local cache.
-    const justFinished = new Set(match.teamIds || []);
-    await fillMatches(activeGameCode, justFinished);
+    // Mark these teams as just-finished BEFORE fillMatches runs,
+    // so the patience gate has accurate timestamps even if Firestore
+    // cache hasn't updated yet.
+    (match.teamIds || []).forEach(markTeamFinished);
+    await fillMatches(activeGameCode);
   }
 
   if (rewardPayload) {
