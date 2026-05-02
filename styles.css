@@ -1888,24 +1888,28 @@ body.mobile-app .mobile-bottom-nav.mobile-only {
 .mobile-bottom-nav__tab {
   appearance: none;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.88);
   border-radius: 12px;
-  min-height: 48px;
+  min-height: 52px;
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   cursor: pointer;
   white-space: nowrap;
   text-align: center;
-  padding: 0 4px;
+  padding: 6px 4px;
   width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.mobile-bottom-nav__tab svg {
+  stroke: currentColor;
+  flex-shrink: 0;
 }
 
 .mobile-bottom-nav__tab.is-active {
@@ -3202,4 +3206,22 @@ body:not(.mobile-app) .current-match-team {
   margin-top: 14px;
   display: grid;
   gap: 12px;
+}
+
+/* ── SVG SPIN ICON (replaces hourglass emoji) ───────────── */
+@keyframes icon-spin {
+  0%   { transform: rotate(0deg); }
+  40%  { transform: rotate(180deg); }
+  60%  { transform: rotate(180deg); }
+  100% { transform: rotate(360deg); }
+}
+.spin-icon {
+  animation: icon-spin 2s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+
+/* SVG icons in section-title align correctly */
+body.mobile-app .section-title svg,
+.section-title svg {
+  flex-shrink: 0;
+  vertical-align: middle;
 }
