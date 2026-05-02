@@ -2895,23 +2895,25 @@ body:not(.mobile-app) .dt-play-tab.dt-host-hide { display: none; }
 .dispute-sheet .status { color: rgba(240,236,226,0.65); }
 
 /* Dispute button on game page */
-/* Dispute button on game page — warm red, pairs with the exit button */
+/* Dispute button — solid crimson, clearly distinct from the gold exit button */
 #dispute-last-result {
-  background: rgba(180, 60, 40, 0.18);
-  border: 1px solid rgba(200, 80, 55, 0.45);
-  color: rgba(255, 145, 110, 0.95);
+  background: linear-gradient(135deg, #8b1e1e, #c0392b);
+  border: 1px solid rgba(255, 100, 80, 0.4);
+  color: #fff;
   font-size: 0.82rem;
+  font-weight: 700;
   min-height: 42px;
-  padding: 6px 12px;
+  padding: 0 14px;
   border-radius: 12px;
-  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
+  box-shadow: 0 4px 14px rgba(180, 30, 20, 0.35);
 }
 #dispute-last-result:hover {
-  background: rgba(180, 60, 40, 0.28);
+  background: linear-gradient(135deg, #a02424, #d44030);
+  box-shadow: 0 6px 18px rgba(180, 30, 20, 0.5);
 }
 
 /* ── NULLIFY OVERLAY ──────────────────────────────────────── */
