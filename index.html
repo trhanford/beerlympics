@@ -542,7 +542,7 @@
           <div class="ref-page-header">
             <p class="ref-page-eyebrow">Official Ruling</p>
             <h2 class="ref-page-title">
-            <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><line x1="12" y1="3" x2="12" y2="21"/><path d="M5 21h14"/><path d="M3 6l9-3 9 3"/><path d="M3 6c0 2.5 2 4 4.5 4s4.5-1.5 4.5-4"/><path d="M12 6c0 2.5 2 4 4.5 4s4.5-1.5 4.5-4"/></svg>
             The Ref
           </h2>
             <p class="ref-page-subtitle">Ask about gameplay. The Ref has the final word.</p>
@@ -696,14 +696,16 @@
 
     <nav class="mobile-bottom-nav mobile-only hidden" id="mobile-bottom-nav" aria-label="Mobile navigation">
       <button class="mobile-bottom-nav__tab is-active" id="mobile-nav-game" type="button" data-view="player">
+        <!-- Play button icon -->
         <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>
+          <circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/>
         </svg>
         <span>Game</span>
       </button>
       <button class="mobile-bottom-nav__tab" id="mobile-nav-ref" type="button" data-view="ref">
+        <!-- Balance/scales icon - universal "judge/ruling" symbol -->
         <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+          <line x1="12" y1="3" x2="12" y2="21"/><path d="M5 21h14"/><path d="M3 6l9-3 9 3"/><path d="M3 6c0 2.5 2 4 4.5 4s4.5-1.5 4.5-4"/><path d="M12 6c0 2.5 2 4 4.5 4s4.5-1.5 4.5-4"/>
         </svg>
         <span>The Ref</span>
       </button>
@@ -715,7 +717,7 @@
       </button>
       <button class="mobile-bottom-nav__tab" id="mobile-nav-rules" type="button" data-view="rules">
         <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
         </svg>
         <span>Rules</span>
       </button>
