@@ -13,6 +13,7 @@ import {
   serverTimestamp,
   runTransaction,
   writeBatch,
+  arrayUnion,
 } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -1102,10 +1103,17 @@ async function processPendingTeamAction(force = false) {
         showToast("Round finished. Team removed.", "info");
       }
     } else if (pendingAction.type === "pause") {
+      // Mark synchronously so fillMatches won't assign them a new game
+      // before Firestore confirms paused:true via onSnapshot.
+      recentlyPaused.add(pendingAction.teamId);
       await clearTeamFromMatches(activeGameCode, pendingAction.teamId);
       await updateDoc(doc(teamsCollection(activeGameCode), pendingAction.teamId), {
         paused: true,
       });
+      // Remove from recentlyPaused once Firestore confirms (next onSnapshot will
+      // see paused:true and exclude via !t.paused, so we can remove from the set).
+      // We clear it after a short delay to ensure the next fillMatches call is safe.
+      setTimeout(() => recentlyPaused.delete(pendingAction.teamId), 5000);
       if (getActiveTeamId() === pendingAction.teamId) {
         showToast("Round finished. Your team is now paused.", "success");
       }
@@ -1459,6 +1467,18 @@ const getActualCompletedAt = (team) => {
   if (tracked && Date.now() - tracked < RECENTLY_FINISHED_TTL) return tracked;
   return team.lastCompletedAt?.toMillis?.() ?? 0;
 };
+
+// Teams being paused right now — prevents fillMatches assigning a new game
+// before Firestore confirms paused:true via onSnapshot.
+const recentlyPaused = new Set();
+
+// Evict stale recentlyFinished entries every 5 minutes.
+setInterval(() => {
+  const cutoff = Date.now() - RECENTLY_FINISHED_TTL;
+  for (const [id, ts] of recentlyFinished) {
+    if (ts < cutoff) recentlyFinished.delete(id);
+  }
+}, 5 * 60 * 1000);
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Score a game type for a specific pair — lower score = more desired.
@@ -1480,13 +1500,15 @@ async function fillMatches(gameCode) {
   const pendingTeamId = pendingAction?.gameCode === gameCode ? pendingAction.teamId : null;
 
   let available = sortTeamsForMatch(
-    getTeams().filter((t) => !t.currentMatchId && !t.paused && t.id !== pendingTeamId)
+    getTeams().filter((t) => !t.currentMatchId && !t.paused && !recentlyPaused.has(t.id) && t.id !== pendingTeamId)
   );
 
   const orderedTypes = sortGameTypesForFill(getMatches());
 
   let madeMatch = true;
-  while (madeMatch && available.length >= 2) {
+  let iterations = 0;
+  const MAX_MATCH_ITERATIONS = 50;
+  while (madeMatch && available.length >= 2 && iterations++ < MAX_MATCH_ITERATIONS) {
     madeMatch = false;
 
     // ── FLIP CUP ASSEMBLY WINDOW ──────────────────────────────────────────────
@@ -1801,17 +1823,39 @@ const renderLeaderboard = () => {
   standings.forEach((team, index) => {
     const card = document.createElement("div");
     card.className = `leaderboard-card${isAdminMode ? " admin" : ""}`;
+
+    // Determine if this team is tied with adjacent teams
+    const sameAsPrev = index > 0 &&
+      standings[index-1].wins === team.wins &&
+      standings[index-1].points === team.points &&
+      standings[index-1].losses === team.losses;
+    const sameAsNext = index < standings.length - 1 &&
+      standings[index+1].wins === team.wins &&
+      standings[index+1].points === team.points &&
+      standings[index+1].losses === team.losses;
+    const isTied = sameAsPrev || sameAsNext;
+
+    // Find the actual rank (first team in this tied group)
+    let displayRank = index + 1;
+    if (sameAsPrev) {
+      for (let k = index - 1; k >= 0; k--) {
+        if (standings[k].wins === team.wins && standings[k].points === team.points && standings[k].losses === team.losses) {
+          displayRank = k + 1;
+        } else break;
+      }
+    }
+
     const rankClass =
-      index === 0
+      displayRank === 1
         ? "rank rank--gold"
-        : index === 1
+        : displayRank === 2
           ? "rank rank--silver"
-          : index === 2
+          : displayRank === 3
             ? "rank rank--bronze"
             : "rank rank--default";
     card.innerHTML = `
       <div class="team-row">
-        <span class="${rankClass}">#${index + 1}</span>
+        <span class="${rankClass}">${isTied ? `T${displayRank}` : `#${displayRank}`}</span>
         <div class="team-info">
           <div class="team-row">
             ${renderFlagAvatar(team.country)}
@@ -2029,7 +2073,7 @@ const renderMatch = () => {
     );
     nextGameCard.innerHTML = hasPending
       ? `
-        <h3><svg class="spin-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M5 3h14M5 21h14M12 3v3M12 21v-3M5 12h14M8.5 3.5 12 8l3.5-4.5M8.5 20.5 12 16l3.5 4.5"/></svg> Waiting on game stations</h3>
+        <h3><span class="loading-spinner" aria-hidden="true"></span> Waiting on game stations</h3>
         <p class="status">All your remaining games are currently in play. Check back soon.</p>
       `
       : `
@@ -2046,6 +2090,11 @@ const renderMatch = () => {
   // ── PRE-GAME POWERUP DECISION ─────────────────────────────────────────────
   const alreadyDoubledDown = Boolean(match.doubleDown?.[activeTeamId]);
   const alreadySkipped = Boolean(match.preGameSkipped?.[activeTeamId]);
+  // Seed preGameDecided from Firestore state so reconnecting players don't
+  // see the pre-game screen briefly before the snapshot catches up.
+  if ((alreadyDoubledDown || alreadySkipped) && !preGameDecided.has(match.id)) {
+    preGameDecided.add(match.id);
+  }
   const needsPreGameDecision =
     match.status !== "complete" && !alreadyDoubledDown && !alreadySkipped && !preGameDecided.has(match.id);
 
@@ -2220,13 +2269,14 @@ const renderMatch = () => {
         </div>`;
       document.body.appendChild(overlay);
 
-      document.getElementById("fc-confirm-yes").addEventListener("click", async () => {
+      document.getElementById("fc-confirm-yes").addEventListener("click", async (e) => {
+        // Disable immediately to prevent double-tap (bug 3)
+        e.currentTarget.disabled = true;
         overlay.remove();
-        dismissMobileKeyboard();
         const winnerSide = claimedWin ? "win" : "lose";
+        // recordResult internally calls processPendingTeamAction(true) — no need
+        // to call it again here. A second call would race and could double-process.
         await recordResult(match.id, { flipCupFinalResult: winnerSide, activeTeamId });
-        // Explicitly process any pending exit/pause now that the match is complete
-        void processPendingTeamAction();
       });
       document.getElementById("fc-confirm-no").addEventListener("click", () => overlay.remove());
     };
@@ -2580,9 +2630,19 @@ const processSwitchToLoss = async () => {
         losses: Math.max(0, (loserData.losses || 0) - 1),
         points: Math.max(0, (loserData.points || 0) - oldLosePts + newWinPts),
       });
-      transaction.update(matchRef, {
-        result: { ...matchSnap.data().result, winnerTeamId: oldLoserId, loserTeamId: oldWinnerId, corrected: true },
-      });
+      // Update match result — swap winner/loser for both 2-team and flip cup formats
+      const updatedResult = { ...matchSnap.data().result, corrected: true };
+      // 2-team format
+      updatedResult.winnerTeamId = oldLoserId;
+      updatedResult.loserTeamId  = oldWinnerId;
+      // Flip cup format — swap the winnerIds array too
+      if (Array.isArray(updatedResult.winnerIds)) {
+        const allIds = match.teamIds || [];
+        updatedResult.winnerIds = allIds.filter(id => id !== oldWinnerId && id !== oldLoserId);
+        // For a 2-team match this just swaps the two; for flip cup keep the pairings
+        if (updatedResult.winnerIds.length === 0) updatedResult.winnerIds = [oldLoserId];
+      }
+      transaction.update(matchRef, { result: updatedResult });
     });
     showToast("Result corrected. Leaderboard updated.", "success");
   } catch (err) {
@@ -2636,19 +2696,23 @@ const executeNullify = async (match) => {
       ]);
       if (!matchSnap.exists()) return;
 
-      const result = matchSnap.data().result || {};
+      // Use the fresh result from Firestore, not the local state object.
+      // This ensures correctness if switchToLoss ran between the nullify request
+      // and execution, preventing double-adjustment of points.
+      const freshResult = matchSnap.data().result || {};
       const PARTICIPATION_PTS = 2;
 
       teamSnaps.forEach((snap, i) => {
         if (!snap.exists()) return;
         const team = snap.data();
+        const teamId = match.teamIds[i];
         const isWinner =
-          result.winnerTeamId === match.teamIds[i] ||
-          (Array.isArray(result.winnerIds) && result.winnerIds.includes(match.teamIds[i]));
+          freshResult.winnerTeamId === teamId ||
+          (Array.isArray(freshResult.winnerIds) && freshResult.winnerIds.includes(teamId));
         const isLoser = !isWinner;
 
-        const oldWinPts  = isWinner ? calculatePoints(match.teamIds[i], true,  match) : 0;
-        const oldLosePts = isLoser  ? calculatePoints(match.teamIds[i], false, match) : 0;
+        const oldWinPts  = isWinner ? calculatePoints(teamId, true,  match) : 0;
+        const oldLosePts = isLoser  ? calculatePoints(teamId, false, match) : 0;
         const pointAdjust = PARTICIPATION_PTS - oldWinPts - oldLosePts;
 
         transaction.update(teamRefs[i], {
@@ -2777,24 +2841,28 @@ const initDisputeSystem = () => {
   agreeBtn?.addEventListener("click", async () => {
     const activeGameCode = getActiveGameCode();
     const activeTeamId   = getActiveTeamId();
-    // Use the match with a pending nullify, not just the last completed match
     const match = getMatchWithPendingNullify();
     if (!match || !activeGameCode || !activeTeamId) return;
 
     const req = match.nullifyRequest || {};
-    const newAgreed = [...new Set([...(req.agreedBy || []), activeTeamId])];
-    const majority  = Math.floor((match.teamIds?.length || 2) / 2) + 1;
+    const majority = Math.floor((match.teamIds?.length || 2) / 2) + 1;
 
-    if (newAgreed.length >= majority) {
+    // Use arrayUnion so concurrent agreements from different devices don't overwrite each other
+    await updateDoc(doc(matchesCollection(activeGameCode), match.id), {
+      "nullifyRequest.agreedBy": arrayUnion(activeTeamId),
+    });
+
+    // Re-read to get fresh agreed count after the write
+    const freshMatch = getMatchWithPendingNullify();
+    const freshAgreed = freshMatch?.nullifyRequest?.agreedBy || [];
+    const newCount = new Set([...(req.agreedBy || []), activeTeamId, ...freshAgreed]).size;
+
+    if (newCount >= majority) {
       await updateDoc(doc(matchesCollection(activeGameCode), match.id), {
-        "nullifyRequest.agreedBy": newAgreed,
         "nullifyRequest.status": "approved",
       });
       await executeNullify(match);
     } else {
-      await updateDoc(doc(matchesCollection(activeGameCode), match.id), {
-        "nullifyRequest.agreedBy": newAgreed,
-      });
       dismissNullifyOverlay();
       showToast("You agreed to nullify. Waiting for others.", "info");
     }
@@ -2808,36 +2876,34 @@ const initDisputeSystem = () => {
 
     const req = match.nullifyRequest || {};
 
-    // If this is the dismiss button (requester or already-agreed), just close
     if ((req.agreedBy || []).includes(activeTeamId)) {
       dismissNullifyOverlay();
       return;
     }
 
-    const newDeclined = [...new Set([...(req.declinedBy || []), activeTeamId])];
+    // Use arrayUnion for decline too
+    await updateDoc(doc(matchesCollection(activeGameCode), match.id), {
+      "nullifyRequest.declinedBy": arrayUnion(activeTeamId),
+    });
+
     const total = match.teamIds?.length || 2;
     const majority = Math.floor(total / 2) + 1;
     const agreedCount = (req.agreedBy || []).length;
-    const remainingCanAgree = total - newDeclined.length - agreedCount;
+    const newDeclinedCount = new Set([...(req.declinedBy || []), activeTeamId]).size;
+    const remainingCanAgree = total - newDeclinedCount - agreedCount;
 
     if (agreedCount + remainingCanAgree < majority) {
       await updateDoc(doc(matchesCollection(activeGameCode), match.id), {
-        "nullifyRequest.declinedBy": newDeclined,
         "nullifyRequest.status": "rejected",
       });
       dismissNullifyOverlay();
       showToast("Nullify rejected. The original result stands.", "info");
     } else {
-      await updateDoc(doc(matchesCollection(activeGameCode), match.id), {
-        "nullifyRequest.declinedBy": newDeclined,
-      });
       dismissNullifyOverlay();
       showToast("You declined the nullify request.", "info");
     }
   });
 };
-
-// ── END DISPUTE SYSTEM ────────────────────────────────────────────────────────
 
 // ── END DISPUTE SYSTEM ────────────────────────────────────────────────────────
 
