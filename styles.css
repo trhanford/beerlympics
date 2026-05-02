@@ -2895,13 +2895,23 @@ body:not(.mobile-app) .dt-play-tab.dt-host-hide { display: none; }
 .dispute-sheet .status { color: rgba(240,236,226,0.65); }
 
 /* Dispute button on game page */
+/* Dispute button on game page — warm red, pairs with the exit button */
 #dispute-last-result {
-  border-color: rgba(220,100,60,0.35);
-  color: rgba(220,130,80,0.9);
+  background: rgba(180, 60, 40, 0.18);
+  border: 1px solid rgba(200, 80, 55, 0.45);
+  color: rgba(255, 145, 110, 0.95);
   font-size: 0.82rem;
-  min-height: 36px;
+  min-height: 42px;
   padding: 6px 12px;
-  margin-top: 4px;
+  border-radius: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+#dispute-last-result:hover {
+  background: rgba(180, 60, 40, 0.28);
 }
 
 /* ── NULLIFY OVERLAY ──────────────────────────────────────── */
@@ -3225,3 +3235,22 @@ body.mobile-app .section-title svg,
   flex-shrink: 0;
   vertical-align: middle;
 }
+
+/* ── CSS LOADING SPINNER (replaces spin-icon SVG) ────────── */
+@keyframes spinner-rotate {
+  to { transform: rotate(360deg); }
+}
+.loading-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(240, 236, 226, 0.25);
+  border-top-color: rgba(240, 236, 226, 0.85);
+  border-radius: 50%;
+  animation: spinner-rotate 0.75s linear infinite;
+  vertical-align: middle;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+/* Remove old spin-icon keyframes (no longer used) */
