@@ -822,6 +822,7 @@ const clearActiveSession = (code = getActiveGameCode()) => {
   clearSessionValue(STORAGE_KEYS.activeGameCode);
   clearSessionValue(STORAGE_KEYS.currentGameCode);
   clearPendingTeamAction();
+  stopFillMatchesHeartbeat();
 };
 
 const initials = (value) =>
@@ -984,6 +985,7 @@ function isHost() {
 // Debounced + locked so we don't spam Firestore writes.
 let fillMatchesTimer = null;
 let fillMatchesInFlight = false;
+let fillMatchesHeartbeat = null;
 
 function scheduleFillMatches(code) {
   if (!code) return;
@@ -1005,10 +1007,35 @@ function scheduleFillMatches(code) {
   }, 250);
 }
 
+// Heartbeat: re-runs fillMatches every 60s on the host.
+// This ensures the patience gate is re-evaluated even when no match
+// has recently completed (e.g. two teams waiting while the other two
+// are in a long game, or the host's browser was idle overnight).
+function startFillMatchesHeartbeat(code) {
+  stopFillMatchesHeartbeat();
+  fillMatchesHeartbeat = setInterval(() => {
+    if (!isHost()) return;
+    if (fillMatchesInFlight) return;
+    scheduleFillMatches(code);
+  }, 60_000);
+}
+
+function stopFillMatchesHeartbeat() {
+  if (fillMatchesHeartbeat) {
+    clearInterval(fillMatchesHeartbeat);
+    fillMatchesHeartbeat = null;
+  }
+}
+
 function subscribeToGame(code) {
   if (unsubscribeGame) unsubscribeGame();
   if (unsubscribeTeams) unsubscribeTeams();
   if (unsubscribeMatches) unsubscribeMatches();
+
+  // Start the heartbeat so the patience gate is re-evaluated
+  // even when no matches are completing (e.g. teams waiting while
+  // others are in a long game or the browser was left idle).
+  startFillMatchesHeartbeat(code);
 
   unsubscribeGame = onSnapshot(gameRef(code), (snap) => {
     state.game = snap.exists() ? { id: snap.id, ...snap.data() } : null;
