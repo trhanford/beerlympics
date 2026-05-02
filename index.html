@@ -388,7 +388,7 @@
                 </div>
                 <div class="game-card access-card">
                   <div class="section-title">
-                    <span>🔐</span>
+                    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     <h3>Join a game</h3>
                   </div>
                   <label for="gameCode">Game code</label>
@@ -404,19 +404,19 @@
                   />
                   <p class="hint" id="gameCode-hint">Ask the host for the 4-digit code.</p>
                   <button class="btn" type="submit" id="join-game">
-                    Lock in our team 🚀
+                    Lock in our team
                   </button>
                 </div>
                 <div class="game-card access-card">
                   <div class="section-title">
-                    <span>🎬</span>
+                    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
                     <h3>Start a new game</h3>
                   </div>
                   <p class="status">
                     Hosting tonight? Create a fresh code for everyone.
                   </p>
                   <button class="btn ghost" type="button" id="start-game">
-                    I'm starting the games 🎬
+                    I'm starting the games
                   </button>
                 </div>
                 <p class="status" id="save-status">Nothing saved yet.</p>
@@ -450,7 +450,7 @@
           </div>
           <div class="mobile-panel mobile-play-panel" id="mobile-play-panel">
             <div class="section-title">
-              <span>🎯</span>
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
               <h2>Your Next Game</h2>
             </div>
             <div class="game-card" id="next-game">
@@ -459,7 +459,8 @@
             <div class="score-actions" id="score-actions"></div>
             <div class="mobile-game-action-row">
               <button class="btn ghost mobile-only" type="button" id="dispute-last-result" style="display:none;">
-                🚩 Dispute
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                Dispute
               </button>
               <button class="btn ghost mobile-only" type="button" id="mobile-exit-game-btn">
                 Exit Game
@@ -540,7 +541,10 @@
         <div class="ref-page">
           <div class="ref-page-header">
             <p class="ref-page-eyebrow">Official Ruling</p>
-            <h2 class="ref-page-title">🏛️ The Ref</h2>
+            <h2 class="ref-page-title">
+            <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            The Ref
+          </h2>
             <p class="ref-page-subtitle">Ask about gameplay. The Ref has the final word.</p>
           </div>
           <div class="ref-messages" id="ask-ref-messages">
@@ -692,19 +696,27 @@
 
     <nav class="mobile-bottom-nav mobile-only hidden" id="mobile-bottom-nav" aria-label="Mobile navigation">
       <button class="mobile-bottom-nav__tab is-active" id="mobile-nav-game" type="button" data-view="player">
-        <span aria-hidden="true">🎮</span>
+        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>
+        </svg>
         <span>Game</span>
       </button>
       <button class="mobile-bottom-nav__tab" id="mobile-nav-ref" type="button" data-view="ref">
-        <span aria-hidden="true">🏛️</span>
+        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+        </svg>
         <span>The Ref</span>
       </button>
       <button class="mobile-bottom-nav__tab" id="mobile-nav-leaderboard" type="button" data-view="leaderboard">
-        <span aria-hidden="true">🏆</span>
+        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
         <span>Scores</span>
       </button>
       <button class="mobile-bottom-nav__tab" id="mobile-nav-rules" type="button" data-view="rules">
-        <span aria-hidden="true">📜</span>
+        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+        </svg>
         <span>Rules</span>
       </button>
     </nav>
