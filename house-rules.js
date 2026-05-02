@@ -185,4 +185,164 @@ WIND BLOCKING:
   touch the cup or physically interfere with the flip itself —
   only passive blocking is allowed.
 
+
+────────────────────────────────────────
+  BAG TOSS (CORNHOLE) — HOUSE RULES
+────────────────────────────────────────
+
+SCORING:
+  Bag in the hole = 3 points. Bag resting on the board = 1 point.
+  Cancellation scoring applies each round: subtract the lower team's
+  points from the higher team's — only the net difference counts.
+  First team to exactly 21 wins. If you go over 21, you bust back to
+  whatever score you had before that round (or 15, depending on what
+  players agree beforehand).
+
+BAGS AND BOARD:
+  Bags must be tossed underhand. Both feet must remain behind the
+  foul line during the throw. Partner plays from the opposite end.
+
+KNOCKING OFF:
+  If a bag is knocked off the board by another bag before the round
+  ends, only the final resting position counts. A bag that goes
+  through the hole on a bounce counts as 1 point, not 3.
+
+
+────────────────────────────────────────
+  DARTS — HOUSE RULES
+────────────────────────────────────────
+
+FORMAT:
+  301, double-out. Each team starts at 301 and must reach exactly
+  zero. The final dart must land in a double segment or the bullseye
+  to close out. If you go below zero (bust), your score reverts to
+  what it was before that turn.
+
+THROWING ORDER:
+  One player per team throws all three darts, then the other team
+  goes. Partners alternate who throws each round.
+
+BOUNCE-OUTS:
+  If a dart bounces out of the board, it does not score and cannot
+  be re-thrown. It simply counts as a missed dart.
+
+
+────────────────────────────────────────
+  RAGE CAGE (STACK CUP) — HOUSE RULES
+────────────────────────────────────────
+
+SETUP:
+  Fill the center of the table with solo cups (one per player, plus
+  extras for drama). Each player starts with their own full cup.
+  Played by two teams of two around the table.
+
+GAMEPLAY:
+  Two players start simultaneously with ping pong balls, bouncing
+  into their personal cup. Once in, pass clockwise. If you make your
+  cup before the person ahead of you makes theirs, stack your cup on
+  top of theirs — they must draw a new cup from the pile and start
+  over. Last player on a team to get stacked out repeatedly loses
+  for their team.
+
+TEAM WIN CONDITION:
+  The team that eliminates both opposing players (via stacking them
+  out or forcing them to finish all their cups) wins the round.
+
+NO FINGER:
+  Absolutely no using your finger to block the cup opening during
+  another player's bounce attempt.
+
+
+────────────────────────────────────────
+  KAN JAM — HOUSE RULES
+────────────────────────────────────────
+
+SCORING:
+  Dinger (1 pt): Deflected frisbee touches the side of the kan.
+  Deuce (2 pts): Thrown frisbee hits the kan directly with no
+    partner deflection.
+  Bucket (3 pts): Partner deflects frisbee into the opening of the kan.
+  Instant Win: Thrower puts frisbee directly through the slot on the
+    side of the kan with no partner help — game over immediately.
+  Play to exactly 21. Must hit exactly 21 — if you go over, you
+  go back to 11.
+
+DEFLECTION RULES:
+  The deflecting partner may redirect the frisbee but may not catch,
+  carry, or guide it in. One clean deflection only. If they catch it
+  and re-throw, no points awarded.
+
+BOUNDARIES:
+  Frisbee must be released from behind the back line of your kan.
+
+
+────────────────────────────────────────
+  SPIKEBALL — HOUSE RULES
+────────────────────────────────────────
+
+GAMEPLAY:
+  Serve off the net to start each rally. Teams alternate and each
+  team gets up to 3 touches to return the ball off the net. No
+  designated sides — players move freely around the net.
+
+SCORING:
+  Point scored when: opposing team fails to return ball off net,
+  ball hits the rim, or ball bounces twice on the net. First to 21,
+  win by 2.
+
+SERVING:
+  Server must be 6 feet from the net. Serve must be clean — no
+  spinner serves. One re-serve allowed per point (if server steps
+  inside 6 feet, or serve hits rim, re-do). Two bad serves = point
+  for receiving team.
+
+CONTESTING:
+  No interference or body contact. If the ball hits a player who is
+  not in position to make the play, it may be replayed at the
+  referee's discretion.
+
+
+────────────────────────────────────────
+  QUARTERS — HOUSE RULES
+────────────────────────────────────────
+
+GAMEPLAY:
+  Players take turns bouncing a quarter off the table and into a
+  shot glass. Make it = pick an opposing player to drink, and you
+  shoot again until you miss. Miss = next player goes.
+
+TEAM WIN CONDITION:
+  First team where BOTH players have each made 3 consecutive quarters
+  without missing wins the round. (Adjust the target number before
+  the game starts if preferred.)
+
+SPEED:
+  No deliberate slowing down between shots. Once you pick up the
+  quarter, you have 5 seconds to shoot.
+
+
+────────────────────────────────────────
+  BEER BALL — HOUSE RULES
+────────────────────────────────────────
+
+SETUP:
+  Two teams of two face each other across a table or open space.
+  Each team has one full, unopened can of beer placed in front of them.
+
+GAMEPLAY:
+  Teams take turns throwing a ball (tennis ball or similar) at the
+  opposing team's can. When the can is hit, the opposing team's
+  players must drink continuously until the throwing team retrieves
+  the ball and places it back on the ground (or designated spot).
+  Once the ball is placed, drinking stops.
+
+WIN CONDITION:
+  First team to finish their entire can of beer wins. You may only
+  drink when your can has been hit — no voluntary chugging.
+
+KNOCKOVER:
+  If the ball knocks the can over, the opposing team may also drink
+  until the can is stood back up (by the throwing team). A knocked
+  can must be stood up by the team that threw — not the drinking team.
+
 `;
