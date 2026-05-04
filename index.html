@@ -479,7 +479,7 @@
 
       <section class="card hidden" id="rules-section">
         <div class="section-title">
-          <span>📜</span>
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           <h2>Game Rules</h2>
         </div>
         <p class="status">Tap each game to expand the rules.</p>
@@ -487,54 +487,103 @@
           <details class="rules-item">
             <summary>Beer Pong</summary>
             <ul>
-              <li>Set up 10 cups in a triangle for each team.</li>
-              <li>Teams alternate tosses; one player shoots at a time.</li>
-              <li>A made shot removes one cup and that cup must be consumed.</li>
-              <li>Both teammates make in one turn = balls back for another turn.</li>
-              <li>When all cups are gone, the losing team gets one redemption turn.</li>
+              <li>10 cups per team in a triangle. Alternate turns, one shot at a time.</li>
+              <li>Made shot = cup removed and consumed. Both teammates make = balls back.</li>
+              <li>When all cups are gone, losing team gets one redemption turn.</li>
             </ul>
           </details>
           <details class="rules-item">
             <summary>Flip Cup</summary>
             <ul>
-              <li>Teams line up shoulder-to-shoulder on opposite sides of the table.</li>
-              <li>First player drinks, sets cup on edge, and flips until it lands upside down.</li>
-              <li>Next teammate starts only after the previous flip is completed.</li>
-              <li>First team to have every player complete their flip wins the round.</li>
-              <li>No hand-switching mid-flip and no touching a teammate’s cup.</li>
+              <li>Teams line up on opposite sides. Drink, set cup on edge, then flip it over.</li>
+              <li>Next teammate only starts after the previous flip lands cleanly.</li>
+              <li>First team fully done wins. No mid-flip hand switching.</li>
             </ul>
           </details>
           <details class="rules-item">
             <summary>Beerio Kart</summary>
             <ul>
-              <li>Each player starts a Mario Kart race with one unopened beer.</li>
-              <li>You must finish your drink before crossing the finish line.</li>
-              <li>No drinking while your kart is moving; pull over to drink.</li>
-              <li>If you cross before finishing, that race score does not count.</li>
-              <li>Fastest valid combined team finish wins.</li>
+              <li>Each player starts a Mario Kart race with one beer. Finish it before the finish line.</li>
+              <li>No drinking while the kart is moving — pull over first.</li>
+              <li>Cross the line before finishing = that score doesn't count.</li>
             </ul>
           </details>
           <details class="rules-item">
             <summary>Die</summary>
             <ul>
-              <li>Two teams face each other with drinks at table corners.</li>
-              <li>Players toss a die aiming for a clean hit on the table and high bounce.</li>
-              <li>Catches with one hand negate points; missed catches score for offense.</li>
-              <li>Standard scoring: 1 point for a miss, 2 if the die hits floor untouched.</li>
-              <li>Play to the target score set by the host (commonly 9 or 11).</li>
+              <li>Toss the die so it bounces cleanly on the opposing team's half.</li>
+              <li>One-handed catch negates the point for offense.</li>
+              <li>Missed catch = 1 pt; die hits floor untouched = 2 pts.</li>
+              <li>Play to the host's target score (commonly 9 or 11).</li>
             </ul>
           </details>
           <details class="rules-item">
             <summary>Drinkball</summary>
             <ul>
-              <li>Place one cup in front of each player and one ball in play.</li>
-              <li>Teams pass and shoot trying to land the ball in an opponent cup.</li>
-              <li>Made shot = opposing player drinks and that cup resets.</li>
-              <li>No goaltending, blocking with cup hand, or body contact.</li>
-              <li>First team to the agreed score wins.</li>
+              <li>One cup per player, one ball in play. Shoot to land in an opponent's cup.</li>
+              <li>Made shot = that player drinks and the cup resets.</li>
+              <li>No goaltending, blocking with your cup hand, or body contact.</li>
+            </ul>
+          </details>
+          <details class="rules-item">
+            <summary>Bag Toss</summary>
+            <ul>
+              <li>Boards 27 ft apart; partners play from opposite ends.</li>
+              <li>Bag in hole = 3 pts. Bag on board = 1 pt. Cancellation scoring each round.</li>
+              <li>First to exactly 21 wins. Going over busts you back.</li>
+              <li>All throws must be underhand and from behind the foul line.</li>
+            </ul>
+          </details>
+          <details class="rules-item">
+            <summary>Darts</summary>
+            <ul>
+              <li>301 format, double out. Count down from 301 to exactly zero.</li>
+              <li>Final dart must hit a double or bullseye to close it out.</li>
+              <li>Going below zero is a bust — revert to score before that turn.</li>
+              <li>Teams alternate turns; partners alternate who throws each round.</li>
+            </ul>
+          </details>
+          <details class="rules-item">
+            <summary>Rage Cage</summary>
+            <ul>
+              <li>All 4 players around a table filled with cups.</li>
+              <li>Bounce a ping pong ball into your cup, then pass it clockwise.</li>
+              <li>Make it before the person ahead of you = stack your cup on theirs.</li>
+              <li>They must draw a new cup from the pile and start over.</li>
+              <li>Team that eliminates both opponents first wins.</li>
+            </ul>
+          </details>
+          <details class="rules-item">
+            <summary>Kan Jam</summary>
+            <ul>
+              <li>Dinger (1 pt): deflected frisbee touches the side of the kan.</li>
+              <li>Deuce (2 pts): thrown frisbee hits kan directly, no partner help.</li>
+              <li>Bucket (3 pts): partner deflects frisbee into the kan's opening.</li>
+              <li>Instant win: thrower puts it through the slot unassisted.</li>
+              <li>Play to exactly 21. Go over and you drop back to 11.</li>
+            </ul>
+          </details>
+          <details class="rules-item">
+            <summary>Spikeball</summary>
+            <ul>
+              <li>Serve off the net; each team gets up to 3 touches to return.</li>
+              <li>No designated sides — move freely around the net after the serve.</li>
+              <li>Point when opponents can't return, or ball hits the rim or bounces twice.</li>
+              <li>First to 21, win by 2. No spin serves allowed.</li>
+            </ul>
+          </details>
+          <details class="rules-item">
+            <summary>Quarters</summary>
+            <ul>
+              <li>Take turns bouncing a quarter off the table into a shot glass.</li>
+              <li>Make it = pick an opponent to drink, then shoot again until you miss.</li>
+              <li>First team where both players each hit 3 consecutive makes wins.</li>
+              <li>5 seconds to shoot once you pick up the quarter.</li>
             </ul>
           </details>
         </div>
+      </section>
+
       </section>
 
       <section class="card hidden" id="ref-section">
