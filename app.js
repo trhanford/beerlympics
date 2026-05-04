@@ -3845,13 +3845,19 @@ const initDesktopLanding = () => {
   });
 };
 
-// Map game checkbox IDs → rule value prefixes to show/hide
+// Map game checkbox IDs → rule value prefixes to show/hide in house rules dropdowns
 const GAME_RULE_MAP = {
   "cfg-die":        ["die_"],
   "cfg-beer-pong":  ["pong_"],
   "cfg-beerio-kart":["kart_"],
   "cfg-flip-cup":   ["flipcup_"],
-  "cfg-drinkball":  [], // no specific house rules yet
+  "cfg-drinkball":  [],
+  "cfg-bag-toss":   ["bagtoss_"],
+  "cfg-darts":      ["darts_"],
+  "cfg-rage-cage":  ["ragecage_"],
+  "cfg-kan-jam":    ["kanjam_"],
+  "cfg-spikeball":  ["spikeball_"],
+  "cfg-quarters":   ["quarters_"],
 };
 
 const initGameRulesFilter = () => {
@@ -3860,17 +3866,22 @@ const initGameRulesFilter = () => {
 
   Object.entries(GAME_RULE_MAP).forEach(([checkboxId, prefixes]) => {
     const gameChk = document.getElementById(checkboxId);
-    if (!gameChk || prefixes.length === 0) return;
+    if (!gameChk) return;
 
     gameChk.addEventListener("change", () => {
       const enabled = gameChk.checked;
-      rulesList.querySelectorAll("input[type='checkbox']").forEach(ruleChk => {
-        const matchesGame = prefixes.some(p => ruleChk.value.startsWith(p));
-        if (matchesGame) {
-          const row = ruleChk.closest("label");
-          if (row) {
-            row.style.display = enabled ? "" : "none";
-            ruleChk.checked = enabled; // uncheck hidden rules too
+      if (prefixes.length === 0) return;
+      // Find the details group whose summary text matches the checkbox label
+      rulesList.querySelectorAll("details.dt-rules-group").forEach(group => {
+        const hasMatchingRules = group.querySelectorAll("input[type='checkbox']");
+        const matches = [...hasMatchingRules].some(chk => prefixes.some(p => chk.value.startsWith(p)));
+        if (matches) {
+          group.style.display = enabled ? "" : "none";
+          // Uncheck all rules inside when game is disabled
+          if (!enabled) {
+            hasMatchingRules.forEach(chk => { chk.checked = false; });
+          } else {
+            hasMatchingRules.forEach(chk => { chk.checked = true; });
           }
         }
       });
