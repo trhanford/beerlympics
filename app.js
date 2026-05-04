@@ -1871,9 +1871,9 @@ const renderLeaderboard = () => {
         </div>
       </div>
       <div class="team-row">
-        <span class="stat-pill">${team.points || 0} pts</span>
-        <span class="stat-pill">${team.wins || 0} W</span>
-        <span class="stat-pill">${team.losses || 0} L</span>
+        <span class="stat-pill stat-pill--points">${team.points || 0} pts</span>
+        <span class="stat-pill stat-pill--wl">${team.wins || 0} W</span>
+        <span class="stat-pill stat-pill--wl">${team.losses || 0} L</span>
       </div>
     `;
     if (isAdminMode) {
@@ -4036,7 +4036,7 @@ KAN JAM: Dinger (1 pt) = deflected frisbee touches the kan. Deuce (2 pts) = dire
 
 SPIKEBALL: 3 touches per team to return off the net. Move freely after the serve. Point when opponents can't return, ball hits the rim, or bounces twice. First to 21, win by 2. No spin serves.
 
-QUARTERS: Bounce a quarter into a shot glass. Make it = pick an opponent to drink, shoot again. Miss = next player. First team where both players hit 3 consecutive makes wins. 5 seconds to shoot.
+QUARTERS: Players sit in a circle with drinks in front of them. Someone spins a quarter and calls a flicker while it's still spinning. The flicker tries to knock the quarter into another player's drink. If they hit it, that person chugs for the entire duration of the next spin (spun by the flicker). Up to 2 other players can tap the quarter to keep it going longer. Non-flicking players can guard with 2 fingers from one hand only — no arms, no cupping, no second hand. When spinning stops, the person who was drinking gets to spin next and call a new flicker. Miss = quarter passes to the person called to flick.
 
 BEER BALL: One full can per team. Throw a ball at the opponent's can. When hit, they drink until the ball is retrieved and placed back down. First team to finish their can wins.
 
