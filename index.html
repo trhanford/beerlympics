@@ -301,11 +301,17 @@
               <h2>Games to Play</h2>
               <p>All selected games will be included in the rotation.</p>
               <div class="dt-rules-list">
-                <label class="dt-rule-check"><input type="checkbox" id="cfg-beer-pong" checked /> 🏓 Beer Pong</label>
-                <label class="dt-rule-check"><input type="checkbox" id="cfg-flip-cup" checked /> 🥤 Flip Cup</label>
-                <label class="dt-rule-check"><input type="checkbox" id="cfg-beerio-kart" checked /> 🏎️ Beerio Kart</label>
-                <label class="dt-rule-check"><input type="checkbox" id="cfg-die" checked /> 🎲 Die</label>
-                <label class="dt-rule-check"><input type="checkbox" id="cfg-drinkball" checked /> ⚽ Drinkball</label>
+                <label class="dt-rule-check"><input type="checkbox" id="cfg-beer-pong" checked /> Beer Pong</label>
+                <label class="dt-rule-check"><input type="checkbox" id="cfg-flip-cup" checked /> Flip Cup</label>
+                <label class="dt-rule-check"><input type="checkbox" id="cfg-beerio-kart" checked /> Beerio Kart</label>
+                <label class="dt-rule-check"><input type="checkbox" id="cfg-die" checked /> Die</label>
+                <label class="dt-rule-check"><input type="checkbox" id="cfg-drinkball" checked /> Drinkball</label>
+                <label class="dt-rule-check"><input type="checkbox" id="cfg-bag-toss" checked /> Bag Toss</label>
+                <label class="dt-rule-check"><input type="checkbox" id="cfg-darts" checked /> Darts</label>
+                <label class="dt-rule-check"><input type="checkbox" id="cfg-rage-cage" checked /> Rage Cage</label>
+                <label class="dt-rule-check"><input type="checkbox" id="cfg-kan-jam" checked /> Kan Jam</label>
+                <label class="dt-rule-check"><input type="checkbox" id="cfg-spikeball" checked /> Spikeball</label>
+                <label class="dt-rule-check"><input type="checkbox" id="cfg-quarters" checked /> Quarters</label>
               </div>
             </div>
 
@@ -313,21 +319,65 @@
             <div class="dt-card">
               <div class="dt-card-icon">📋</div>
               <h2>House Rules</h2>
-              <p>The Ref will be briefed on all enabled rules before the first question.</p>
+              <p>The Ref will be briefed on all enabled rules.</p>
               <div class="dt-rules-list" id="dt-rules-list">
-                <label class="dt-rule-check"><input type="checkbox" value="die_line" checked /> Die: Center line is a live play</label>
-                <label class="dt-rule-check"><input type="checkbox" value="die_field_goal" checked /> Die: Field goal (2 pts)</label>
-                <label class="dt-rule-check"><input type="checkbox" value="die_cup_side" checked /> Die: Cup-side deflection (2 pts)</label>
-                <label class="dt-rule-check"><input type="checkbox" value="die_cup_land" checked /> Die: Cup landing / can top (3 pts)</label>
-                <label class="dt-rule-check"><input type="checkbox" value="die_halftime" checked /> Die: Halftime at 10 combined pts</label>
-                <label class="dt-rule-check"><input type="checkbox" value="die_fifa" checked /> Die: FIFA rule</label>
-                <label class="dt-rule-check"><input type="checkbox" value="die_number_shout" checked /> Die: Number shout on long bounce</label>
-                <label class="dt-rule-check"><input type="checkbox" value="pong_bitch_cup" checked /> Beer Pong: Bitch cup rule</label>
-                <label class="dt-rule-check"><input type="checkbox" value="pong_elbow" checked /> Beer Pong: Elbow rule</label>
-                <label class="dt-rule-check"><input type="checkbox" value="pong_reracks" checked /> Beer Pong: Reracks (2 per game)</label>
-                <label class="dt-rule-check"><input type="checkbox" value="pong_gentlemens" checked /> Beer Pong: Gentleman's at 2 cups</label>
-                <label class="dt-rule-check"><input type="checkbox" value="kart_no_dd" checked /> Beerio Kart: No drinking and driving</label>
-                <label class="dt-rule-check"><input type="checkbox" value="flipcup_block" checked /> Flip Cup: Wind-blocking allowed</label>
+
+                <details class="dt-rules-group">
+                  <summary>Die</summary>
+                  <label class="dt-rule-check"><input type="checkbox" value="die_line" checked /> Center line is a live play</label>
+                  <label class="dt-rule-check"><input type="checkbox" value="die_field_goal" checked /> Field goal counts as 2 pts</label>
+                  <label class="dt-rule-check"><input type="checkbox" value="die_cup_side" checked /> Cup-side deflection counts as 2 pts</label>
+                  <label class="dt-rule-check"><input type="checkbox" value="die_cup_land" checked /> Cup landing / can top = 3 pts</label>
+                  <label class="dt-rule-check"><input type="checkbox" value="die_halftime" checked /> Halftime at 10 combined pts</label>
+                  <label class="dt-rule-check"><input type="checkbox" value="die_fifa" checked /> FIFA rule in effect</label>
+                  <label class="dt-rule-check"><input type="checkbox" value="die_number_shout" checked /> Number shout on long bounce</label>
+                </details>
+
+                <details class="dt-rules-group">
+                  <summary>Beer Pong</summary>
+                  <label class="dt-rule-check"><input type="checkbox" value="pong_bitch_cup" checked /> Bitch cup rule</label>
+                  <label class="dt-rule-check"><input type="checkbox" value="pong_elbow" checked /> Elbow rule</label>
+                  <label class="dt-rule-check"><input type="checkbox" value="pong_reracks" checked /> Reracks (2 per game)</label>
+                  <label class="dt-rule-check"><input type="checkbox" value="pong_gentlemens" checked /> Gentleman's at 2 cups</label>
+                </details>
+
+                <details class="dt-rules-group">
+                  <summary>Beerio Kart</summary>
+                  <label class="dt-rule-check"><input type="checkbox" value="kart_no_dd" checked /> No drinking and driving</label>
+                </details>
+
+                <details class="dt-rules-group">
+                  <summary>Flip Cup</summary>
+                  <label class="dt-rule-check"><input type="checkbox" value="flipcup_block" checked /> Wind-blocking by teammates allowed</label>
+                </details>
+
+                <details class="dt-rules-group">
+                  <summary>Bag Toss</summary>
+                  <label class="dt-rule-check"><input type="checkbox" value="bagtoss_bust" checked /> Bust rule — going over resets score</label>
+                </details>
+
+                <details class="dt-rules-group">
+                  <summary>Darts</summary>
+                  <label class="dt-rule-check"><input type="checkbox" value="darts_double_out" checked /> Double-out required to win</label>
+                </details>
+
+                <details class="dt-rules-group">
+                  <summary>Kan Jam</summary>
+                  <label class="dt-rule-check"><input type="checkbox" value="kanjam_bust" checked /> Going over 21 drops back to 11</label>
+                </details>
+
+                <details class="dt-rules-group">
+                  <summary>Spikeball</summary>
+                  <label class="dt-rule-check"><input type="checkbox" value="spikeball_win2" checked /> Must win by 2</label>
+                  <label class="dt-rule-check"><input type="checkbox" value="spikeball_nospinner" checked /> No spin serves</label>
+                </details>
+
+                <details class="dt-rules-group">
+                  <summary>Quarters</summary>
+                  <label class="dt-rule-check"><input type="checkbox" value="quarters_2finger" checked /> 2-finger guard rule (one hand only)</label>
+                  <label class="dt-rule-check"><input type="checkbox" value="quarters_2extenders" checked /> Max 2 players may extend the spin</label>
+                </details>
+
               </div>
             </div>
           </div>
@@ -484,8 +534,11 @@
         </div>
         <p class="status">Tap each game to expand the rules.</p>
         <div class="rules-ref-tip">
-          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><line x1="12" y1="3" x2="12" y2="21"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
-          Need more detail? <strong>Ask The Ref</strong> — they know every rule, every edge case, and all the house rules too.
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><line x1="12" y1="3" x2="12" y2="21"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+          <div>
+            <strong>Need more detail? Ask The Ref.</strong>
+            They know every rule, every edge case, and all the house rules too.
+          </div>
         </div>
         <div class="rules-accordion" id="rules-accordion">
           <details class="rules-item">
