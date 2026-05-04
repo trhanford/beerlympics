@@ -3256,3 +3256,47 @@ body.mobile-app .section-title svg,
 }
 
 /* Remove old spin-icon keyframes (no longer used) */
+
+/* ── LEADERBOARD STAT PILLS ──────────────────────────────── */
+
+/* Points pill: gold gradient on desktop, gold on mobile */
+.stat-pill--points {
+  background: linear-gradient(135deg, #d8bf7c, #f7f1de 52%, #b89146) !important;
+  color: #1a0d00 !important;
+  border-color: transparent !important;
+  font-weight: 700;
+}
+
+/* Win/loss pills: visible on desktop, hidden on mobile */
+body.mobile-app .stat-pill--wl {
+  display: none !important;
+}
+
+/* On mobile, points pill gets gold tint to stand out */
+body.mobile-app .stat-pill--points {
+  background: linear-gradient(135deg, rgba(216,191,100,0.25), rgba(247,241,222,0.15)) !important;
+  border-color: rgba(216,191,124,0.4) !important;
+  color: #f7e79a !important;
+  font-weight: 700;
+}
+
+/* ── RULES PAGE REF TIP ──────────────────────────────────── */
+.rules-ref-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(216, 191, 124, 0.1);
+  border: 1px solid rgba(216, 191, 124, 0.25);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: rgba(240, 236, 226, 0.75);
+  margin-bottom: 4px;
+}
+.rules-ref-tip svg {
+  stroke: #c9a860;
+  flex-shrink: 0;
+}
+.rules-ref-tip strong {
+  color: #f7e79a;
+}
