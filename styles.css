@@ -417,8 +417,9 @@ body:not(.mobile-app) .hint.error { color: #ff8080; }
 .dt-rules-list {
   display: grid;
   gap: 6px;
-  max-height: 260px;
+  max-height: 320px;
   overflow-y: auto;
+  overflow-x: visible;
   padding-right: 4px;
 }
 
@@ -3382,30 +3383,34 @@ body:not(.mobile-app) .stat-pill--points {
 /* ── REF PROACTIVE NOTIFICATION BANNER ───────────────────── */
 .ref-notif-banner {
   position: fixed;
-  top: -80px;
-  left: 16px;
-  right: 16px;
+  top: -120px;
+  left: 12px;
+  right: 12px;
   background: linear-gradient(135deg, rgba(14,10,4,0.97), rgba(30,20,8,0.97));
   border: 1px solid rgba(216,191,124,0.4);
-  border-radius: 14px;
-  padding: 12px 16px;
+  border-radius: 12px;
+  padding: 10px 14px;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  z-index: 9000;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  gap: 9px;
+  z-index: 4000;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
   transition: top 350ms cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none;
 }
-.ref-notif-banner.show { top: 16px; }
+.ref-notif-banner.show {
+  top: 12px;
+  pointer-events: auto;
+}
 .ref-notif-icon {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   flex-shrink: 0;
   margin-top: 1px;
 }
 .ref-notif-text {
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   color: #f0ece2;
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
 /* ── REF BROADCAST BUBBLE IN CHAT ────────────────────────── */
