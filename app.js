@@ -6,6 +6,7 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  addDoc,
   updateDoc,
   onSnapshot,
   deleteDoc,
@@ -4086,7 +4087,11 @@ const notificationsCollection = (code) =>
 
 // Display a notification as a mobile banner + Ref chat broadcast bubble
 const showNotification = (msg) => {
-  if (!isMobileLayout()) return;
+  // Only show if user is actively in a game session (not on registration page)
+  if (!isMobileLayout() || !getActiveGameCode()) return;
+  // Don't show if we're on the onboarding/landing screen
+  const mobileState = getMobileState?.();
+  if (mobileState === "onboarding" || mobileState === "welcome") return;
 
   // Banner
   const banner = document.createElement("div");
@@ -4123,6 +4128,7 @@ const showNotification = (msg) => {
 let unsubNotifications = null;
 const subscribeToNotifications = (code) => {
   if (unsubNotifications) { unsubNotifications(); unsubNotifications = null; }
+  notifShownIds.clear(); // clear stale IDs from previous game session
   if (!isMobileLayout()) return;
 
   const { onSnapshot: _onSnapshot } = { onSnapshot };
@@ -4162,8 +4168,8 @@ const sendProactiveNotif = async (code, promptContext) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 80,
-        system: `You are The Ref — the sassy, confident announcer for Beerlympics. Generate ONE short, punchy hype message (max 2 sentences, no quotes) based on the situation given. Be mildly offensive and fun. Never use hashtags or emojis in the text itself.`,
+        max_tokens: 35,
+        system: `You are The Ref for Beerlympics. Generate ONE punchy sentence (max 10 words, no quotes, no emojis, no hashtags) based on the situation. Sassy and direct.`,
         messages: [{ role: "user", content: promptContext }],
       }),
     });
@@ -4172,7 +4178,7 @@ const sendProactiveNotif = async (code, promptContext) => {
     if (!message) return;
 
     // Write to Firestore — all subscribed mobile clients will display it
-    await setDoc(doc(notificationsCollection(code)), {
+    await addDoc(notificationsCollection(code), {
       message,
       createdAt: serverTimestamp(),
       type: promptContext.slice(0, 30),
