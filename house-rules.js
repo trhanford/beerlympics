@@ -306,19 +306,40 @@ CONTESTING:
   QUARTERS — HOUSE RULES
 ────────────────────────────────────────
 
-GAMEPLAY:
-  Players take turns bouncing a quarter off the table and into a
-  shot glass. Make it = pick an opposing player to drink, and you
-  shoot again until you miss. Miss = next player goes.
+SETUP:
+  All players sit or stand in a circle around the table with their
+  drink in front of them. One quarter is in play.
 
-TEAM WIN CONDITION:
-  First team where BOTH players have each made 3 consecutive quarters
-  without missing wins the round. (Adjust the target number before
-  the game starts if preferred.)
+SPINNING:
+  A designated player spins the quarter on the table. While it is
+  still spinning they may call on any player to be the flicker.
+  The spinner can wait as long as they want — the longer they wait,
+  the harder the flick.
 
-SPEED:
-  No deliberate slowing down between shots. Once you pick up the
-  quarter, you have 5 seconds to shoot.
+FLICKING:
+  The called player flicks the spinning quarter toward any other
+  player's drink. All non-flicking players may use only two fingers
+  from one hand to guard their drink — moving them up and down like
+  a paddle. No two hands, no arm, no four fingers, no cupping.
+
+HIT:
+  If the quarter hits someone's drink, that person must chug for the
+  entire duration of the next quarter spin. The flicker who landed
+  the hit spins again immediately. Other players (max 2) may carefully
+  tap the quarter to keep it spinning longer and extend the chug —
+  but cannot restart a stopped quarter.
+
+TURN TRANSFER:
+  Once the quarter stops spinning and the drinker finishes, the person
+  who was drinking gets to spin the quarter and call the next flicker.
+
+MISS:
+  If the flick misses all drinks, the quarter passes to the person
+  who was called to flick — they now spin and call someone else.
+
+OBJECTIVE:
+  There is no formal win condition. The game continues until everyone
+  agrees to stop. The goal is to keep your drink safe and punish others.
 
 
 ────────────────────────────────────────
