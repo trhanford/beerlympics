@@ -3300,3 +3300,74 @@ body.mobile-app .stat-pill--points {
 .rules-ref-tip strong {
   color: #f7e79a;
 }
+
+/* ── DESKTOP POINTS PILL FIX (beat the !important desktop override) ─── */
+body:not(.mobile-app) .stat-pill--points {
+  background: linear-gradient(135deg, #d8bf7c, #f7f1de 52%, #b89146) !important;
+  color: #1a0d00 !important;
+  border-color: transparent !important;
+  font-weight: 700 !important;
+}
+
+/* ── HOUSE RULES DROPDOWN GROUPS ────────────────────────── */
+.dt-rules-group {
+  border: 1px solid rgba(216,191,124,0.18);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.dt-rules-group summary {
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #f0ece2;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(216,191,124,0.07);
+}
+.dt-rules-group summary::-webkit-details-marker { display: none; }
+.dt-rules-group summary::after {
+  content: "›";
+  font-size: 1rem;
+  opacity: 0.5;
+  transition: transform 180ms;
+}
+.dt-rules-group[open] summary::after { transform: rotate(90deg); }
+.dt-rules-group .dt-rule-check {
+  display: flex;
+  padding: 5px 12px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  font-size: 0.79rem;
+}
+
+/* ── MOBILE RULES REF TIP — CLEANER LAYOUT ────────────────── */
+.rules-ref-tip {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 8px 10px;
+  background: rgba(216, 191, 124, 0.08);
+  border: 1px solid rgba(216, 191, 124, 0.22);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 0.81rem;
+  color: rgba(240, 236, 226, 0.72);
+  margin-top: 12px;
+  margin-bottom: 2px;
+  line-height: 1.5;
+}
+.rules-ref-tip svg {
+  stroke: #c9a860;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.rules-ref-tip strong {
+  color: #f7e79a;
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.86rem;
+}
