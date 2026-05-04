@@ -3313,7 +3313,6 @@ body:not(.mobile-app) .stat-pill--points {
 .dt-rules-group {
   border: 1px solid rgba(216,191,124,0.18);
   border-radius: 8px;
-  overflow: hidden;
   margin-bottom: 6px;
 }
 .dt-rules-group summary {
@@ -3328,6 +3327,10 @@ body:not(.mobile-app) .stat-pill--points {
   align-items: center;
   justify-content: space-between;
   background: rgba(216,191,124,0.07);
+  border-radius: 8px;
+}
+.dt-rules-group[open] summary {
+  border-radius: 8px 8px 0 0;
 }
 .dt-rules-group summary::-webkit-details-marker { display: none; }
 .dt-rules-group summary::after {
@@ -3335,13 +3338,17 @@ body:not(.mobile-app) .stat-pill--points {
   font-size: 1rem;
   opacity: 0.5;
   transition: transform 180ms;
+  flex-shrink: 0;
 }
 .dt-rules-group[open] summary::after { transform: rotate(90deg); }
 .dt-rules-group .dt-rule-check {
   display: flex;
-  padding: 5px 12px;
+  align-items: center;
+  padding: 6px 12px;
   border-top: 1px solid rgba(255,255,255,0.05);
   font-size: 0.79rem;
+  gap: 8px;
+  color: #f0ece2;
 }
 
 /* ── MOBILE RULES REF TIP — CLEANER LAYOUT ────────────────── */
