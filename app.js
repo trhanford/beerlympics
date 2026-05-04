@@ -830,6 +830,7 @@ const clearActiveSession = (code = getActiveGameCode()) => {
   clearSessionValue(STORAGE_KEYS.currentGameCode);
   clearPendingTeamAction();
   stopFillMatchesHeartbeat();
+  if (unsubNotifications) { unsubNotifications(); unsubNotifications = null; }
 };
 
 const initials = (value) =>
@@ -1024,6 +1025,8 @@ function startFillMatchesHeartbeat(code) {
     if (!isHost()) return;
     if (fillMatchesInFlight) return;
     scheduleFillMatches(code);
+    // Also check sleeping giant — it's time-based, not match-completion-based
+    void checkProactiveNotifications(code);
   }, 60_000);
 }
 
@@ -1043,6 +1046,7 @@ function subscribeToGame(code) {
   // even when no matches are completing (e.g. teams waiting while
   // others are in a long game or the browser was left idle).
   startFillMatchesHeartbeat(code);
+  subscribeToNotifications(code);
 
   unsubscribeGame = onSnapshot(gameRef(code), (snap) => {
     state.game = snap.exists() ? { id: snap.id, ...snap.data() } : null;
@@ -2420,6 +2424,7 @@ async function recordResult(matchId, payload) {
           lastGameType: match.gameType,
           consecutiveGameType: team.lastGameType === match.gameType
             ? (team.consecutiveGameType || 0) + 1 : 1,
+          consecutiveWins: isWinner ? (team.consecutiveWins || 0) + 1 : 0,
           gamesPlayed: (team.gamesPlayed || 0) + 1,
           lastCompletedAt: serverTimestamp(),
           flipCupStreak: 0,
@@ -2474,6 +2479,7 @@ async function recordResult(matchId, payload) {
         lastGameType: match.gameType,
         consecutiveGameType: team.lastGameType === match.gameType
           ? (team.consecutiveGameType || 0) + 1 : 1,
+        consecutiveWins: isWinner ? (team.consecutiveWins || 0) + 1 : 0,
         gamesPlayed: (team.gamesPlayed || 0) + 1,
         lastCompletedAt: serverTimestamp(),
         flipCupStreak: team.lastGameType === "flip_cup"
@@ -2502,6 +2508,7 @@ async function recordResult(matchId, payload) {
     // cache hasn't updated yet.
     (match.teamIds || []).forEach(markTeamFinished);
     await fillMatches(activeGameCode);
+    void checkProactiveNotifications(activeGameCode);
   }
 
   if (rewardPayload) {
@@ -4015,6 +4022,268 @@ init();
 // ── ASK THE REF CHATBOT ──────────────────────────────────────────────────────
 // Requests route through a Cloudflare Worker — no API key in this file.
 // ── ASK THE REF ──────────────────────────────────────────────────────────────
+// ── REF: LIVE GAME STATE INJECTION ───────────────────────────────────────────
+// Builds a compact snapshot of current game state for injection into every Ref
+// API call. Reads from in-memory state arrays — zero Firestore reads.
+const buildGameStateString = () => {
+  const teams = getTeams();
+  const matches = getMatches();
+  if (!teams.length) return "";
+
+  const now = Date.now();
+  const completed = matches.filter(m => m.status === "complete");
+  const active    = matches.filter(m => m.status === "in_progress");
+
+  const teamName = (id) => {
+    const t = teams.find(t => t.id === id);
+    return t ? `${t.playerName} + ${t.partnerName} (${t.country || "?"})` : id;
+  };
+  const gameName = (id) => GAME_TYPES.find(g => g.id === id)?.name || id;
+
+  const standings = [...teams].sort((a, b) =>
+    (b.points || 0) - (a.points || 0) || (b.wins || 0) - (a.wins || 0)
+  );
+
+  const activeLines = active.map(m =>
+    `${gameName(m.gameType)}: ${m.teamIds.map(teamName).join(" vs ")}`
+  );
+
+  const waiting = teams.filter(t => !t.currentMatchId && !t.paused)
+    .sort((a, b) => (a.lastCompletedAt?.toMillis?.() ?? 0) - (b.lastCompletedAt?.toMillis?.() ?? 0))
+    .map(t => teamName(t.id));
+
+  const paused = teams.filter(t => t.paused).map(t => teamName(t.id));
+
+  const standingsLines = standings.map((t, i) =>
+    `${i + 1}. ${teamName(t.id)}: ${t.points || 0}pts, ${t.wins || 0}W-${t.losses || 0}L`
+  );
+
+  const teamDetails = teams.map(t =>
+    `${teamName(t.id)}: ${t.gamesPlayed || 0} games played, ${t.consecutiveWins || 0} win streak`
+  );
+
+  const lines = [
+    `[CURRENT GAME STATE — ${new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}]`,
+    `Total completed: ${completed.length} | Active now: ${active.length}`,
+    active.length ? `Active matches:\n  ${activeLines.join("\n  ")}` : "No active matches.",
+    waiting.length ? `Waiting (no match): ${waiting.join(", ")}` : "No teams waiting.",
+    paused.length  ? `Paused teams: ${paused.join(", ")}` : "",
+    `Standings:\n  ${standingsLines.join("\n  ")}`,
+    `Team detail:\n  ${teamDetails.join("\n  ")}`,
+  ].filter(Boolean);
+
+  return lines.join("\n");
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── PROACTIVE NOTIFICATIONS ───────────────────────────────────────────────────
+const NOTIF_COOLDOWN_MS     = 4 * 60 * 1000; // 4 minutes between notifications
+const SLEEPING_GIANT_MS     = 8 * 60 * 1000; // 8 minutes idle = sleeping giant
+const notifShownIds         = new Set();       // prevents re-showing on reconnect
+
+const notificationsCollection = (code) =>
+  collection(db, "games", code, "notifications");
+
+// Display a notification as a mobile banner + Ref chat broadcast bubble
+const showNotification = (msg) => {
+  if (!isMobileLayout()) return;
+
+  // Banner
+  const banner = document.createElement("div");
+  banner.className = "ref-notif-banner";
+  banner.innerHTML = `
+    <span class="ref-notif-icon">📣</span>
+    <span class="ref-notif-text">${msg}</span>
+  `;
+  document.body.appendChild(banner);
+  requestAnimationFrame(() => banner.classList.add("show"));
+  setTimeout(() => {
+    banner.classList.remove("show");
+    setTimeout(() => banner.remove(), 400);
+  }, 6000);
+
+  // Ref chat broadcast bubble
+  if (refMsgsEl) {
+    const wrap = document.createElement("div");
+    wrap.className = "ref-message ref-msg ref-broadcast";
+    const bubble = document.createElement("span");
+    bubble.className = "ref-bubble";
+    bubble.textContent = msg;
+    const tag = document.createElement("span");
+    tag.className = "ref-broadcast-tag";
+    tag.textContent = "📣 Ref broadcast";
+    wrap.appendChild(tag);
+    wrap.appendChild(bubble);
+    refMsgsEl.appendChild(wrap);
+    refMsgsEl.scrollTop = refMsgsEl.scrollHeight;
+  }
+};
+
+// Subscribe to the notifications subcollection and display new ones
+let unsubNotifications = null;
+const subscribeToNotifications = (code) => {
+  if (unsubNotifications) { unsubNotifications(); unsubNotifications = null; }
+  if (!isMobileLayout()) return;
+
+  const { onSnapshot: _onSnapshot } = { onSnapshot };
+  unsubNotifications = onSnapshot(notificationsCollection(code), (snap) => {
+    snap.docChanges().forEach(change => {
+      if (change.type !== "added") return;
+      const id = change.doc.id;
+      if (notifShownIds.has(id)) return;
+      notifShownIds.add(id);
+      const data = change.doc.data();
+      // Skip notifications older than 30 seconds (reconnect)
+      const age = Date.now() - (data.createdAt?.toMillis?.() ?? 0);
+      if (age > 30_000) return;
+      showNotification(data.message);
+    });
+  });
+};
+
+// Generate and send a proactive notification (host only, AI-generated message)
+const sendProactiveNotif = async (code, promptContext) => {
+  if (!isHost() || !code) return;
+  try {
+    // Check and update cooldown in Firestore
+    const gameSnap = await getDoc(doc(collection(db, "games"), code));
+    if (!gameSnap.exists()) return;
+    const gameData = gameSnap.data();
+    const lastAt = gameData.lastProactiveAt?.toMillis?.() ?? 0;
+    if (Date.now() - lastAt < NOTIF_COOLDOWN_MS) return; // still cooling down
+
+    await updateDoc(doc(collection(db, "games"), code), {
+      lastProactiveAt: serverTimestamp(),
+    });
+
+    // Generate the message via AI
+    const res = await fetch(REF_WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 80,
+        system: `You are The Ref — the sassy, confident announcer for Beerlympics. Generate ONE short, punchy hype message (max 2 sentences, no quotes) based on the situation given. Be mildly offensive and fun. Never use hashtags or emojis in the text itself.`,
+        messages: [{ role: "user", content: promptContext }],
+      }),
+    });
+    const data = await res.json();
+    const message = data?.content?.[0]?.text?.trim();
+    if (!message) return;
+
+    // Write to Firestore — all subscribed mobile clients will display it
+    await setDoc(doc(notificationsCollection(code)), {
+      message,
+      createdAt: serverTimestamp(),
+      type: promptContext.slice(0, 30),
+    });
+  } catch (err) {
+    console.warn("Proactive notif failed:", err);
+  }
+};
+
+// Run all notification checks after a match completes. Host only.
+const checkProactiveNotifications = async (code) => {
+  if (!isHost() || !code) return;
+  const teams   = getTeams();
+  const matches = getMatches();
+  const completed = matches.filter(m => m.status === "complete");
+  const total = completed.length;
+
+  const teamName = (t) => `${t.playerName} + ${t.partnerName}`;
+  const standings = [...teams].sort((a, b) =>
+    (b.points || 0) - (a.points || 0) || (b.wins || 0) - (a.wins || 0)
+  );
+
+  // 1. FIRST BLOOD — exactly 1 completed game
+  if (total === 1) {
+    const last = completed[0];
+    const winner = teams.find(t => t.id === last.result?.winnerTeamId);
+    if (winner) {
+      await sendProactiveNotif(code,
+        `First game of the night just finished. ${teamName(winner)} won. Set the tone.`
+      );
+      return;
+    }
+  }
+
+  // 2. HOT STREAK — exactly 3 consecutive wins (fires once per streak start)
+  const streakTeam = teams.find(t => (t.consecutiveWins || 0) === 3);
+  if (streakTeam) {
+    await sendProactiveNotif(code,
+      `${teamName(streakTeam)} (${streakTeam.country}) just won 3 in a row. They're on fire and need to be stopped.`
+    );
+    return;
+  }
+
+  // 3. 10-GAME MILESTONE — exactly 10 completed games
+  if (total === 10) {
+    await sendProactiveNotif(code,
+      `10 games down at Beerlympics. The dust is settling and the scores are starting to mean something.`
+    );
+    return;
+  }
+
+  // 4. TOP DOG — between game 13 and 16, announce the leader
+  if (total >= 13 && total <= 16) {
+    const leader = standings[0];
+    const second = standings[1];
+    if (leader && second && (leader.points || 0) > (second.points || 0)) {
+      await sendProactiveNotif(code,
+        `${teamName(leader)} is running away with this thing at ${leader.points} points. Someone needs to knock them down a peg.`
+      );
+      return;
+    }
+  }
+
+  // 5. UNDEFEATED — after game 7, exactly 1 team still has zero losses
+  if (total >= 7) {
+    const undefeated = teams.filter(t => (t.losses || 0) === 0 && (t.gamesPlayed || 0) >= 2);
+    if (undefeated.length === 1) {
+      await sendProactiveNotif(code,
+        `${teamName(undefeated[0])} still hasn't lost a single game. That's suspicious. Go test them.`
+      );
+      return;
+    }
+  }
+
+  // 6. UNDERDOG COMEBACK — bottom half team, 2 consecutive wins, climbed 2+ positions
+  if (standings.length >= 4) {
+    const midpoint = Math.floor(standings.length / 2);
+    const climber = teams.find(t => {
+      const currentRank = standings.findIndex(s => s.id === t.id);
+      return (
+        (t.consecutiveWins || 0) >= 2 &&
+        currentRank < standings.length &&  // currently in top half now
+        (t.losses || 0) > 0               // has lost before (not just a new team)
+      );
+    });
+    if (climber) {
+      await sendProactiveNotif(code,
+        `${teamName(climber)} was counting themselves out but just clawed their way back up. Never count them out.`
+      );
+      return;
+    }
+  }
+
+  // 7. SLEEPING GIANT — any team (including paused) idle for 8+ minutes
+  const now = Date.now();
+  const sleeper = teams.find(t => {
+    const lastAt = t.lastCompletedAt?.toMillis?.() ?? 0;
+    if (lastAt === 0) return false; // never played, skip
+    const idle = now - lastAt;
+    return idle >= SLEEPING_GIANT_MS;
+  });
+  if (sleeper) {
+    const msg = sleeper.paused
+      ? `${teamName(sleeper)} has been paused for a while. Are they okay? Someone go check on them.`
+      : `${teamName(sleeper)} hasn't played in over 8 minutes. Wake up — this is Beerlympics, not naptime.`;
+    await sendProactiveNotif(code, msg);
+    return;
+  }
+};
+// ── END PROACTIVE NOTIFICATIONS ───────────────────────────────────────────────
+
 const REF_WORKER_URL = "https://beerlympicsapi.boardfreak56.workers.dev";
 
 // Conversation history — keeps context across turns
@@ -4114,8 +4383,8 @@ const askTheRef = async () => {
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 320,
-        system: REF_SYSTEM_PROMPT,
-        messages: refHistory, // full history = memory
+        system: REF_SYSTEM_PROMPT + "\n\n" + buildGameStateString(),
+        messages: refHistory,
       }),
     });
 
