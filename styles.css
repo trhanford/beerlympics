@@ -3540,3 +3540,143 @@ body:not(.mobile-app) .install-app-btn:hover {
 .dt-admin-neutral:hover {
   background: rgba(255,255,255,0.1) !important;
 }
+
+/* ── UNIFIED NAVBAR ICON BUTTONS ─────────────────────────── */
+.dt-nav-icon-btn {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(240,236,226,0.55);
+  transition: background 140ms, border-color 140ms, color 140ms;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+.dt-nav-icon-btn:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(216,191,124,0.35);
+  color: #f0ece2;
+}
+.dt-nav-icon-btn.active {
+  background: rgba(216,191,124,0.12);
+  border-color: rgba(216,191,124,0.4);
+  color: #c9a860;
+}
+/* Override old install-app-btn styles on desktop */
+body:not(.mobile-app) #install-app-btn {
+  width: 34px !important;
+  min-height: unset !important;
+  padding: 0 !important;
+  font-size: 0 !important; /* hide any text */
+}
+/* Admin label acts like a button */
+.dt-admin-label {
+  user-select: none;
+}
+
+/* ── ADMIN LEADERBOARD EDIT ──────────────────────────────── */
+.leaderboard-edit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.leaderboard-edit input[type="number"] {
+  width: 60px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(216,191,124,0.2);
+  color: #f0ece2;
+  border-radius: 7px;
+  padding: 4px 8px;
+  font-size: 0.82rem;
+  text-align: center;
+}
+.leaderboard-edit input[type="number"]:focus {
+  outline: none;
+  border-color: rgba(216,191,124,0.45);
+}
+
+/* ── ADMIN ROSTER ROW ────────────────────────────────────── */
+.roster-team.admin {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── MERGE PANEL ─────────────────────────────────────────── */
+.admin-merge {
+  margin-top: 16px;
+  padding: 14px;
+  background: rgba(216,191,124,0.05);
+  border: 1px solid rgba(216,191,124,0.15);
+  border-radius: 12px;
+}
+.admin-merge-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.admin-merge-header h4 {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #f0ece2;
+}
+.admin-merge-header svg { stroke: #c9a860; flex-shrink: 0; }
+.merge-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+.merge-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 140px;
+}
+.merge-field label {
+  font-size: 0.72rem;
+  color: rgba(240,236,226,0.5);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.merge-field select {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(216,191,124,0.2);
+  color: #f0ece2;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.82rem;
+}
+.merge-arrow {
+  color: rgba(216,191,124,0.5);
+  font-size: 1.1rem;
+  padding-bottom: 6px;
+  flex-shrink: 0;
+}
+
+/* ── ROSTER FORM BUTTONS ─────────────────────────────────── */
+.roster-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.roster-actions .btn.small.dt-admin-action,
+.roster-actions .btn.small.dt-admin-danger {
+  font-size: 0.8rem !important;
+  padding: 6px 14px !important;
+  min-height: 34px !important;
+  border-radius: 8px !important;
+}
