@@ -446,27 +446,100 @@ body:not(.mobile-app) .hint.error { color: #ff8080; }
 }
 
 /* Admin toggle in landing */
-.dt-admin-toggle {
+/* ── ADMIN TOGGLE — NAVBAR VERSION ──────────────────────── */
+.dt-nav-admin {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 18px;
-  border-radius: 12px;
-  background: rgba(0,0,0,0.35);
-  border: 1px solid rgba(216,191,124,0.14);
+  gap: 6px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(216,191,124,0.2);
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 0.72rem;
   color: rgba(240,236,226,0.7);
-  font-size: 0.88rem;
+  transition: background 140ms, border-color 140ms;
+  white-space: nowrap;
 }
-
-.dt-admin-toggle input[type="checkbox"] {
-  width: 16px; height: 16px;
+.dt-nav-admin:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(216,191,124,0.4);
+}
+.dt-nav-admin input[type="checkbox"] {
+  width: 13px; height: 13px;
   accent-color: #c9a860;
-  padding: 0; min-height: unset;
-  border: none; background: transparent; box-shadow: none;
+  margin: 0; padding: 0;
+  flex-shrink: 0;
+}
+.dt-nav-admin-label { font-weight: 700; color: #f0ece2; }
+.dt-nav-admin-status { color: rgba(240,236,226,0.4); font-size: 0.66rem; }
+
+/* ── ADMIN PANEL / GRID ─────────────────────────────────── */
+.admin-panel,
+.admin-grid {
+  background: rgba(216,191,124,0.05);
+  border: 1px solid rgba(216,191,124,0.18);
+  border-radius: 14px;
+  padding: 14px;
 }
 
-/* Hero card no longer used on desktop */
-body:not(.mobile-app) .hero { display: none; }
+/* ── LEADERBOARD ADMIN ROW ──────────────────────────────── */
+.leaderboard-card.admin {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+/* ── ROSTER ADMIN BUTTONS ───────────────────────────────── */
+body:not(.mobile-app) .roster-actions .btn {
+  background: rgba(216,191,124,0.1);
+  border: 1px solid rgba(216,191,124,0.25);
+  color: #f0ece2;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+body:not(.mobile-app) .roster-actions .btn:hover {
+  background: rgba(216,191,124,0.2);
+}
+body:not(.mobile-app) .roster-actions .btn.danger,
+body:not(.mobile-app) .roster-actions .btn[class*="remove"],
+body:not(.mobile-app) .roster-actions .btn[class*="delete"] {
+  background: rgba(180,40,40,0.15);
+  border-color: rgba(220,70,60,0.35);
+  color: rgba(255,145,120,0.9);
+}
+body:not(.mobile-app) .roster-actions .btn.danger:hover {
+  background: rgba(180,40,40,0.28);
+}
+
+/* ── ADMIN MERGE SECTION ────────────────────────────────── */
+.admin-merge {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(216,191,124,0.2);
+}
+
+/* ── MERGE ROW / CONTROLS ───────────────────────────────── */
+.merge-row {
+  gap: 8px;
+}
+.merge-row input,
+.merge-row select {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(216,191,124,0.2);
+  color: #f0ece2;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+}
+.merge-row input::placeholder { color: rgba(240,236,226,0.35); }
+
+/* Legacy admin-toggle (mobile / old location) — hide on desktop */
+body:not(.mobile-app) .admin-toggle:not(.dt-admin-toggle):not(.dt-nav-admin) {
+  display: none;
+}
+body:not(.mobile-app) .dt-admin-toggle { display: none; }
 
 /* Stepper hidden on desktop */
 body:not(.mobile-app) .stepper { display: none; }
@@ -990,11 +1063,7 @@ input.small {
 
 .roster-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-.admin-merge {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px dashed rgba(47, 89, 255, 0.2);
-}
+/* admin-merge now styled in the admin theme block above */
 
 .game-code {
   font-weight: 800;
