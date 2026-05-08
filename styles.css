@@ -3463,3 +3463,80 @@ body:not(.mobile-app) .stat-pill.stat-pill--points {
   padding: 2px 4px;
 }
 .dt-cd-reset:hover { opacity: 1; }
+
+/* ── NAVBAR RIGHT — UNIFIED DARK GLASS STYLE ────────────── */
+
+/* Install App button — match the navbar ghost style */
+body:not(.mobile-app) .install-app-btn {
+  appearance: none;
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  color: rgba(240,236,226,0.75) !important;
+  border-radius: 8px !important;
+  padding: 5px 12px !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  min-height: unset !important;
+  box-shadow: none !important;
+  transition: background 140ms, border-color 140ms;
+  white-space: nowrap;
+}
+body:not(.mobile-app) .install-app-btn:hover {
+  background: rgba(255,255,255,0.1) !important;
+  border-color: rgba(216,191,124,0.3) !important;
+  color: #f0ece2 !important;
+}
+
+/* Sim button — match the same ghost style */
+.dt-sim-btn {
+  appearance: none;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(240,236,226,0.6);
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 140ms, border-color 140ms;
+  line-height: 1;
+}
+.dt-sim-btn:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(216,191,124,0.3);
+  color: #f0ece2;
+}
+
+/* ── ADMIN CONTROL ROOM BUTTONS ─────────────────────────── */
+.dt-admin-action {
+  background: rgba(216,191,124,0.1) !important;
+  border: 1px solid rgba(216,191,124,0.22) !important;
+  color: #f0ece2 !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  padding: 10px 16px !important;
+  min-height: 42px !important;
+  box-shadow: none !important;
+  transition: background 140ms, border-color 140ms !important;
+}
+.dt-admin-action:hover {
+  background: rgba(216,191,124,0.18) !important;
+  border-color: rgba(216,191,124,0.4) !important;
+}
+.dt-admin-danger {
+  background: rgba(180,40,40,0.15) !important;
+  border-color: rgba(220,70,60,0.3) !important;
+  color: rgba(255,150,130,0.9) !important;
+}
+.dt-admin-danger:hover {
+  background: rgba(180,40,40,0.28) !important;
+  border-color: rgba(220,70,60,0.5) !important;
+}
+.dt-admin-neutral {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+  color: rgba(240,236,226,0.8) !important;
+}
+.dt-admin-neutral:hover {
+  background: rgba(255,255,255,0.1) !important;
+}
