@@ -212,6 +212,12 @@
           <div class="mode-pill dt-mode-pill hidden" id="mode-pill">🎈 Player Mode</div>
           <div class="mode-pill host hidden" id="host-pill">🎬 Host Mode</div>
           <button id="install-app-btn" class="btn ghost install-app-btn hidden" type="button">Install App</button>
+          <!-- Admin toggle — hidden until in-game -->
+          <label class="dt-nav-admin hidden" id="dt-nav-admin-wrap" title="Toggle admin tools">
+            <input type="checkbox" id="admin-toggle" />
+            <span class="dt-nav-admin-label">Admin</span>
+            <small id="admin-status" class="dt-nav-admin-status">locked</small>
+          </label>
           <button class="dt-sim-btn desktop-only" type="button"
             title="Open 10-phone test simulator"
             onclick="(function(){var p=prompt('Admin password:');if(p===null)return;if(btoa(p)==='YmVlcmx5bXBpY3M='){window.open('./test-simulator.html','_blank','width=1440,height=920,noopener');}else{alert('Wrong password.');}})()">🧪</button>
@@ -277,13 +283,6 @@
             </div>
           </div>
 
-          <div class="admin-toggle dt-admin-toggle">
-            <label>
-              <input type="checkbox" id="admin-toggle" />
-              Admin mode
-            </label>
-            <small id="admin-status">Admin tools are locked.</small>
-          </div>
         </div>
 
         <!-- STEP 2: Configure (shown after game code generated) -->
