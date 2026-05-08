@@ -465,30 +465,40 @@
           </button>
         </div>
         <div class="dt-nav-links">
-          <button class="tab active dt-play-tab" data-view="player">Play</button>
+          <!-- Play tab hidden on desktop — registration handled by landing page -->
+          <button class="tab dt-play-tab hidden" data-view="player">Play</button>
           <button class="tab" data-view="roster">Roster</button>
           <button class="tab" data-view="leaderboard">Leaderboard</button>
           <button class="tab hidden" data-view="control" id="control-tab">Control</button>
         </div>
         <div class="dt-nav-right">
-          <div class="mode-pill dt-mode-pill hidden" id="mode-pill">🎈 Player Mode</div>
-          <div class="mode-pill host hidden" id="host-pill">🎬 Host Mode</div>
-          <button id="install-app-btn" class="btn ghost install-app-btn hidden" type="button">Install App</button>
-          <!-- Admin toggle — hidden until in-game -->
-          <label class="dt-nav-admin hidden" id="dt-nav-admin-wrap" title="Toggle admin tools">
-            <input type="checkbox" id="admin-toggle" />
-            <span class="dt-nav-admin-label">Admin</span>
-            <small id="admin-status" class="dt-nav-admin-status">locked</small>
-          </label>
-          <!-- Countdown reset — only visible to admin, hidden by default -->
-          <button class="dt-cd-reset hidden" id="dt-cd-reset" type="button"
-            title="Reset countdown lock"
-            onclick="(function(){if(confirm('Reset countdown? The site will lock again.')){localStorage.removeItem('_brl_s26');location.reload();}})()">
-            🔒
+          <!-- Hidden state holders for JS — not rendered -->
+          <div class="mode-pill dt-mode-pill hidden" id="mode-pill" style="display:none"></div>
+          <div class="mode-pill host hidden" id="host-pill" style="display:none"></div>
+
+          <!-- Install App -->
+          <button id="install-app-btn" class="dt-nav-icon-btn hidden" type="button" title="Install App">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           </button>
-          <button class="dt-sim-btn desktop-only" type="button"
-            title="Open 10-phone test simulator"
-            onclick="(function(){var p=prompt('Admin password:');if(p===null)return;if(btoa(p)==='YmVlcmx5bXBpY3M='){window.open('./test-simulator.html','_blank','width=1440,height=920,noopener');}else{alert('Wrong password.');}})()">🧪</button>
+
+          <!-- Admin toggle — hidden until in-game -->
+          <label class="dt-nav-icon-btn dt-admin-label hidden" id="dt-nav-admin-wrap" title="Enable admin mode">
+            <input type="checkbox" id="admin-toggle" style="display:none" />
+            <small id="admin-status" style="display:none"></small>
+            <svg id="admin-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </label>
+
+          <!-- Countdown reset — admin only -->
+          <button class="dt-nav-icon-btn hidden" id="dt-cd-reset" type="button" title="Reset countdown"
+            onclick="(function(){if(confirm('Reset countdown? The site will lock again.')){localStorage.removeItem('_brl_s26');location.reload();}})()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.17"/></svg>
+          </button>
+
+          <!-- Simulator -->
+          <button class="dt-nav-icon-btn desktop-only" type="button" title="Test simulator"
+            onclick="(function(){var p=prompt('Admin password:');if(p===null)return;if(btoa(p)==='YmVlcmx5bXBpY3M='){window.open('./test-simulator.html','_blank','width=1440,height=920,noopener');}else{alert('Wrong password.');}})()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
+          </button>
         </div>
       </nav>
     </header>
@@ -1020,32 +1030,30 @@
               <input id="rosterPartnerName" name="rosterPartnerName" required />
             </div>
             <div class="roster-actions">
-              <button class="btn small" type="submit">Update my entry ✍️</button>
-              <button class="btn small secondary" type="button" id="remove-team">
-                Remove our team 🗑️
-              </button>
+              <button class="btn small dt-admin-action" type="submit">Save changes</button>
+              <button class="btn small dt-admin-danger" type="button" id="remove-team">Remove team</button>
             </div>
             <p class="status" id="roster-status">Claim your team to edit it here.</p>
           </form>
           <div class="admin-merge hidden" id="merge-panel">
-            <h4>Merge duplicate teams</h4>
-            <p class="status">
-              Move the source team's results into the destination team, then delete the duplicate.
-            </p>
+            <div class="admin-merge-header">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              <h4>Merge duplicate teams</h4>
+            </div>
+            <p class="status">Move a team's results into another, then remove the duplicate.</p>
             <div class="merge-row">
-              <div>
-                <label for="merge-source">Source team (delete)</label>
+              <div class="merge-field">
+                <label for="merge-source">Remove this team</label>
                 <select id="merge-source"></select>
               </div>
-              <div>
-                <label for="merge-target">Destination team (keep)</label>
+              <div class="merge-arrow">→</div>
+              <div class="merge-field">
+                <label for="merge-target">Merge into this team</label>
                 <select id="merge-target"></select>
               </div>
             </div>
-            <button class="btn small secondary" type="button" id="merge-button">
-              Merge teams
-            </button>
-            <p class="status" id="merge-status">Select two teams to merge.</p>
+            <button class="btn small dt-admin-action" type="button" id="merge-button">Merge teams</button>
+            <p class="status" id="merge-status">Select two different teams to merge.</p>
           </div>
         </div>
       </section>
