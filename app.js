@@ -1898,7 +1898,7 @@ const renderLeaderboard = () => {
       });
       const clearButton = document.createElement("button");
       clearButton.type = "button";
-      clearButton.className = "btn small ghost";
+      clearButton.className = "btn small dt-admin-danger";
       clearButton.textContent = "Reset";
       clearButton.addEventListener("click", async () => {
         const activeGameCode = getActiveGameCode();
@@ -1974,12 +1974,12 @@ const renderRoster = () => {
           <span class="status">${team.country}</span>
         `;
         if (team.id === activeTeamId) {
-          row.style.borderColor = "rgba(91, 108, 255, 0.4)";
+          row.style.borderColor = "rgba(216,191,124,0.45)";
         }
         if (isAdmin) {
           const editButton = document.createElement("button");
           editButton.type = "button";
-          editButton.className = "btn small ghost";
+          editButton.className = "btn small dt-admin-action";
           editButton.textContent = "Edit";
           editButton.addEventListener("click", () => {
             adminEditingTeamId = team.id;
@@ -3446,6 +3446,14 @@ adminToggle.addEventListener("change", () => {
       localStorage.setItem(STORAGE_KEYS.adminMode, "true");
       showToast("Admin tools unlocked.", "success");
       document.getElementById("dt-cd-reset")?.classList.remove("hidden");
+      // Switch to unlock icon
+      const wrap = document.getElementById("dt-nav-admin-wrap");
+      if (wrap) {
+        wrap.classList.add("active");
+        wrap.title = "Admin mode ON — click to disable";
+        const icon = document.getElementById("admin-icon");
+        if (icon) icon.innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>';
+      }
     } else {
       adminToggle.checked = false;
       localStorage.setItem(STORAGE_KEYS.adminMode, "false");
@@ -3455,6 +3463,14 @@ adminToggle.addEventListener("change", () => {
     localStorage.setItem(STORAGE_KEYS.adminMode, "false");
     showToast("Admin mode disabled.", "info");
     document.getElementById("dt-cd-reset")?.classList.add("hidden");
+    // Switch back to lock icon
+    const wrap = document.getElementById("dt-nav-admin-wrap");
+    if (wrap) {
+      wrap.classList.remove("active");
+      wrap.title = "Enable admin mode";
+      const icon = document.getElementById("admin-icon");
+      if (icon) icon.innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';
+    }
   }
   adminEditingTeamId = null;
   refreshState();
@@ -3590,6 +3606,18 @@ const refreshState = () => {
   const hostMode = isHost();
   adminToggle.checked = isAdminMode;
   adminStatus.textContent = isAdminMode ? "Admin tools unlocked." : "Admin tools are locked.";
+  // Sync admin icon state
+  const adminWrap = document.getElementById("dt-nav-admin-wrap");
+  if (adminWrap) {
+    adminWrap.classList.toggle("active", isAdminMode);
+    adminWrap.title = isAdminMode ? "Admin mode ON — click to disable" : "Enable admin mode";
+    const icon = document.getElementById("admin-icon");
+    if (icon) {
+      icon.innerHTML = isAdminMode
+        ? '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>'
+        : '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';
+    }
+  }
   adminPanel.classList.toggle("hidden", !isAdminMode);
 
   // Mobile pill management (desktop pill is managed by showDtModePill)
