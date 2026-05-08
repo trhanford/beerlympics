@@ -134,10 +134,7 @@
   </head>
   <body>
 
-  <!-- ── LAUNCH COUNTDOWN ─────────────────────────────────────────────────────
-       Blocks the site until Saturday May 9 2026 12:30 PM EST (17:30 UTC).
-       Password "3241" bypasses immediately. Auto-unlocks at target time.
-  ──────────────────────────────────────────────────────────────────────────── -->
+  <!-- ── LAUNCH COUNTDOWN ──────────────────────────────────────────────────── -->
   <div id="countdown-overlay">
     <style>
       #countdown-overlay {
@@ -394,23 +391,23 @@
     <div id="cd-date">Saturday · May 9, 2026 · 12:30 PM EST</div>
 
     <script>
-      // Target: Saturday May 9 2026 12:30 PM EST = 17:30 UTC
-      const CD_TARGET = new Date(Date.UTC(2026, 4, 9, 17, 30, 0)); // month is 0-indexed
-      const CD_PW = "3241";
-      const CD_KEY = "cd_unlocked";
+      // Launch config (obfuscated — do not share source)
+      const CD_TARGET = new Date(Date.UTC(0x7ea, 0x4, 0x9, 0x11, 0x1e, 0));
+      const _k = "_brl_s26";
+      const _h = "MzI0MQ=="; // encoded
 
-      // Unlock if password already entered
-      if (localStorage.getItem(CD_KEY) === "1") {
+      // Unlock if already authenticated
+      if (localStorage.getItem(_k) === btoa(_k)) {
         document.getElementById("countdown-overlay").classList.add("gone");
       }
 
       function cdCheckPw() {
         const p = prompt("Enter access code:");
-        if (p === CD_PW) {
-          localStorage.setItem(CD_KEY, "1");
+        if (p !== null && btoa(p) === _h) {
+          localStorage.setItem(_k, btoa(_k));
           cdUnlock();
         } else if (p !== null) {
-          alert("Wrong code.");
+          alert("Incorrect.");
         }
       }
 
@@ -492,8 +489,7 @@
       cdTick();
       const cdInterval = setInterval(cdTick, 1000);
 
-      // Auto-unlock if we're already past the target
-      if (Date.now() >= CD_TARGET) cdUnlock();
+      if (Date.now() >= CD_TARGET.getTime()) cdUnlock();
     </script>
   </div>
     <div class="mobile-splash-screen mobile-only" id="mobile-splash" aria-hidden="true">
@@ -581,6 +577,12 @@
             <span class="dt-nav-admin-label">Admin</span>
             <small id="admin-status" class="dt-nav-admin-status">locked</small>
           </label>
+          <!-- Countdown reset — only visible to admin, hidden by default -->
+          <button class="dt-cd-reset hidden" id="dt-cd-reset" type="button"
+            title="Reset countdown lock"
+            onclick="(function(){if(confirm('Reset countdown? The site will lock again.')){localStorage.removeItem('_brl_s26');location.reload();}})()">
+            🔒
+          </button>
           <button class="dt-sim-btn desktop-only" type="button"
             title="Open 10-phone test simulator"
             onclick="(function(){var p=prompt('Admin password:');if(p===null)return;if(btoa(p)==='YmVlcmx5bXBpY3M='){window.open('./test-simulator.html','_blank','width=1440,height=920,noopener');}else{alert('Wrong password.');}})()">🧪</button>
