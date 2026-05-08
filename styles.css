@@ -3448,3 +3448,18 @@ body:not(.mobile-app) .stat-pill.stat-pill--points {
   margin-bottom: 2px;
   font-size: 0.86rem;
 }
+
+
+
+/* ── COUNTDOWN RESET BUTTON (admin only) ─────────────────── */
+.dt-cd-reset {
+  appearance: none;
+  background: transparent;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 140ms;
+  padding: 2px 4px;
+}
+.dt-cd-reset:hover { opacity: 1; }
