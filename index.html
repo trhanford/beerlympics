@@ -166,7 +166,7 @@
       #cd-logo span { color: #c9a860; }
       #cd-sub { font-size: clamp(0.72rem,2vw,0.88rem); color: rgba(240,236,226,0.4); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 48px; text-align: center; }
 
-      #cd-timer { display: flex; align-items: flex-end; gap: clamp(12px,2.5vw,28px); margin-bottom: 40px; }
+      #cd-timer { display: flex; align-items: center; gap: clamp(12px,2.5vw,28px); margin-bottom: 40px; }
       .cd-unit { display: flex; flex-direction: column; align-items: center; gap: 10px; }
       .cd-cards { display: flex; gap: 5px; }
 
@@ -248,7 +248,7 @@
       }
 
       .cd-label { font-size: clamp(0.58rem,1.1vw,0.7rem); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(240,236,226,0.32); }
-      .cd-colon { font-size: clamp(28px,4.5vw,44px); font-weight: 800; color: rgba(216,191,124,0.35); margin-bottom: 20px; line-height: 1; animation: blink 1s step-end infinite; }
+      .cd-colon { font-size: clamp(28px,4.5vw,44px); font-weight: 800; color: rgba(216,191,124,0.35); line-height: 1; animation: blink 1s step-end infinite; }
       @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.15} }
 
       /* ── MOBILE: scale everything down to fit narrow screens ── */
@@ -261,7 +261,7 @@
         }
         #cd-timer   { gap: 7px; }
         .cd-cards   { gap: 3px; }
-        .cd-colon   { font-size: 20px; margin-bottom: 14px; }
+        .cd-colon   { font-size: 20px; }
         .cd-label   { font-size: 0.52rem; letter-spacing: 0.1em; }
         #cd-sub     { margin-bottom: 34px; }
         #cd-logo    { font-size: 1.5rem; }
@@ -286,10 +286,10 @@
     </div>
 
     <div id="cd-divider"></div>
-    <div id="cd-date">Saturday &middot; May 9, 2026 &middot; 12:30 PM EST</div>
+    <div id="cd-date">Saturday &middot; May 9, 2026 &middot; 1:00 PM EST</div>
 
     <script>
-      const CD_TARGET = new Date(Date.UTC(0x7ea, 0x4, 0x9, 0x11, 0x1e, 0));
+      const CD_TARGET = new Date(Date.UTC(0x7ea, 0x4, 0x9, 0x12, 0x0, 0));
       const _k = "_brl_s26";
       const _h = "MzI0MQ==";
 
