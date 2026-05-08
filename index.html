@@ -133,6 +133,369 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+
+  <!-- ── LAUNCH COUNTDOWN ─────────────────────────────────────────────────────
+       Blocks the site until Saturday May 9 2026 12:30 PM EST (17:30 UTC).
+       Password "3241" bypasses immediately. Auto-unlocks at target time.
+  ──────────────────────────────────────────────────────────────────────────── -->
+  <div id="countdown-overlay">
+    <style>
+      #countdown-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background: #080503;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        font-family: -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif;
+        overflow: hidden;
+      }
+      #countdown-overlay.gone { display: none; }
+
+      /* Background texture */
+      #countdown-overlay::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(ellipse 80% 60% at 50% 100%, rgba(180,140,50,0.12), transparent),
+          radial-gradient(ellipse 60% 40% at 50% 0%, rgba(100,70,20,0.08), transparent);
+        pointer-events: none;
+      }
+
+      /* Password button */
+      #cd-pw-btn {
+        position: absolute;
+        top: 20px; right: 20px;
+        appearance: none;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.3);
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 0.72rem;
+        font-family: inherit;
+        cursor: pointer;
+        transition: all 140ms;
+        letter-spacing: 0.04em;
+      }
+      #cd-pw-btn:hover {
+        background: rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.7);
+        border-color: rgba(216,191,124,0.3);
+      }
+
+      /* Logo area */
+      #cd-logo {
+        font-size: clamp(1.6rem, 4vw, 2.8rem);
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        margin-bottom: 12px;
+        color: #f7f1de;
+        text-align: center;
+      }
+      #cd-logo span { color: #c9a860; }
+
+      /* Subtitle */
+      #cd-sub {
+        font-size: clamp(0.75rem, 2vw, 0.92rem);
+        color: rgba(240,236,226,0.45);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        margin-bottom: 52px;
+        text-align: center;
+      }
+
+      /* Flip cards container */
+      #cd-timer {
+        display: flex;
+        align-items: flex-end;
+        gap: clamp(16px, 3vw, 32px);
+        margin-bottom: 44px;
+      }
+
+      .cd-unit {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .cd-cards {
+        display: flex;
+        gap: 4px;
+      }
+
+      /* Individual flip card */
+      .cd-card {
+        width: clamp(38px, 7vw, 62px);
+        height: clamp(54px, 10vw, 88px);
+        position: relative;
+        perspective: 400px;
+      }
+
+      .cd-card-face {
+        position: absolute;
+        inset: 0;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: clamp(28px, 5.5vw, 52px);
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        overflow: hidden;
+      }
+
+      /* Top half */
+      .cd-card-top {
+        background: linear-gradient(180deg, #1a1208 0%, #120d06 50%);
+        border: 1px solid rgba(216,191,124,0.12);
+        color: #f7e79a;
+        clip-path: inset(0 0 50% 0);
+        border-radius: 6px 6px 2px 2px;
+        box-shadow: 0 -1px 0 rgba(0,0,0,0.6) inset;
+      }
+
+      /* Bottom half */
+      .cd-card-bottom {
+        background: linear-gradient(180deg, #0f0a05 50%, #0a0703 100%);
+        border: 1px solid rgba(216,191,124,0.12);
+        color: #f7e79a;
+        clip-path: inset(50% 0 0 0);
+        border-radius: 2px 2px 6px 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      }
+
+      /* The flipping top half (animated) */
+      .cd-card-flip-top {
+        background: linear-gradient(180deg, #1a1208 0%, #120d06 50%);
+        border: 1px solid rgba(216,191,124,0.12);
+        color: #f7e79a;
+        clip-path: inset(0 0 50% 0);
+        border-radius: 6px 6px 2px 2px;
+        transform-origin: bottom center;
+        transform: rotateX(0deg);
+        transition: transform 0.3s ease-in;
+        z-index: 2;
+      }
+
+      .cd-card.flipping .cd-card-flip-top {
+        transform: rotateX(-90deg);
+      }
+
+      /* New bottom half revealed */
+      .cd-card-flip-bottom {
+        background: linear-gradient(180deg, #0f0a05 50%, #0a0703 100%);
+        border: 1px solid rgba(216,191,124,0.12);
+        color: #f7e79a;
+        clip-path: inset(50% 0 0 0);
+        border-radius: 2px 2px 6px 6px;
+        transform-origin: top center;
+        transform: rotateX(90deg);
+        transition: transform 0.3s ease-out 0.3s;
+        z-index: 1;
+      }
+
+      .cd-card.flipping .cd-card-flip-bottom {
+        transform: rotateX(0deg);
+      }
+
+      /* Separator line in middle of card */
+      .cd-card::after {
+        content: "";
+        position: absolute;
+        left: 0; right: 0;
+        top: 50%;
+        height: 1px;
+        background: rgba(0,0,0,0.8);
+        z-index: 10;
+        transform: translateY(-50%);
+      }
+
+      /* Unit label */
+      .cd-label {
+        font-size: clamp(0.6rem, 1.2vw, 0.72rem);
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: rgba(240,236,226,0.35);
+      }
+
+      /* Colon separator */
+      .cd-colon {
+        font-size: clamp(28px, 5vw, 46px);
+        font-weight: 800;
+        color: rgba(216,191,124,0.4);
+        margin-bottom: 22px;
+        line-height: 1;
+        animation: blink 1s step-end infinite;
+      }
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.2; }
+      }
+
+      /* Date line */
+      #cd-date {
+        font-size: clamp(0.72rem, 1.5vw, 0.88rem);
+        color: rgba(240,236,226,0.3);
+        letter-spacing: 0.1em;
+        text-align: center;
+      }
+
+      /* Gold divider */
+      #cd-divider {
+        width: clamp(60px, 12vw, 100px);
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(216,191,124,0.5), transparent);
+        margin: 28px 0 20px;
+      }
+    </style>
+
+    <button id="cd-pw-btn" onclick="cdCheckPw()">Access</button>
+
+    <div id="cd-logo">BEER<span>LYMPICS</span></div>
+    <div id="cd-sub">Game night starts in</div>
+
+    <div id="cd-timer">
+      <!-- Days -->
+      <div class="cd-unit">
+        <div class="cd-cards" id="cd-days"></div>
+        <div class="cd-label">Days</div>
+      </div>
+      <div class="cd-colon">:</div>
+      <!-- Hours -->
+      <div class="cd-unit">
+        <div class="cd-cards" id="cd-hours"></div>
+        <div class="cd-label">Hours</div>
+      </div>
+      <div class="cd-colon">:</div>
+      <!-- Minutes -->
+      <div class="cd-unit">
+        <div class="cd-cards" id="cd-minutes"></div>
+        <div class="cd-label">Minutes</div>
+      </div>
+      <div class="cd-colon">:</div>
+      <!-- Seconds -->
+      <div class="cd-unit">
+        <div class="cd-cards" id="cd-seconds"></div>
+        <div class="cd-label">Seconds</div>
+      </div>
+    </div>
+
+    <div id="cd-divider"></div>
+    <div id="cd-date">Saturday · May 9, 2026 · 12:30 PM EST</div>
+
+    <script>
+      // Target: Saturday May 9 2026 12:30 PM EST = 17:30 UTC
+      const CD_TARGET = new Date(Date.UTC(2026, 4, 9, 17, 30, 0)); // month is 0-indexed
+      const CD_PW = "3241";
+      const CD_KEY = "cd_unlocked";
+
+      // Unlock if password already entered
+      if (localStorage.getItem(CD_KEY) === "1") {
+        document.getElementById("countdown-overlay").classList.add("gone");
+      }
+
+      function cdCheckPw() {
+        const p = prompt("Enter access code:");
+        if (p === CD_PW) {
+          localStorage.setItem(CD_KEY, "1");
+          cdUnlock();
+        } else if (p !== null) {
+          alert("Wrong code.");
+        }
+      }
+
+      function cdUnlock() {
+        const el = document.getElementById("countdown-overlay");
+        el.style.transition = "opacity 600ms ease";
+        el.style.opacity = "0";
+        setTimeout(() => el.classList.add("gone"), 650);
+        if (cdInterval) clearInterval(cdInterval);
+      }
+
+      // Build flip card DOM for a 2-digit unit
+      function cdBuildCards(containerId) {
+        const container = document.getElementById(containerId);
+        for (let i = 0; i < 2; i++) {
+          const card = document.createElement("div");
+          card.className = "cd-card";
+          card.innerHTML = `
+            <div class="cd-card-face cd-card-top">0</div>
+            <div class="cd-card-face cd-card-bottom">0</div>
+            <div class="cd-card-face cd-card-flip-top">0</div>
+            <div class="cd-card-face cd-card-flip-bottom">0</div>
+          `;
+          container.appendChild(card);
+        }
+      }
+
+      // Set a card to a digit, with flip animation if changed
+      function cdSetCard(containerId, value) {
+        const padded = String(value).padStart(2, "0");
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const cards = container.querySelectorAll(".cd-card");
+        cards.forEach((card, i) => {
+          const digit = padded[i];
+          const top    = card.querySelector(".cd-card-top");
+          const bottom = card.querySelector(".cd-card-bottom");
+          const flipTop = card.querySelector(".cd-card-flip-top");
+          const flipBot = card.querySelector(".cd-card-flip-bottom");
+          if (top.textContent === digit) return; // no change, skip
+          // Set new digit on flip faces
+          flipTop.textContent = top.textContent; // old value flips away
+          flipBot.textContent = digit;           // new value flips in
+          // Trigger flip
+          card.classList.add("flipping");
+          setTimeout(() => {
+            top.textContent    = digit;
+            bottom.textContent = digit;
+            card.classList.remove("flipping");
+          }, 620);
+        });
+      }
+
+      function cdTick() {
+        const now  = Date.now();
+        const diff = CD_TARGET - now;
+
+        if (diff <= 0) {
+          cdUnlock();
+          return;
+        }
+
+        const days    = Math.floor(diff / 86400000);
+        const hours   = Math.floor((diff % 86400000) / 3600000);
+        const minutes = Math.floor((diff % 3600000)  / 60000);
+        const seconds = Math.floor((diff % 60000)    / 1000);
+
+        cdSetCard("cd-days",    days);
+        cdSetCard("cd-hours",   hours);
+        cdSetCard("cd-minutes", minutes);
+        cdSetCard("cd-seconds", seconds);
+      }
+
+      // Init
+      cdBuildCards("cd-days");
+      cdBuildCards("cd-hours");
+      cdBuildCards("cd-minutes");
+      cdBuildCards("cd-seconds");
+      cdTick();
+      const cdInterval = setInterval(cdTick, 1000);
+
+      // Auto-unlock if we're already past the target
+      if (Date.now() >= CD_TARGET) cdUnlock();
+    </script>
+  </div>
     <div class="mobile-splash-screen mobile-only" id="mobile-splash" aria-hidden="true">
       <img class="mobile-splash-logo" src="assets/icons/beerlogo.png" alt="Beerlympics logo" />
     </div>
