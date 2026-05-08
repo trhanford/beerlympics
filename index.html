@@ -138,265 +138,135 @@
   <div id="countdown-overlay">
     <style>
       #countdown-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 99999;
+        position: fixed; inset: 0; z-index: 99999;
         background: #080503;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 0;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
         font-family: -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif;
         overflow: hidden;
       }
       #countdown-overlay.gone { display: none; }
-
-      /* Background texture */
       #countdown-overlay::before {
-        content: "";
-        position: absolute;
-        inset: 0;
+        content: ""; position: absolute; inset: 0; pointer-events: none;
         background:
           radial-gradient(ellipse 80% 60% at 50% 100%, rgba(180,140,50,0.12), transparent),
           radial-gradient(ellipse 60% 40% at 50% 0%, rgba(100,70,20,0.08), transparent);
-        pointer-events: none;
       }
 
-      /* Password button */
       #cd-pw-btn {
-        position: absolute;
-        top: 20px; right: 20px;
-        appearance: none;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
-        color: rgba(255,255,255,0.3);
-        border-radius: 8px;
-        padding: 6px 12px;
-        font-size: 0.72rem;
-        font-family: inherit;
-        cursor: pointer;
-        transition: all 140ms;
-        letter-spacing: 0.04em;
+        position: absolute; top: 20px; right: 20px;
+        appearance: none; background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.3);
+        border-radius: 8px; padding: 6px 12px; font-size: 0.72rem;
+        font-family: inherit; cursor: pointer; transition: all 140ms; letter-spacing: 0.04em;
       }
-      #cd-pw-btn:hover {
-        background: rgba(255,255,255,0.1);
-        color: rgba(255,255,255,0.7);
-        border-color: rgba(216,191,124,0.3);
-      }
+      #cd-pw-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); border-color: rgba(216,191,124,0.3); }
 
-      /* Logo area */
-      #cd-logo {
-        font-size: clamp(1.6rem, 4vw, 2.8rem);
-        font-weight: 900;
-        letter-spacing: -0.03em;
-        margin-bottom: 12px;
-        color: #f7f1de;
-        text-align: center;
-      }
+      #cd-logo { font-size: clamp(1.6rem,4vw,2.8rem); font-weight: 900; letter-spacing: -0.03em; margin-bottom: 10px; color: #f7f1de; text-align: center; }
       #cd-logo span { color: #c9a860; }
+      #cd-sub { font-size: clamp(0.72rem,2vw,0.88rem); color: rgba(240,236,226,0.4); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 48px; text-align: center; }
 
-      /* Subtitle */
-      #cd-sub {
-        font-size: clamp(0.75rem, 2vw, 0.92rem);
-        color: rgba(240,236,226,0.45);
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        margin-bottom: 52px;
-        text-align: center;
-      }
+      #cd-timer { display: flex; align-items: flex-end; gap: clamp(12px,2.5vw,28px); margin-bottom: 40px; }
+      .cd-unit { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+      .cd-cards { display: flex; gap: 5px; }
 
-      /* Flip cards container */
-      #cd-timer {
-        display: flex;
-        align-items: flex-end;
-        gap: clamp(16px, 3vw, 32px);
-        margin-bottom: 44px;
-      }
-
-      .cd-unit {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .cd-cards {
-        display: flex;
-        gap: 4px;
-      }
-
-      /* Individual flip card */
+      /* ── FLIP CARD ── */
       .cd-card {
-        width: clamp(38px, 7vw, 62px);
-        height: clamp(54px, 10vw, 88px);
+        width: clamp(42px,7.5vw,66px);
+        height: clamp(60px,11vw,92px);
         position: relative;
-        perspective: 400px;
+        perspective: 300px;
+        border-radius: 8px;
       }
 
-      .cd-card-face {
-        position: absolute;
-        inset: 0;
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: clamp(28px, 5.5vw, 52px);
-        font-weight: 800;
-        font-variant-numeric: tabular-nums;
-        letter-spacing: -0.02em;
-        backface-visibility: hidden;
-        -webkit-backface-visibility: hidden;
-        overflow: hidden;
-      }
-
-      /* Top half */
-      .cd-card-top {
-        background: linear-gradient(180deg, #1a1208 0%, #120d06 50%);
-        border: 1px solid rgba(216,191,124,0.12);
-        color: #f7e79a;
-        clip-path: inset(0 0 50% 0);
-        border-radius: 6px 6px 2px 2px;
-        box-shadow: 0 -1px 0 rgba(0,0,0,0.6) inset;
-      }
-
-      /* Bottom half */
-      .cd-card-bottom {
-        background: linear-gradient(180deg, #0f0a05 50%, #0a0703 100%);
-        border: 1px solid rgba(216,191,124,0.12);
-        color: #f7e79a;
-        clip-path: inset(50% 0 0 0);
-        border-radius: 2px 2px 6px 6px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-      }
-
-      /* The flipping top half (animated) */
-      .cd-card-flip-top {
-        background: linear-gradient(180deg, #1a1208 0%, #120d06 50%);
-        border: 1px solid rgba(216,191,124,0.12);
-        color: #f7e79a;
-        clip-path: inset(0 0 50% 0);
-        border-radius: 6px 6px 2px 2px;
-        transform-origin: bottom center;
-        transform: rotateX(0deg);
-        transition: transform 0.3s ease-in;
-        z-index: 2;
-      }
-
-      .cd-card.flipping .cd-card-flip-top {
-        transform: rotateX(-90deg);
-      }
-
-      /* New bottom half revealed */
-      .cd-card-flip-bottom {
-        background: linear-gradient(180deg, #0f0a05 50%, #0a0703 100%);
-        border: 1px solid rgba(216,191,124,0.12);
-        color: #f7e79a;
-        clip-path: inset(50% 0 0 0);
-        border-radius: 2px 2px 6px 6px;
-        transform-origin: top center;
-        transform: rotateX(90deg);
-        transition: transform 0.3s ease-out 0.3s;
-        z-index: 1;
-      }
-
-      .cd-card.flipping .cd-card-flip-bottom {
-        transform: rotateX(0deg);
-      }
-
-      /* Separator line in middle of card */
+      /* Divider line between halves */
       .cd-card::after {
-        content: "";
-        position: absolute;
-        left: 0; right: 0;
-        top: 50%;
-        height: 1px;
-        background: rgba(0,0,0,0.8);
-        z-index: 10;
-        transform: translateY(-50%);
+        content: ""; position: absolute; left: 0; right: 0; top: 50%;
+        height: 1.5px; background: rgba(0,0,0,0.9); z-index: 10; pointer-events: none;
       }
 
-      /* Unit label */
-      .cd-label {
-        font-size: clamp(0.6rem, 1.2vw, 0.72rem);
-        font-weight: 700;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: rgba(240,236,226,0.35);
+      /* Static halves — always visible */
+      .cd-upper, .cd-lower {
+        position: absolute; left: 0; right: 0; height: 50%; overflow: hidden;
+        display: flex; justify-content: center;
+        background: #161007;
+        border: 1px solid rgba(216,191,124,0.13);
       }
+      .cd-upper { top: 0; border-radius: 8px 8px 0 0; border-bottom: none; align-items: flex-end; }
+      .cd-lower { bottom: 0; border-radius: 0 0 8px 8px; border-top: none; align-items: flex-start; box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
 
-      /* Colon separator */
-      .cd-colon {
-        font-size: clamp(28px, 5vw, 46px);
-        font-weight: 800;
-        color: rgba(216,191,124,0.4);
-        margin-bottom: 22px;
+      /* Animated halves — hidden until .flipping */
+      .cd-flip-upper, .cd-flip-lower {
+        position: absolute; left: 0; right: 0; height: 50%;
+        overflow: hidden; display: none; justify-content: center;
+        background: #161007;
+        border: 1px solid rgba(216,191,124,0.13);
+        z-index: 4;
+      }
+      .cd-flip-upper { top: 0; border-radius: 8px 8px 0 0; border-bottom: none; align-items: flex-end; transform-origin: 50% 100%; }
+      .cd-flip-lower { bottom: 0; border-radius: 0 0 8px 8px; border-top: none; align-items: flex-start; transform-origin: 50% 0%; box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
+
+      /* Digit */
+      .cd-digit {
+        font-size: clamp(30px,5.8vw,54px);
+        font-weight: 800; color: #f7e79a;
         line-height: 1;
-        animation: blink 1s step-end infinite;
-      }
-      @keyframes blink {
-        0%, 100% { opacity: 1; }
-        50%       { opacity: 0.2; }
-      }
-
-      /* Date line */
-      #cd-date {
-        font-size: clamp(0.72rem, 1.5vw, 0.88rem);
-        color: rgba(240,236,226,0.3);
-        letter-spacing: 0.1em;
-        text-align: center;
+        display: block;
+        font-variant-numeric: tabular-nums;
+        /* Position so top half shows top of character, bottom half shows bottom */
+        height: clamp(60px,11vw,92px);
+        display: flex; align-items: center; justify-content: center;
       }
 
-      /* Gold divider */
-      #cd-divider {
-        width: clamp(60px, 12vw, 100px);
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(216,191,124,0.5), transparent);
-        margin: 28px 0 20px;
+      /* Flip animations */
+      @keyframes cdFlipOut {
+        0%   { transform: rotateX(0deg); }
+        100% { transform: rotateX(-90deg); }
       }
+      @keyframes cdFlipIn {
+        0%   { transform: rotateX(90deg); }
+        100% { transform: rotateX(0deg); }
+      }
+
+      .cd-card.flipping .cd-flip-upper {
+        display: flex;
+        animation: cdFlipOut 0.22s ease-in forwards;
+      }
+      .cd-card.flipping .cd-flip-lower {
+        display: flex;
+        animation: cdFlipIn 0.22s ease-out 0.22s forwards;
+      }
+
+      .cd-label { font-size: clamp(0.58rem,1.1vw,0.7rem); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(240,236,226,0.32); }
+      .cd-colon { font-size: clamp(28px,4.5vw,44px); font-weight: 800; color: rgba(216,191,124,0.35); margin-bottom: 20px; line-height: 1; animation: blink 1s step-end infinite; }
+      @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.15} }
+
+      #cd-divider { width: clamp(50px,10vw,90px); height: 1px; background: linear-gradient(90deg, transparent, rgba(216,191,124,0.45), transparent); margin: 24px 0 18px; }
+      #cd-date { font-size: clamp(0.7rem,1.4vw,0.85rem); color: rgba(240,236,226,0.28); letter-spacing: 0.08em; text-align: center; }
     </style>
 
     <button id="cd-pw-btn" onclick="cdCheckPw()">Access</button>
-
     <div id="cd-logo">BEER<span>LYMPICS</span></div>
     <div id="cd-sub">Game night starts in</div>
 
     <div id="cd-timer">
-      <!-- Days -->
-      <div class="cd-unit">
-        <div class="cd-cards" id="cd-days"></div>
-        <div class="cd-label">Days</div>
-      </div>
+      <div class="cd-unit"><div class="cd-cards" id="cd-days"></div><div class="cd-label">Days</div></div>
       <div class="cd-colon">:</div>
-      <!-- Hours -->
-      <div class="cd-unit">
-        <div class="cd-cards" id="cd-hours"></div>
-        <div class="cd-label">Hours</div>
-      </div>
+      <div class="cd-unit"><div class="cd-cards" id="cd-hours"></div><div class="cd-label">Hours</div></div>
       <div class="cd-colon">:</div>
-      <!-- Minutes -->
-      <div class="cd-unit">
-        <div class="cd-cards" id="cd-minutes"></div>
-        <div class="cd-label">Minutes</div>
-      </div>
+      <div class="cd-unit"><div class="cd-cards" id="cd-minutes"></div><div class="cd-label">Minutes</div></div>
       <div class="cd-colon">:</div>
-      <!-- Seconds -->
-      <div class="cd-unit">
-        <div class="cd-cards" id="cd-seconds"></div>
-        <div class="cd-label">Seconds</div>
-      </div>
+      <div class="cd-unit"><div class="cd-cards" id="cd-seconds"></div><div class="cd-label">Seconds</div></div>
     </div>
 
     <div id="cd-divider"></div>
-    <div id="cd-date">Saturday · May 9, 2026 · 12:30 PM EST</div>
+    <div id="cd-date">Saturday &middot; May 9, 2026 &middot; 12:30 PM EST</div>
 
     <script>
-      // Launch config (obfuscated — do not share source)
       const CD_TARGET = new Date(Date.UTC(0x7ea, 0x4, 0x9, 0x11, 0x1e, 0));
       const _k = "_brl_s26";
-      const _h = "MzI0MQ=="; // encoded
+      const _h = "MzI0MQ==";
 
-      // Unlock if already authenticated
       if (localStorage.getItem(_k) === btoa(_k)) {
         document.getElementById("countdown-overlay").classList.add("gone");
       }
@@ -416,82 +286,77 @@
         el.style.transition = "opacity 600ms ease";
         el.style.opacity = "0";
         setTimeout(() => el.classList.add("gone"), 650);
-        if (cdInterval) clearInterval(cdInterval);
+        if (typeof cdInterval !== "undefined") clearInterval(cdInterval);
       }
 
-      // Build flip card DOM for a 2-digit unit
       function cdBuildCards(containerId) {
-        const container = document.getElementById(containerId);
+        const c = document.getElementById(containerId);
         for (let i = 0; i < 2; i++) {
           const card = document.createElement("div");
           card.className = "cd-card";
-          card.innerHTML = `
-            <div class="cd-card-face cd-card-top">0</div>
-            <div class="cd-card-face cd-card-bottom">0</div>
-            <div class="cd-card-face cd-card-flip-top">0</div>
-            <div class="cd-card-face cd-card-flip-bottom">0</div>
-          `;
-          container.appendChild(card);
+          card.innerHTML =
+            '<div class="cd-upper"><span class="cd-digit">0</span></div>' +
+            '<div class="cd-lower"><span class="cd-digit">0</span></div>' +
+            '<div class="cd-flip-upper"><span class="cd-digit">0</span></div>' +
+            '<div class="cd-flip-lower"><span class="cd-digit">0</span></div>';
+          c.appendChild(card);
         }
       }
 
-      // Set a card to a digit, with flip animation if changed
       function cdSetCard(containerId, value) {
         const padded = String(value).padStart(2, "0");
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        const cards = container.querySelectorAll(".cd-card");
-        cards.forEach((card, i) => {
+        const c = document.getElementById(containerId);
+        if (!c) return;
+        c.querySelectorAll(".cd-card").forEach((card, i) => {
           const digit = padded[i];
-          const top    = card.querySelector(".cd-card-top");
-          const bottom = card.querySelector(".cd-card-bottom");
-          const flipTop = card.querySelector(".cd-card-flip-top");
-          const flipBot = card.querySelector(".cd-card-flip-bottom");
-          if (top.textContent === digit) return; // no change, skip
-          // Set new digit on flip faces
-          flipTop.textContent = top.textContent; // old value flips away
-          flipBot.textContent = digit;           // new value flips in
-          // Trigger flip
+          const upperD = card.querySelector(".cd-upper .cd-digit");
+          if (upperD.textContent === digit) return; // unchanged
+
+          const lowerD     = card.querySelector(".cd-lower .cd-digit");
+          const flipUpperD = card.querySelector(".cd-flip-upper .cd-digit");
+          const flipLowerD = card.querySelector(".cd-flip-lower .cd-digit");
+
+          // Flip-upper shows OLD digit and folds away
+          flipUpperD.textContent = upperD.textContent;
+          // Flip-lower shows NEW digit and folds in
+          flipLowerD.textContent = digit;
+
+          // Update static lower immediately — it's hidden behind flip-upper during the flip
+          lowerD.textContent = digit;
+
+          // Reset then trigger animation (force reflow to restart if mid-animation)
+          card.classList.remove("flipping");
+          void card.offsetHeight;
           card.classList.add("flipping");
+
+          // After both halves animate (220ms + 220ms delay + 220ms = 440ms), update upper and clean up
           setTimeout(() => {
-            top.textContent    = digit;
-            bottom.textContent = digit;
+            upperD.textContent = digit;
             card.classList.remove("flipping");
-          }, 620);
+          }, 480);
         });
       }
 
-      function cdTick() {
-        const now  = Date.now();
-        const diff = CD_TARGET - now;
-
-        if (diff <= 0) {
-          cdUnlock();
-          return;
-        }
-
-        const days    = Math.floor(diff / 86400000);
-        const hours   = Math.floor((diff % 86400000) / 3600000);
-        const minutes = Math.floor((diff % 3600000)  / 60000);
-        const seconds = Math.floor((diff % 60000)    / 1000);
-
-        cdSetCard("cd-days",    days);
-        cdSetCard("cd-hours",   hours);
-        cdSetCard("cd-minutes", minutes);
-        cdSetCard("cd-seconds", seconds);
-      }
-
-      // Init
       cdBuildCards("cd-days");
       cdBuildCards("cd-hours");
       cdBuildCards("cd-minutes");
       cdBuildCards("cd-seconds");
+
+      function cdTick() {
+        const diff = CD_TARGET - Date.now();
+        if (diff <= 0) { cdUnlock(); return; }
+        cdSetCard("cd-days",    Math.floor(diff / 86400000));
+        cdSetCard("cd-hours",   Math.floor((diff % 86400000) / 3600000));
+        cdSetCard("cd-minutes", Math.floor((diff % 3600000)  / 60000));
+        cdSetCard("cd-seconds", Math.floor((diff % 60000)    / 1000));
+      }
+
       cdTick();
       const cdInterval = setInterval(cdTick, 1000);
-
       if (Date.now() >= CD_TARGET.getTime()) cdUnlock();
     </script>
   </div>
+
     <div class="mobile-splash-screen mobile-only" id="mobile-splash" aria-hidden="true">
       <img class="mobile-splash-logo" src="assets/icons/beerlogo.png" alt="Beerlympics logo" />
     </div>
