@@ -3956,6 +3956,9 @@ const showDtModePill = (hostMode) => {
   if (isMobileLayout()) return; // mobile handles its own pill
   pill.classList.add("dt-visible");
   pill.textContent = hostMode ? "🎬 Host Mode" : "🎈 Player Mode";
+  // Show admin toggle in navbar now that we're in-game
+  const adminWrap = document.getElementById("dt-nav-admin-wrap");
+  if (adminWrap) adminWrap.classList.remove("hidden");
 };
 // ── END DESKTOP LANDING ────────────────────────────────────────────────────
 
