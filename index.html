@@ -171,52 +171,62 @@
       .cd-cards { display: flex; gap: 5px; }
 
       /* ── FLIP CARD ── */
+      /* Card uses CSS custom properties so inner digits can reference full height */
       .cd-card {
-        width: clamp(42px,7.5vw,66px);
-        height: clamp(60px,11vw,92px);
+        --cd-w: clamp(42px, 7.5vw, 66px);
+        --cd-h: clamp(60px, 11vw, 92px);
+        --cd-half: calc(var(--cd-h) / 2);
+        --cd-fs: clamp(28px, 5.4vw, 50px);
+        width: var(--cd-w);
+        height: var(--cd-h);
         position: relative;
         perspective: 300px;
-        border-radius: 8px;
       }
 
-      /* Divider line between halves */
+      /* Divider line */
       .cd-card::after {
         content: ""; position: absolute; left: 0; right: 0; top: 50%;
-        height: 1.5px; background: rgba(0,0,0,0.9); z-index: 10; pointer-events: none;
+        height: 1.5px; background: rgba(0,0,0,0.95); z-index: 10; pointer-events: none;
       }
 
-      /* Static halves — always visible */
-      .cd-upper, .cd-lower {
-        position: absolute; left: 0; right: 0; height: 50%; overflow: hidden;
-        display: flex; justify-content: center;
+      /* All half-divs share the same base style */
+      .cd-upper, .cd-lower, .cd-flip-upper, .cd-flip-lower {
+        position: absolute; left: 0; right: 0;
+        height: var(--cd-half); overflow: hidden;
         background: #161007;
         border: 1px solid rgba(216,191,124,0.13);
       }
-      .cd-upper { top: 0; border-radius: 8px 8px 0 0; border-bottom: none; align-items: flex-end; }
-      .cd-lower { bottom: 0; border-radius: 0 0 8px 8px; border-top: none; align-items: flex-start; box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
+      .cd-upper      { top: 0;    border-radius: 8px 8px 0 0; border-bottom: none; }
+      .cd-lower      { bottom: 0; border-radius: 0 0 8px 8px; border-top: none;    box-shadow: 0 4px 16px rgba(0,0,0,0.45); }
+      .cd-flip-upper { top: 0;    border-radius: 8px 8px 0 0; border-bottom: none; display: none; z-index: 4; transform-origin: 50% 100%; }
+      .cd-flip-lower { bottom: 0; border-radius: 0 0 8px 8px; border-top: none;    display: none; z-index: 4; transform-origin: 50% 0%;   }
 
-      /* Animated halves — hidden until .flipping */
-      .cd-flip-upper, .cd-flip-lower {
-        position: absolute; left: 0; right: 0; height: 50%;
-        overflow: hidden; display: none; justify-content: center;
-        background: #161007;
-        border: 1px solid rgba(216,191,124,0.13);
-        z-index: 4;
-      }
-      .cd-flip-upper { top: 0; border-radius: 8px 8px 0 0; border-bottom: none; align-items: flex-end; transform-origin: 50% 100%; }
-      .cd-flip-lower { bottom: 0; border-radius: 0 0 8px 8px; border-top: none; align-items: flex-start; transform-origin: 50% 0%; box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
-
-      /* Digit */
-      .cd-digit {
-        font-size: clamp(30px,5.8vw,54px);
-        font-weight: 800; color: #f7e79a;
-        line-height: 1;
-        display: block;
+      /*
+       * KEY ALIGNMENT FIX:
+       * Each .cd-inner is the FULL card height — not the half-div height.
+       * The half-div's overflow:hidden clips it to show only its portion.
+       * Upper half: inner starts at top:0  → shows top half of centered number.
+       * Lower half: inner starts at top:-50% of card → shows bottom half.
+       */
+      .cd-inner {
+        width: 100%;
+        height: var(--cd-h);         /* full card height, not half */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--cd-fs);
+        font-weight: 800;
+        color: #f7e79a;
         font-variant-numeric: tabular-nums;
-        /* Position so top half shows top of character, bottom half shows bottom */
-        height: clamp(60px,11vw,92px);
-        display: flex; align-items: center; justify-content: center;
+        letter-spacing: -0.02em;
+        user-select: none;
       }
+      /* Upper: inner sits naturally at top of upper div → top half visible */
+      .cd-upper      .cd-inner { margin-top: 0; }
+      .cd-flip-upper .cd-inner { margin-top: 0; }
+      /* Lower: inner shifted UP by half-card so bottom half is in view */
+      .cd-lower      .cd-inner { margin-top: calc(-1 * var(--cd-half)); }
+      .cd-flip-lower .cd-inner { margin-top: calc(-1 * var(--cd-half)); }
 
       /* Flip animations */
       @keyframes cdFlipOut {
@@ -295,10 +305,10 @@
           const card = document.createElement("div");
           card.className = "cd-card";
           card.innerHTML =
-            '<div class="cd-upper"><span class="cd-digit">0</span></div>' +
-            '<div class="cd-lower"><span class="cd-digit">0</span></div>' +
-            '<div class="cd-flip-upper"><span class="cd-digit">0</span></div>' +
-            '<div class="cd-flip-lower"><span class="cd-digit">0</span></div>';
+            '<div class="cd-upper"><div class="cd-inner">0</div></div>' +
+            '<div class="cd-lower"><div class="cd-inner">0</div></div>' +
+            '<div class="cd-flip-upper"><div class="cd-inner">0</div></div>' +
+            '<div class="cd-flip-lower"><div class="cd-inner">0</div></div>';
           c.appendChild(card);
         }
       }
@@ -309,12 +319,12 @@
         if (!c) return;
         c.querySelectorAll(".cd-card").forEach((card, i) => {
           const digit = padded[i];
-          const upperD = card.querySelector(".cd-upper .cd-digit");
+          const upperD = card.querySelector(".cd-upper .cd-inner");
           if (upperD.textContent === digit) return; // unchanged
 
-          const lowerD     = card.querySelector(".cd-lower .cd-digit");
-          const flipUpperD = card.querySelector(".cd-flip-upper .cd-digit");
-          const flipLowerD = card.querySelector(".cd-flip-lower .cd-digit");
+          const lowerD     = card.querySelector(".cd-lower .cd-inner");
+          const flipUpperD = card.querySelector(".cd-flip-upper .cd-inner");
+          const flipLowerD = card.querySelector(".cd-flip-lower .cd-inner");
 
           // Flip-upper shows OLD digit and folds away
           flipUpperD.textContent = upperD.textContent;
