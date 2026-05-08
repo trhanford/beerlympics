@@ -291,19 +291,31 @@
     <script>
       const CD_TARGET = new Date(Date.UTC(0x7ea, 0x4, 0x8, 0xc, 0x28, 0));
       const _k = "_brl_s26";
-      const _h = "MzI0MQ==";
+      const _w = "https://beerlympicsapi.boardfreak56.workers.dev/verify-access";
 
-      if (localStorage.getItem(_k) === btoa(_k)) {
+      // Unlock if a valid token is already stored
+      if (localStorage.getItem(_k)) {
         document.getElementById("countdown-overlay").classList.add("gone");
       }
 
-      function cdCheckPw() {
+      async function cdCheckPw() {
         const p = prompt("Enter access code:");
-        if (p !== null && btoa(p) === _h) {
-          localStorage.setItem(_k, btoa(_k));
-          cdUnlock();
-        } else if (p !== null) {
-          alert("Incorrect.");
+        if (p === null) return;
+        try {
+          const res = await fetch(_w, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: p }),
+          });
+          if (res.ok) {
+            const { token } = await res.json();
+            localStorage.setItem(_k, token);
+            cdUnlock();
+          } else {
+            alert("Incorrect.");
+          }
+        } catch {
+          alert("Could not verify — check your connection.");
         }
       }
 
