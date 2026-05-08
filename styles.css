@@ -3466,26 +3466,7 @@ body:not(.mobile-app) .stat-pill.stat-pill--points {
 
 /* ── NAVBAR RIGHT — UNIFIED DARK GLASS STYLE ────────────── */
 
-/* Install App button — match the navbar ghost style */
-body:not(.mobile-app) .install-app-btn {
-  appearance: none;
-  background: rgba(255,255,255,0.05) !important;
-  border: 1px solid rgba(255,255,255,0.12) !important;
-  color: rgba(240,236,226,0.75) !important;
-  border-radius: 8px !important;
-  padding: 5px 12px !important;
-  font-size: 0.75rem !important;
-  font-weight: 600 !important;
-  min-height: unset !important;
-  box-shadow: none !important;
-  transition: background 140ms, border-color 140ms;
-  white-space: nowrap;
-}
-body:not(.mobile-app) .install-app-btn:hover {
-  background: rgba(255,255,255,0.1) !important;
-  border-color: rgba(216,191,124,0.3) !important;
-  color: #f0ece2 !important;
-}
+
 
 /* Sim button — match the same ghost style */
 .dt-sim-btn {
@@ -3568,13 +3549,17 @@ body:not(.mobile-app) .install-app-btn:hover {
   border-color: rgba(216,191,124,0.4);
   color: #c9a860;
 }
-/* Override old install-app-btn styles on desktop */
+/* Install App on desktop — force it to match icon button shape */
 body:not(.mobile-app) #install-app-btn {
   width: 34px !important;
+  height: 34px !important;
   min-height: unset !important;
   padding: 0 !important;
-  font-size: 0 !important; /* hide any text */
+  font-size: 0 !important;
+  line-height: 0 !important;
+  color: rgba(240,236,226,0.55) !important;
 }
+body:not(.mobile-app) #install-app-btn svg { display: block; }
 /* Admin label acts like a button */
 .dt-admin-label {
   user-select: none;
