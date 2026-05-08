@@ -3302,8 +3302,8 @@ body.mobile-app .stat-pill--points {
   color: #f7e79a;
 }
 
-/* ── DESKTOP POINTS PILL FIX (beat the !important desktop override) ─── */
-body:not(.mobile-app) .stat-pill--points {
+/* ── DESKTOP POINTS PILL — compound selector beats all single-class rules ── */
+body:not(.mobile-app) .stat-pill.stat-pill--points {
   background: linear-gradient(135deg, #d8bf7c, #f7f1de 52%, #b89146) !important;
   color: #1a0d00 !important;
   border-color: transparent !important;
