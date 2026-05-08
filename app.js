@@ -3445,6 +3445,7 @@ adminToggle.addEventListener("change", () => {
     if (entered === ADMIN_PASSCODE) {
       localStorage.setItem(STORAGE_KEYS.adminMode, "true");
       showToast("Admin tools unlocked.", "success");
+      document.getElementById("dt-cd-reset")?.classList.remove("hidden");
     } else {
       adminToggle.checked = false;
       localStorage.setItem(STORAGE_KEYS.adminMode, "false");
@@ -3453,6 +3454,7 @@ adminToggle.addEventListener("change", () => {
   } else {
     localStorage.setItem(STORAGE_KEYS.adminMode, "false");
     showToast("Admin mode disabled.", "info");
+    document.getElementById("dt-cd-reset")?.classList.add("hidden");
   }
   adminEditingTeamId = null;
   refreshState();
