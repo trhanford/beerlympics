@@ -31,15 +31,11 @@ const db = getFirestore(app);
 const GAME_TYPES = [
   { id: "beer_pong",  name: "Beer Pong",   teams: 2 },
   { id: "flip_cup",  name: "Flip Cup",     teams: 4 },
-  { id: "beerio_kart", name: "Beerio Kart", teams: 2 },
   { id: "die",       name: "Die",          teams: 2 },
   { id: "drinkball", name: "Drinkball",    teams: 2 },
   { id: "bag_toss",  name: "Bag Toss",     teams: 2 },
-  { id: "darts",     name: "Darts",        teams: 2 },
-  { id: "rage_cage", name: "Rage Cage",    teams: 4 },
   { id: "kan_jam",   name: "Kan Jam",      teams: 2 },
   { id: "spikeball", name: "Spikeball",    teams: 2 },
-  { id: "quarters",  name: "Quarters",     teams: 2 },
 ];
 
 const STORAGE_KEYS = {
