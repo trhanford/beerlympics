@@ -35,7 +35,6 @@ const GAME_TYPES = [
   { id: "drinkball", name: "Drinkball",    teams: 2 },
   { id: "bag_toss",  name: "Bag Toss",     teams: 2 },
   { id: "kan_jam",   name: "Kan Jam",      teams: 2 },
-  { id: "spikeball", name: "Spikeball",    teams: 2 },
 ];
 
 const STORAGE_KEYS = {
@@ -3884,7 +3883,6 @@ const GAME_RULE_MAP = {
   "cfg-darts":      ["darts_"],
   "cfg-rage-cage":  ["ragecage_"],
   "cfg-kan-jam":    ["kanjam_"],
-  "cfg-spikeball":  ["spikeball_"],
   "cfg-quarters":   ["quarters_"],
 };
 
